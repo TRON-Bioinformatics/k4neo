@@ -1,0 +1,16 @@
+modus:
+  query: true
+  indexing: false
+
+indexing:
+  samples: config/samples.txt
+  kmer_size: 21
+  cutoff: 2
+  method: "raptor"
+
+query:
+  index: examples/kmindex/G_21
+  query_fasta: examples/query.fasta
+  kmer_ratio: 0.7
+  method: "kmindex"
+  reindeer_exe: "Reindeer"

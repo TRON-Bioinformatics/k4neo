@@ -1,0 +1,4 @@
+.idea
+neokant/pipeline/.snakemake
+neokant/pipeline/query
+neokant/pipeline/indexing
