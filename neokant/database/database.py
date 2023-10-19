@@ -1,15 +1,21 @@
 from neokant.parser.parser import Parser
 from tinydb import TinyDB, Query
 from logzero import logger as loggy
+import pandas as pd
 
 
 class DataBase:
+    def __init__(self, db_file):
+        self.db_file = db_file
+        self.database = TinyDB(self.db_file, sort_keys=True, indent=4)
+
+
+class CreateDataBase(DataBase):
     def __init__(self, db_file, data_set_file, tissue_map):
         """
         Database initialization
         """
-        self.db_file = db_file
-        self.database = TinyDB(self.db_file)
+        super().__init__(db_file)
         self.data_set_file = data_set_file
         self.tissue_map = Parser.parse_tissuemap_into_document(tissue_map)
 
@@ -33,9 +39,9 @@ class DataBase:
         sample_study_table = self.database.table("sample_study_table")
         for this_sample in study_annot:
             exists = sample_study_table.contains((sample_study_query.sample_name == this_sample["sample_name"]) &
-                                                 (sample_study_query.project_id == this_sample["project_id"]))
+                                                 (sample_study_query.study_id == study_id))
             if not exists:
-                sample_study_query.insert({x: this_sample[x] for x in ("sample_name", "project_id")})
+                sample_study_table.insert({"sample_name": this_sample["sample_name"], "study_id": study_id})
 
     def _add_samples(self, study_id: str, study_annot: dict, sample_count: str):
         """
@@ -56,7 +62,7 @@ class DataBase:
         elif len(study_table) != sample_count:
             counter = 0
             for element in study_annot:
-                exists = study_table.contains(study_query.index_name == element["index_name"])
+                exists = study_table.contains(study_query.sample_name == element["sample_name"])
                 if not exists:
                     study_table.insert(element)
                     counter += 1
@@ -65,14 +71,18 @@ class DataBase:
             loggy.error("Don't know what to do here")
 
     def _add_tissues(self):
+        """
+        Add tissue map to database to match public tissue identifiers to neoKant tissue types
+        :return:
+        """
         counter = 0
         tissue_table = self.database.table('tissue_map')
         tissue_query = Query()
         for element in self.tissue_map:
             exists = tissue_table.contains(
                 (tissue_query.tissue_public == element['tissue_public']) &
-                (tissue_query.tissue_public == element['tissue']) &
-                (tissue_query.tissue_public == element['subtissue'])
+                (tissue_query.tissue == element['tissue']) &
+                (tissue_query.subtissue == element['subtissue'])
             )
             if not exists:
                 tissue_table.insert(element)
@@ -81,6 +91,12 @@ class DataBase:
 
     @staticmethod
     def _update_sample_document_with_tissue(sample: dict, tissue_map: list) -> dict:
+        """
+        Update the document representation of a sample with the neoKant tissue identifiers
+        :param sample: A json document representation of a sample
+        :param tissue_map: A list of tissue documents to compare to
+        :return: Updated sample representation
+        """
         tissue_public = sample['tissue']
         tissue_match = {}
         found = False
@@ -93,7 +109,7 @@ class DataBase:
             i += 1
         if not tissue_match:
             loggy.error(f"Could not find for sample {sample['index_name']} a tissue match. Ignoring for annotation")
-            return
+            return sample
 
         sample['tissue'] = tissue_match['tissue']
         sample['subtissue'] = tissue_match['subtissue']
@@ -106,11 +122,12 @@ class DataBase:
         loggy.info("Adding tissue mapping into database")
         self._add_tissues()
         loggy.info("Adding samples into database")
+        studies = set()
         for study_id, study_annot, sample_count in self._parse_study_table():
-             # If study is not in database parse table into document format
-            study_elements = Parser.parse_into_document(study_annot)
+            # If study is not in database parse table into document format
+            study_elements = Parser.parse_sample_into_document(study_annot)
             # Update samples with tissue mapping and add subtissue section
-            study_elements = [DataBase._update_sample_document_with_tissue(x, self.tissue_map) for x in study_elements]
+            study_elements = [self._update_sample_document_with_tissue(x, self.tissue_map) for x in study_elements]
             self._sample_study_table(study_id, study_elements)
             self._add_samples(study_id, study_elements, sample_count)
 
@@ -121,45 +138,26 @@ class DataBase:
         """
         self._init_database()
 
-
-class Query:
-    def __init__(self, db: DataBase):
-        self.db = db
-        self.query = Query()
-
-    def get_sample_from_study(self, study, sample):
-        pass
-
-    def get_study_sample_mapping(self, sample_names: list):
+    def precomputations(self):
         """
-        Generate a mapping of sample tables to sample names
-        {study_id : [id1, id2, id3]}
+        Contains precomputations that would be an unnecessary overhead when compuzted always on the fly. Should be run
+        after inserting all samples
+        :return:
         """
-        study_matching = {}
-        sample_studies = [x 
-            for x in self.db.table("sample_study_table").get(self.query.sample_name.any(sample_names))]
-        for sample in sample_studies:
-            study = sample["project_id"]
-            sample_name = sample["sample_name"]
-            if study not in study_matching:
-                study_matching[study] = [sample_name]
-            else:
-                study_matching[study].append(sample_name)
-        return study_matching
+        tissue_count_table = self.database.table("tissue_counts")
+        tissue_count_query = Query()
+        for study_id, _, sample_count in self._parse_study_table():
+            exists = tissue_count_table.contains(tissue_count_query.study_id == study_id)
+            if exists:
+                loggy.info('Precomputed counts for {} already in database. Skipping calculation')
+                continue
 
-    def get_index_hit(self, index_ids: list):
-        matches = []
-        sample_study_mapping = self.get_study_sample_mapping(index_ids)
+            table = pd.DataFrame(self.database.table(study_id))
+            table['study_id'] = study_id
+            table = table[['tissue', 'developmental_stage', 'disease', 'study_id']].value_counts()
+            # Returns record in document format
+            tissue_counts = table.to_frame().reset_index().to_dict(orient="records")
+            tissue_count_table.insert_multiple(tissue_counts)
+            loggy.info(f"Added {len(tissue_counts)} precomputed tissue counts for {study_id} into database")
 
-        for study, samples in sample_study_mapping.items():
-            table = self.db.table(study)
-            for sample in samples:
-                matches.append(table.search(self.query.sample_name == sample))
-        return matches
 
-    def get_tissue_per_sample(self, sample_name,):
-        matches = self.db.get(self.query.sample_name == sample_name)
-        try:
-            tissue = matches["tissue"]
-        except KeyError as error:
-            loggy.error("Tissue key is missing")

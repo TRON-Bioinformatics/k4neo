@@ -1,0 +1,1 @@
+EXPECTED_CTS_COLUMNS = ["cts_id", "cts_seq", "pos", "query_length"]

@@ -61,7 +61,7 @@ rule cobs_query:
         '--index {input.index} '
         '--file {input.query_fasta} '
         '--threshold {params.theta} '
-        '> {output.search_result} 2> {log}'
+        '> {output.search_results} 2> {log}'
 
 
 rule reindeer_query:

@@ -2,3 +2,11 @@
 neokant/pipeline/.snakemake
 neokant/pipeline/query
 neokant/pipeline/indexing
+.snakemake
+*/__pycache__
+neokant/annotator/__pycache__/
+neokant/database/__pycache__/
+neokant/index/__pycache__/
+neokant/parser/__pycache__/
+neokant/pipeline/__pycache__/
+query*

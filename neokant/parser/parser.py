@@ -13,15 +13,15 @@ class Parser:
         Read neokant tissue map to homogenize tissue identifiers and make them compatible with ExBio.
         :return:
         """
-        tissue_map = []
+        tissue_mapping = []
         with open(tissue_map) as file_handle:
             reader = csv.DictReader(file_handle, delimiter="\t")
             for line in reader:
                 assert all([x in line.keys() for x in EXPECTED_TISSUE_COLUMNS]), "Missing columns"
-                tissue_map.append({'tissue_public': line['tissue_public'],
-                                  'tissue': line['tissue'],
-                                  'subtissue': line['subtissue']})
-        return tissue_map
+                tissue_mapping.append({'tissue_public': line['tissue_description_found_in_public_data'],
+                                       'tissue': line['tissue'],
+                                       'subtissue': line['subtissue']})
+        return tissue_mapping
 
     @staticmethod
     def parse_tissuemap_into_document(tissue_map):
@@ -60,8 +60,9 @@ class IndexResultParser:
     """
     def __init__(self, 
                  indexing_table: str, 
-                 tool: str, 
+                 tool: str,
                  reindeer_sample_mapping:str = None,
+                 raptor_sample_mapping:str = None,
                  kmindex_cutoff: float = 0.7) -> None:
 
         self.indexing_table = indexing_table
@@ -69,29 +70,48 @@ class IndexResultParser:
         self.tool = tool
         # Parameters specific for prediction tools
         self.reindeer_sample_mapping = reindeer_sample_mapping
+        self.raptor_sample_mapping = raptor_sample_mapping
         if self.tool == "reindeer":
             assert self.reindeer_sample_mapping is not None and self.reindeer_sample_mapping != "",\
                 "Parsing REINDEER results requires a sample/index mapping file..."
+        if self.tool == "raptor":
+            assert self.raptor_sample_mapping is not None and self.raptor_sample_mapping != "",\
+                "Parsing Raptor results requires a sample/index mapping file"
         self.kmindex_cutoff = kmindex_cutoff
 
     def parse_results(self) -> dict:
-        result = pd.DataFrame()
+        result = {}
         match self.tool:
             case "reindeer":
-                logger.info("Parsing REINDEER index query...")
+                logger.info("Parsing REINDEER index query results...")
                 result = self._parse_reindeer()
             case "cobs":
-                logger.info("Parsing COBS index query...")
+                logger.info("Parsing COBS index query results...")
                 result = self._parse_cobs()
             case "kmindex":
-                logger.info("Parsing KMINDEX index query...")
+                logger.info("Parsing KMINDEX index query results...")
                 result = self._parse_kmindex()
             case "raptor":
-                logger.info("Parsing RAPTOR index query...")
+                logger.info("Parsing RAPTOR index query results...")
                 result = self._parse_raptor()
             case _:
-                print("Tool is unknown. Cannot parse results")
+                logger.error("Tool is unknown. Cannot parse results")
         return result
+
+    @staticmethod
+    def write_result(results: dict, out_file: str):
+        """
+        Write parsed results into tabular format to be processed by user
+        :param results: A dictionary qith cts as key and sample hits as value
+        :param out_file: Output file
+        :return:
+        """
+        with open(out_file, "w") as file_handle:
+            for query, samples in results.items():
+                for sample in samples:
+                    line = f"{query}\t{sample}\n"
+                    file_handle.write(line)
+
 
     def _parse_reindeer(self) -> dict:
         """
@@ -115,7 +135,6 @@ class IndexResultParser:
                     for item in ele.split(","):
                         if item == "*":
                             break
-
                         key, val = item.split(":")
                         if val != "*":
                             found_list.append(dataset_mapping[i])
@@ -132,15 +151,17 @@ class IndexResultParser:
             for line in reader:
                 cts_id = line["samples"].split(":")[1]
                 results[cts_id] = []
+                sample_count = 0
                 for sample, prediction in line.items():
                     if sample == "samples":
                         continue
                     prediction = float(prediction)
                     if prediction >= self.kmindex_cutoff:
-                        found = True
-                    else:
-                        found = False
-                    results[cts_id].append(sample)
+                        results[cts_id].append(sample)
+                        sample_count += 1
+                if sample_count == 0:
+                    results[cts_id] = [None]
+
         logger.info(f"Parsed {len(results)} target sequences")
         return results
 
@@ -152,8 +173,15 @@ class IndexResultParser:
         :return: Result mapping
         """
         dataset_mapping = {}
+        sample_name_mapping = {}
         results = {}
-        
+
+        with open(self.raptor_sample_mapping, 'r') as file_handle:
+            logger.info("Reading sample/minimiser mapping file to match raptor bin ids to sample_names")
+            reader = csv.DictReader(file_handle, delimiter="\t")
+            for row in reader:
+                sample_name_mapping[row['minimiser_id']] = row['sample_name']
+
         with open(self.indexing_table) as file_handle:
             for line in file_handle:
                 elements = line.rstrip().split("\t")
@@ -172,7 +200,9 @@ class IndexResultParser:
                     results[cts_id] = []
                     if len(elements) > 1:
                         for this_sample in elements[1].split(","):
-                            results[cts_id].append(dataset_mapping[int(this_sample)])
+                            results[cts_id].append(sample_name_mapping[dataset_mapping[int(this_sample)]])
+                    else:
+                        results[cts_id] = [None]
 
         logger.info(f"Parsed {len(results)} target sequences")
         return results
@@ -185,13 +215,13 @@ class IndexResultParser:
                 elements = line.rstrip().split('\t')
                 if line.startswith("*"):
                     cts_id = elements[0].lstrip('*')
-                    results[cts_id] = set()
+                    results[cts_id] = []
                 # If the line does not start with an asteriks it is a sample hit
                 else:
-                    results[cts_id].add([elements[0]])
-
+                    results[cts_id].append(elements[0])
+        # This dict comprehension will create an empty (askteriks) for each cts withoput a hit, so that the user
+        # gets the information that the cts was not found
+        results = {key: (val if val else [None]) for (key, val) in results.items()}
         logger.info(f"Parsed {len(results)} target sequences")
         return results
-
-
                 
