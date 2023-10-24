@@ -39,6 +39,38 @@ def build_database():
     db.precomputations()
     logger.info("Created database")
 
+
+def register_index():
+    parser = ArgumentParser(
+        description=f"neoKant {neokant.VERSION} index register"
+    )
+    parser.add_argument(
+        '--database',
+        dest='database',
+        help='Annotation database file.',
+        required=True
+    )
+    parser.add_argument(
+        '--index',
+        dest='index',
+        help='kmer index to query.',
+        required=True
+    )
+    parser.add_argument(
+        '--method',
+        dest='method',
+        help='K-mer indexing method',
+        required=True
+    )
+    parser.add_argument(
+        '--global-index',
+        dest='global_index',
+        help="Directory where index should be registered"
+    )
+    args = parser.parse_args()
+    logger.info("Index registration...")
+
+
 def parse_output():
     parser = ArgumentParser(
         description=f"neoKant {neokant.VERSION} result parser"
@@ -81,12 +113,13 @@ def parse_output():
         reinder_sample_mapping = args.sample_table
     logger.info("Starting query result parsing...")
     parser = IndexResultParser(args.index_table, args.tool,
-                               reindeer_sample_mapping = reindeer_sample_mapping,
-                               raptor_sample_mapping = raptor_sample_mapping,
+                               reindeer_sample_mapping=reindeer_sample_mapping,
+                               raptor_sample_mapping=raptor_sample_mapping,
                                kmindex_cutoff=args.kmindex_cutoff)
     results = parser.parse_results()
     parser.write_result(results, args.output_table)
     logger.info("Parsed query results into table")
+
 
 def build_index():
     parser = ArgumentParser(
@@ -172,9 +205,14 @@ def annotate():
         '--sample-table',
         dest='sample_table',
         help='Sample table mapping index ids to samples. Only required for Reindeer and Raptor HIBF'
-
     )
-
+    parser.add_argument(
+        '--kmindex-cutoff',
+        dest='kmindex_cutoff',
+        help='Kmindex cutoff to filter results',
+        default=0.7,
+        type=float
+    )
     args = parser.parse_args()
     reindeer_sample_mapping = None
     raptor_sample_mapping = None
@@ -193,13 +231,12 @@ def annotate():
                                   method=args.method,
                                   reindeer_sample_mapping=reindeer_sample_mapping,
                                   raptor_sample_mapping=raptor_sample_mapping,
-                                  kmer_ratio=args.kmer_ratio)
-    print(result)
+                                  kmer_ratio=args.kmer_ratio,
+                                  kmindex_cutoff=args.kmindex_cutoff)
     results = annotator.annotate_cts(result)
     results = annotator.annotate_sequences(results)
-    print(results)
-    #logger.info("Starting annotation ...")
-    #return
+    with open(args.output, "w") as file_handle:
+        results.to_csv(file_handle, sep="\t", index=False)
 
 
 def query_pipeline():

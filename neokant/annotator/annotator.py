@@ -8,14 +8,16 @@ from neokant.database.database import DataBase
 from neokant.database.queries import Queries
 from neokant.annotator import EXPECTED_CTS_COLUMNS
 import xxhash
+import numpy as np
 
 
 class FastaHandler:
     @staticmethod
     def write_fasta(entries: pd.DataFrame, fasta_file: str):
         assert all([x in entries.columns for x in ['query_cts_id', 'query_sequence']]), "Columns are missing"
+        sequences = entries[['query_cts_id', 'query_sequence']].drop_duplicates()
         with open(fasta_file, 'w') as file_handle:
-            for row in entries.itertuples(index=False):
+            for row in sequences.itertuples(index=False):
                 file_handle.write(f">{row.query_cts_id}\n")
                 file_handle.write(f"{row.query_sequence}\n")
 
@@ -132,31 +134,105 @@ class Annotator:
         parsed_results = pd.DataFrame(dict_to_pandas, columns=['cts_id', 'sample_name'])
         return parsed_results
 
-    def annotate_cts(self, parsed_results: pd.DataFrame, annot_style: str = "normal"):
+    def _annotate_studies(self, parsed_results: pd.DataFrame):
+        study_annotation = self.queries.get_sample_study()
+        parsed_results = parsed_results.merge(study_annotation,
+                                              how="left",
+                                              on="sample_name")
+        return parsed_results
+
+    def _annotate_sample_metadata(self, parsed_results: pd.DataFrame):
         """
-        Given all hits in an index collect tissue and number of tissue samples in whole index
+        Add sample metadata
         :param parsed_results:
-        :param annot_style:
         :return:
         """
-        logger.info("Annotating sample hits with corresponding project id")
-        parsed_results['study_id'] = parsed_results.apply(lambda row: self.queries.get_project_id(row.sample_name),
-                                                            axis=1)
-        # Group all indexing results by project_id. This allows us to query the database for each table once, regardless
-        # of the query sequence. Annotation results are then merged back to the dataframe
-        logger.info("Annotating sample hits with sample level metadata")
-        parsed_results = parsed_results.groupby('study_id').apply(lambda df: self.queries.annotate_samples_of_project(df))
+        parsed_results = \
+            parsed_results.groupby('study_id', dropna=False).apply(
+                lambda sub_df: self.queries.annotate_samples_of_project(sub_df)
+            )
+        parsed_results.reset_index(drop=True, inplace=True)
         # Subset to required columns
-        parsed_results = parsed_results.loc[:, ['cts_id', 'sample_name', 'tissue', 'developmental_stage', 'disease']]
+        parsed_results = parsed_results.loc[:,
+                         ['cts_id', 'study_id', 'sample_name', 'tissue', 'developmental_stage', 'disease']]
         # Count combinations of tissue, disease and developmental stage
-        parsed_results = parsed_results.groupby(['cts_id', 'disease', 'developmental_stage', 'tissue'])[
+        parsed_results = parsed_results.groupby(
+            ['cts_id', 'study_id', 'disease', 'developmental_stage', 'tissue'])[
             ['disease', 'developmental_stage', 'tissue']].size().to_frame('count').reset_index()
 
         df = parsed_results[['cts_id']].drop_duplicates()
         df = pd.merge(df, parsed_results, how="left")
         df['count'] = df['count'].fillna(0).astype('int')
-        df = df[['cts_id', 'count', 'disease', 'developmental_stage', 'tissue']]
         return df
+
+    def _annotate_counts(self, parsed_results: pd.DataFrame):
+        parsed_results =\
+            parsed_results.groupby('study_id', group_keys=False).apply(
+                lambda sub_df: self.queries.annotate_tissue_counts(sub_df)
+            )
+
+        parsed_results.reset_index(drop=True, inplace=True)
+        return parsed_results
+
+    @staticmethod
+    def _split_found(parsed_results: pd.DataFrame):
+        """
+        When the index returns query not to be expressed we split them
+        apart and handle them separately
+        :param parsed_results:
+        :return:
+        """
+        not_expressed = \
+            parsed_results.loc[
+                parsed_results['sample_name'].isnull(), ["cts_id"]]
+        not_expressed['count'] = 0
+        not_expressed['total'] = 0
+        not_expressed['disease'] = np.nan
+        not_expressed['developmental_stage'] = np.nan
+        not_expressed['tissue'] = np.nan
+        return not_expressed
+
+    def _basic_aggregate(self, parsed_results: pd.DataFrame):
+        tissue_counts = self.queries.get_tissue_counts()
+        tissue_counts = tissue_counts.groupby(['developmental_stage', 'tissue']).\
+            size().to_frame('count').reset_index()
+        parsed_results = parsed_results.groupby(
+            ['cts_id', 'developmental_stage', 'tissue'])[
+            ['developmental_stage', 'tissue']].size().to_frame('count').reset_index()
+        df = parsed_results[['cts_id']].drop_duplicates()
+        df = pd.merge(df, parsed_results, how="left")
+        df['count'] = df['count'].fillna(0).astype('int')
+        df = pd.merge(df, tissue_counts, how="left")
+        return df
+
+    def annotate_cts(self, parsed_results: pd.DataFrame, annot_style: str = "normal"):
+        """
+        Given all hits in an index collect tissue and number of tissue samples in whole index.
+        Combine annotated CTS with not expressed targets and return aggegrated table
+        :param parsed_results:
+        :param annot_style:
+        :return:
+        """
+        logger.info("Annotating sample hits with corresponding project id")
+        # Select cts not found in index and append columns required to merge later with annotated results
+
+        parsed_results = self._annotate_studies(parsed_results)
+
+        # Group all indexing results by project_id. This allows us to query the database for each table once, regardless
+        # of the query sequence. Annotation results are then merged back to the dataframe
+        not_expressed = self._split_found(parsed_results)
+        parsed_results = parsed_results.dropna()
+        if len(parsed_results.index) == 0:
+            logger.info('None of the queried sequences was found in index...')
+            return not_expressed
+        logger.info("Annotating sample hits with sample level metadata")
+        parsed_results = self._annotate_sample_metadata(parsed_results)
+        logger.info("Annotating with pre-computed counts.")
+        parsed_results = self._annotate_counts(parsed_results)
+        parsed_results = pd.concat([parsed_results, not_expressed])
+        parsed_results =\
+            parsed_results[['cts_id', 'count', 'total', 'disease', 'developmental_stage', 'tissue', 'study_id']]
+        return parsed_results
 
     def annotate_sequences(self, annotated_cts):
         """
@@ -166,6 +242,8 @@ class Annotator:
         """
         df = pd.merge(self.sequence_table, annotated_cts, left_on="query_cts_id", right_on="cts_id")
         df.drop('cts_id_y', inplace=True, axis=1)
+        df.rename(columns={'cts_id_x': 'cts_id'}, inplace=True)
+        df["total"] = pd.to_numeric(df["total"])
         return df
 
 
