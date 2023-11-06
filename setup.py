@@ -17,6 +17,7 @@ setup(
     name='neokant',
     version=VERSION,
     packages=find_packages(exclude=["legacy"]),
+    include_package_data=True,
     entry_points={
         'console_scripts': [
             'neokant-annotator=neokant.command_line:annotate',

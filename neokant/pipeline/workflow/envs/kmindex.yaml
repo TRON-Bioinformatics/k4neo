@@ -7,3 +7,4 @@ dependencies:
   - kmindex
   - kmtricks
   - python
+  - ntcard

@@ -1,3 +1,6 @@
+import pandas as pd
+
+
 def validate_config(config):
     if config["modus"]["query"] and config["modus"]["indexing"]:
         raise ValueError("Can not run pipeline in indexing and query modus")
@@ -19,17 +22,17 @@ def get_final_output():
             f'query/{method}/{method}_search.txt'
         )
     
-    elif config['modus']['index']:
+    elif config['modus']['indexing']:
         method = config['query']['method']
         final_output.append(
-            f'index/{method}/{method}.index'
+            'index/raptor/raptor.index'
         )
     return final_output
-
+ #'index/kmindex/global_index/'
 
 def read_sample_sheet(file):    
     file_content = []
-    with open(file) as file_handle:
+    with open(file, "r") as file_handle:
         for line in file_handle:
             elements = line.rstrip().split(' : ')
             bin_id = elements[0].rstrip()
@@ -37,4 +40,22 @@ def read_sample_sheet(file):
             file_content.append({'bin_id': bin_id, 'fastq': fastq})
     samples = pd.DataFrame(file_content)
     return samples
+
+def get_ntcard_fastq(wildcards):
+    sample = samples.query('bin_id == @wildcards.sample')
+    fastq = sample.get('fastq')
+    try: 
+        fastq = fastq.item()
+    except AttributeError as error:
+        return ''
+    # Our sample sheet format allows the fowllowing delimiters ";"
+    fastq = fastq.split(';')
+    return fastq
+
+
+#f'index/{method}/{method}.index'
+
+
+
+
 

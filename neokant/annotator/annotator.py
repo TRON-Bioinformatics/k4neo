@@ -9,18 +9,30 @@ from neokant.database.queries import Queries
 from neokant.annotator import EXPECTED_CTS_COLUMNS
 import xxhash
 import numpy as np
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+
 
 
 class FastaHandler:
+    
     @staticmethod
     def write_fasta(entries: pd.DataFrame, fasta_file: str):
+        """
+        Write query context sequences into fasta format
+        """
         assert all([x in entries.columns for x in ['query_cts_id', 'query_sequence']]), "Columns are missing"
         sequences = entries[['query_cts_id', 'query_sequence']].drop_duplicates()
+        fasta_entries = []
         with open(fasta_file, 'w') as file_handle:
             for row in sequences.itertuples(index=False):
-                file_handle.write(f">{row.query_cts_id}\n")
-                file_handle.write(f"{row.query_sequence}\n")
-
+                record = SeqRecord(
+                    Seq(row.query_sequence),
+                    id = row.query_cts_id,
+                    name = row.query_cts_id)
+                fasta_entries.append(record)
+            SeqIO.write(fasta_entries, file_handle, "fasta")
 
 class Annotator:
     def __init__(self, working_dir: str, sequence_table: str, db_file: str) -> None:

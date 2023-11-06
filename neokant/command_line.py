@@ -2,14 +2,14 @@ import os
 import sys
 import pathlib
 from argparse import ArgumentParser
-sys.path.append(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+#sys.path.append(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
 from logzero import logger
 import neokant
 from neokant.database.database import DataBase, CreateDataBase
 from neokant.annotator.annotator import Annotator
 from neokant.parser.parser import IndexResultParser
 
-sys.path.append(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/neokant")
+#sys.path.append(XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/neokant")
 
 
 def build_database():

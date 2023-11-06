@@ -2,9 +2,9 @@ import os.path
 
 rule convert_bin_to_raptor_fof:
     input:
-        sample_sheet = config['query']['index']
+        sample_sheet = config['indexing']['samples']
     output:
-        fof = "index/{wildcards.method}/fof.txt"
+        fof = "index/raptor/fof.txt"
     run:
         with open(input.sample_sheet, 'r') as file_handle, open(output.fof, 'w') as write_handle:
             for line in file_handle:
@@ -14,38 +14,28 @@ rule convert_bin_to_raptor_fof:
 
 rule raptor_prepare:
     input:
-        fastq_file = get_fastq_for_bin,
+        sample_sheet = rules.convert_bin_to_raptor_fof.output.fof,
     output:
-        minimiser_list = dir('index/raptor/minimiser/{sample}/minimiser.list')
+        minimiser_list = 'index/raptor/minimiser/minimiser.list'
     params:
-        cut_off = 2,
-        kmer_size = 21,
+        cut_off = int(config['indexing']['cutoff']),
+        kmer_size = int(config['indexing']['kmer_size']),
         window = 21 + 4,
         output_dir = lambda wildcards, output: os.path.dirname(output.minimiser_list)
     conda:
         '../envs/raptor.yaml'
     threads: 16
     log:
-        'index/raptor/minimizer/minimizer_creation.log'
+        'index/raptor/minimiser/minimiser_creation.log'
     shell:
         'raptor '
         'prepare '
         '--threads {threads} '
         '--kmer {params.kmer_size} '
         '--window {params.window} '
-        '--kmer-count-cutoff {params.cut_off}'
+        '--kmer-count-cutoff {params.cut_off} '
         '--input {input.sample_sheet} '
         '--output {params.output_dir} &> {log}'
-
-rule gather_raptor_prepare:
-    input:
-        minimisers = get_all_bin_minimizer
-    output:
-        minimiser_list = "index/raptor/minimiser/minimiser.list"
-    shell:
-        """
-        cat {input.minimisers} > {output.minimiser_list}
-        """
 
 rule raptor_layout:
     input:
@@ -53,8 +43,8 @@ rule raptor_layout:
     output:
         layout_file = "index/raptor/hibf_binning.layout"
     params:
-        fpr = 0.05,
-        kmer_size = 21
+        fpr = 0.05
+        #kmer_size = 21
     conda:
         '../envs/raptor.yaml'
     log: 'index/raptor/layout.log'
@@ -63,7 +53,6 @@ rule raptor_layout:
         'raptor '
         'layout '
         '--input-file {input.minimiser_list} '
-        '--kmer-size {params.kmer_size} '
         '--false-positive-rate {params.fpr} '
         '--threads {threads} '
         '--output-filename {output.layout_file} &> {log}'

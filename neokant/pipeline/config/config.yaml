@@ -3,10 +3,10 @@ modus:
   indexing: false
 
 indexing:
-  samples: config/samples.txt
+  samples: examples/all_bin_paths.txt
   kmer_size: 21
   cutoff: 2
-  method: "raptor"
+  method: "kmindex"
 
 query:
   index: examples/kmindex/G_21

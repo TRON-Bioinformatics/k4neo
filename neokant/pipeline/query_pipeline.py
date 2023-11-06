@@ -93,16 +93,16 @@ class PipelineConfig:
                  index: str,
                  method: str,
                  kmer_ratio: float,
-                 verbose = False):
+                 verbose = True):
         # Generate config object to be used with
         self.config = {"query": {
                                 "index": index,
                                 "method": method,
                                 "kmer_ratio": kmer_ratio}}
         if verbose:
-            self.log_configuration
+            self.log_configuration()
 
     def log_configuration(self):
         logger.info("Query pipeline configuration")
-        for k, v in self.config.items():
+        for k, v in self.config["query"].items():
             logger.info("{}={}".format(k, v))

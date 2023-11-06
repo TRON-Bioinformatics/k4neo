@@ -3,9 +3,16 @@ import sys
 
 configfile: workflow.source_path("../config/config.yaml")
 include: "rules/common.smk"
-include: "rules/query.smk"
-#include: "rules/raptor.smk"
+
 validate_config(config)
+if config['modus']['indexing']:
+    samples = read_sample_sheet(config['indexing']['samples'])
+else:
+    samples = pd.DataFrame(columns=['sample', 'bin_id'])
+
+include: "rules/query.smk"
+include: "rules/kmindex.smk"
+include: "rules/raptor.smk"
 
 
 rule all:
