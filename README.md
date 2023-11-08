@@ -9,10 +9,10 @@ powerful k-mer indexing methods to annotate the expression of novel (neo)antigen
 neoKant requires only a sequence of interest and optionally a custom position and length
 of the query sequence. The input data is annotated with expression in different
 tissues, developmental and disease stages. We support multiple state of the art
-k-mer indexer and provide for COBS, kmindex and raptor pre-built indices of a collection
+k-mer indexer and provide for COBS, Kmindex and Raptor pre-built indices of a collection
 of 1663 non-cancerous/healthy tissue samples from SRA, GEO and ENCODE. At it's core
 neoKant consists of an annotation package that handles manually curated metadata
-and a workflow to query and create matching k-mer search indicies.
+and a workflow to query and create matching k-mer search indices.
 
 ## Dependencies
 
@@ -36,50 +36,96 @@ and a workflow to query and create matching k-mer search indicies.
 
 # Download data repository including metadata database
 
-https://gitlab.rlp.net/tron/kmer_index_data.git
+git clone https://gitlab.rlp.net/tron/kmer_index_data.git
 
 
-# https://gitlab.rlp.net/tron/neokant.git
+# Clone neoKant package
+git clone https://gitlab.rlp.net/tron/neokant.git
 
+# Install conda dependencies
 
-# If you have conda installed you can simply install the environment like this
 conda create -n neokant -c bioconda -c tlemane python python-pip cobs kmindex raptor snakemake-minimal
-pip install requirements.txt
 
-python setup.py install
+# Install neokant into environment
+
+pip install ./neokant
 
 ```
 
 ## Pre-built indices
 
-K-mer indices of data release d5 are available on scratch
+K-mer indices of data release d5 are available on scratch for queries.
 
-### kmindex
-
-```
+### Kmindex
 
 ```
+/scratch/info/projects/CM29_RNA_Seq/kmer_scalability_test/big_index/kmindex/kmindex_21/G21
+```
 
-### cobs
+### COBS
 
-### raptor
+```
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
 
+### Raptor
+
+```
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
 
 ## Input
 
-neoKant requires an in input table with 2 mandatory and 2 optional columns.
-The columns "cts_id" and  "cts_seq" should be unique context sequences to search
-in the index. If columns "positions" and "query_length" are given, the defined positions
-of the context sequence is queried against the index. If any of these two columns
-is NaN, the whole cts is queried. This mode can be used to annotate whole transcript
-isoforms such as putative tumor associated antigens.
+neoKant requires an input table with 2 mandatory and 2 optional columns.
+The columns "cts_id" and "cts_seq" should be unique context sequences that are to be 
+searched for in the index. If the columns "pos" and "query_length" are specified, 
+the defined positions of the context sequence are queried against the index. If one of these two 
+columns is NaN, the entire cts is queried. This mode can be used to annotate entire transcript 
+isoforms such as putative tumor-associated antigens.
 
+## Example commands
+
+```
+
+# Query with kmindex
+
+neokant-annotator \
+  --database kmer_index_data/healthy_tissue_database/d5_annotation.db \
+  --indexXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
+  --queries /path/to/cts.tsv \
+  --output /path/to/cts.annot \
+  --method kmindex  \
+  --kmindex-cutoff 0.7
+  
+# Query with COBS
+ 
+neokant-annotator \
+  --database kmer_index_data/healthy_tissue_database/d5_annotation.db \
+  --index XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
+  --queries /path/to/cts.tsv \
+  --output /path/to/cts.annot \
+  --method cobs  \
+  --ratio 0.7
+
+# Query with Raptor
+
+neokant-annotator \
+  --database kmer_index_data/healthy_tissue_database/d5_annotation.db \
+  --index XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
+  --queries /path/to/cts.tsv \
+  --output /path/to/cts.annot \
+  --method raptor  \
+  --ratio 0.7 \
+  --sample-tableXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+```
 
 ## ToDo
 
-* Implement different search modi 
+* Implement different search modes
     * High level
-    * Subtissue
+    - [x] Standard level with tissue, developmental and diasease counts per study  
     * sample level
     
 * Implement k-mer indexing with automatic downloading from SRA in pipeline
