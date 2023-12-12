@@ -1,16 +1,14 @@
-## neoKant (Neoantigen target K-mer annotator)
+## k4neo (kmer for neoantigen annotation)
 
-> Dare to directly search in your sequencing data instead of relying on predictions of others.
-
-neoKant is package to leverage the information provided by large transcriptomic databases by using 
+k4neo is a package to leverage the information provided by large transcriptomic databases by using 
 powerful k-mer indexing methods to annotate the expression of novel (neo)antigen target sequences in healthy tissues.
 
 
-neoKant requires only a sequence of interest and optionally a custom position and length
+k4neo requires only a sequence of interest and optionally a custom position and length
 of the query sequence. The input data is annotated with expression in different
-tissues, developmental and disease stages. We support multiple state of the art
-k-mer indexer and provide for COBS, Kmindex and Raptor pre-built indices of a collection
-of 1663 non-cancerous/healthy tissue samples from SRA, GEO and ENCODE. At it's core
+tissues, developmental and disease states. We support multiple state of the art
+k-mer indexerd and provide for COBS, Kmindex and Raptor pre-built indices of a collection
+of 1663 non-cancerous (healthy) tissue samples from SRA, GEO and ENCODE. At it's core
 neoKant consists of an annotation package that handles manually curated metadata
 and a workflow to query and create matching k-mer search indices.
 
@@ -28,7 +26,7 @@ and a workflow to query and create matching k-mer search indices.
 * raptor=3.0.1
 * kmindex=0.5.2
 
-> K-mer indexer can be installed from bioconda/tlemance conda channels
+> K-mer indexers can be installed from bioconda/tlemance conda channels
 
 
 ## Installation
@@ -40,15 +38,15 @@ git clone https://gitlab.rlp.net/tron/kmer_index_data.git
 
 
 # Clone neoKant package
-git clone https://gitlab.rlp.net/tron/neokant.git
+git clone https://gitlab.rlp.net/tron/k4neo.git
 
 # Install conda dependencies
 
-conda create -n neokant -c bioconda -c tlemane python python-pip cobs kmindex raptor snakemake-minimal
+conda create -n k4neo -c bioconda -c tlemane python python-pip cobs kmindex raptor snakemake-minimal
 
-# Install neokant into environment
+# Install k4neo into environment
 
-pip install ./neokant
+pip install -e ./k4neo
 
 ```
 
@@ -76,7 +74,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ## Input
 
-neoKant requires an input table with 2 mandatory and 2 optional columns.
+k4neo requires an input table with 2 mandatory and 2 optional columns.
 The columns "cts_id" and "cts_seq" should be unique context sequences that are to be 
 searched for in the index. If the columns "pos" and "query_length" are specified, 
 the defined positions of the context sequence are queried against the index. If one of these two 
