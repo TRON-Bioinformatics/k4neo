@@ -1,7 +1,7 @@
-include neokant/pipeline/workflow/Snakefile
-include neokant/pipeline/workflow/scripts/*
-include neokant/pipeline/workflow/envs/*
-include neokant/pipeline/workflow/rules/*
-include neokant/pipeline/examples/*
-include neokant/pipeline/config/*
+include k4neo/pipeline/workflow/Snakefile
+include k4neo/pipeline/workflow/scripts/*
+include k4neo/pipeline/workflow/envs/*
+include k4neo/pipeline/workflow/rules/*
+include k4neo/pipeline/examples/*
+include k4neo/pipeline/config/*
 

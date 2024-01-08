@@ -1,8 +1,8 @@
 from setuptools import find_packages, setup
-import neokant
+import k4neo
 
 
-VERSION = neokant.VERSION
+VERSION = k4neo.VERSION
 
 
 # parses requirements from file
@@ -14,15 +14,16 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 # Build the Python package
 setup(
-    name='neokant',
+    name='k4neo',
     version=VERSION,
     packages=find_packages(exclude=["legacy"]),
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'neokant-annotator=neokant.command_line:annotate',
-            'neokant-parser=neokant.command_line:parse_output',
-            'neokant-database=neokant.command_line:build_database',
+            'k4neo-annotator=k4neo.command_line:annotate',
+            'k4neo-parser=k4neo.command_line:parse_output',
+            'k4neo-database=k4neo.command_line:build_database',
+            'k4neo-index=k4neo.command_line:build_database',
         ],
     },
     author="TRON - Translational Oncology at the University Medical Center of the Johannes Gutenberg University Mainz"
