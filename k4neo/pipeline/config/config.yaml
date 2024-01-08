@@ -1,6 +1,6 @@
 modus:
-  query: true
-  indexing: false
+  query: false
+  indexing: true
 
 indexing:
   samples: examples/all_bin_paths.txt

@@ -23,7 +23,7 @@ setup(
             'k4neo-annotator=k4neo.command_line:annotate',
             'k4neo-parser=k4neo.command_line:parse_output',
             'k4neo-database=k4neo.command_line:build_database',
-            'k4neo-index=k4neo.command_line:build_database',
+            'k4neo-index=k4neo.command_line:build_index',
         ],
     },
     author="TRON - Translational Oncology at the University Medical Center of the Johannes Gutenberg University Mainz"

@@ -9,8 +9,6 @@ from k4neo.parser.parser import IndexResultParser
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 
 
-
-
 def build_database():
     parser = ArgumentParser(
         description=f"k4neo {k4neo.VERSION} database builder"
@@ -159,11 +157,8 @@ def build_index():
         default=pathlib.Path(__file__).parent / 'pipeline' / 'workflow' / 'Snakefile'
     )
     args = parser.parse_args()
-    if args.method not in ['raptor', 'cobs', 'reindeer', 'kmindex']:
-        raise ValueError()
-
     samples = args.samples
-    working_dir = pathlib.Path(args.working_dir).resolve()
+    working_dir = pathlib.Path(args.index).resolve()
     pipeline = pathlib.Path(args.workflow).resolve()
     pipeline_config = IndexPipelineConfig(samples=samples,
                                           method="raptor",
@@ -171,11 +166,10 @@ def build_index():
                                           cutoff=args.cutoff,
                                           fpr=args.fpr)
     logger.info("Starting indexing pipeline...")
-    logger.info(f"Indexing method: {args.method}")
     index_pipeline = IndexPipeline(pipeline,
                                    working_dir=working_dir,
                                    config=pipeline_config.config)
-    index_pipeline.run_pipeline()
+    index_pipeline.run_pipeline(slurm=False)
     logger.info("Finished indexing pipeline...")
 
     return
@@ -216,7 +210,7 @@ def annotate():
     parser.add_argument(
         '--ratio',
         dest='kmer_ratio',
-        help='Number of shared ki-mers between query and sample to report as hit',
+        help='Number of shared k-mers between query and sample to report as hit',
         default=0.45
     )
     parser.add_argument(
@@ -302,7 +296,8 @@ def query_pipeline():
 def main():
     #build_database()
     #parse_output()
-    annotate()
+    #annotate()
+    build_index()
 
 if __name__ == '__main__':
     main()

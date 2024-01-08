@@ -10,13 +10,25 @@ rule convert_bin_to_raptor_fof:
     input:
         sample_sheet = config['indexing']['samples']
     output:
-        fof = "index/raptor/fof.txt"
+        fof = "index/raptor/fof.txt",
+        index_mapping = "index/raptor/index_mapping.txt"
     run:
-        with open(input.sample_sheet, 'r') as file_handle, open(output.fof, 'w') as write_handle:
+        with open(input.sample_sheet, 'r') as file_handle, open(output.fof, 'w') as write_handle, open(output.index_mapping, 'w') as mapping_handle :
+
+            mapping_handle.write("sample_name\tminimiser_id\n")
             for line in file_handle:
                 elements = line.rstrip().split(' : ')
                 fastq = elements[1].replace(";", " ")
+                
+                # Write FOF
                 write_handle.write(fastq + "\n")
+                # Write index mapping: sample_name: minimider_id
+                # Raptor uses the basename of the first fastq file as bin identifier
+                minimiser_id = os.path.basename(fastq.split(" ")[0]).rstrip(".minimiser")
+                mapping_handle.write(f'{elements[0]}\t{minimiser_id}\n')
+
+rule create_raptor_index_mapping:
+    input:
 
 rule raptor_prepare:
     """

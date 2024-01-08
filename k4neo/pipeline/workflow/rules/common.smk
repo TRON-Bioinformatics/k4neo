@@ -12,7 +12,7 @@ def validate_config(config):
 
     if config["modus"]["indexing"]:
         assert config["indexing"]['samples'] is not None, "Sample table required for indexing"
-        assert config["indexing"]['kmer_size'] in range(19,32), "k-mer size not supported"
+        assert int(config["indexing"]['kmer_size']) in list(range(19,32)), "k-mer size not supported"
         assert config["indexing"]['method'] in ['cobs', 'raptor', 'kmindex', 'reindeer'], "Selected method not supported"
 
 def verbose_logs(verbose: bool = True):
