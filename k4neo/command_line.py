@@ -156,6 +156,12 @@ def build_index():
         help='path to k4neo pipeline',
         default=pathlib.Path(__file__).parent / 'pipeline' / 'workflow' / 'Snakefile'
     )
+    parser.add_argument(
+        '--slurm',
+        dest='slurm',
+        help='Submit pipeline jobs to slurm',
+        action='store_true'
+    )
     args = parser.parse_args()
     samples = args.samples
     working_dir = pathlib.Path(args.index).resolve()
@@ -169,7 +175,7 @@ def build_index():
     index_pipeline = IndexPipeline(pipeline,
                                    working_dir=working_dir,
                                    config=pipeline_config.config)
-    index_pipeline.run_pipeline(slurm=False)
+    index_pipeline.run_pipeline(slurm=args.slurm)
     logger.info("Finished indexing pipeline...")
 
     return
