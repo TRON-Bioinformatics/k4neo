@@ -30,34 +30,44 @@ class FastaHandler:
                 record = SeqRecord(
                     Seq(row.query_sequence),
                     id = row.query_cts_id,
-                    name = row.query_cts_id)
+                    name = row.query_cts_id,
+                    description='')
                 fasta_entries.append(record)
             SeqIO.write(fasta_entries, file_handle, "fasta")
 
 class Annotator:
-    def __init__(self, working_dir: str, sequence_table: str, db_file: str) -> None:
+    def __init__(self, working_dir: str, sequence_table: str, db_file: str, index_kmer_size: int = 21) -> None:
         self.working_dir = pathlib.Path(working_dir)
-        self.sequence_table = self.read_context_seq(sequence_table)
+        self.sequence_table, self.non_queryable = self.read_context_seq(sequence_table, index_kmer_size)
         self.query_fasta = self.working_dir / "query.fa"
         self.db = DataBase(db_file)
         self.queries = Queries(self.db)
 
     @staticmethod
-    def read_context_seq(sequence_table):
+    def read_context_seq(sequence_table, index_kmer_size):
         """
         Read context sequence table into dataframe.
+        Filter out search sequences that do not fullfill 
+        the minimum length criteria
 
         :param sequence_table: Path to sequence table
-        :return: pandas dataframe
+        :param index_kmer_size: Integer giving k-mer size of index
+
+        :return: pandas DataFrame
         """
         with open(sequence_table, "r") as file_handle:
             seq = pd.read_csv(file_handle, sep="\t")
         assert all([x in seq.columns for x in EXPECTED_CTS_COLUMNS]), "Missing columns in context sequence table"
-        return seq
+        # Sequences that are shorter than minimiser_size are excluded from search
+        seq_to_short = seq[seq["cts_seq"].str.len() < index_kmer_size + 4]
+        seq = seq[~seq['cts_id'].isin(seq_to_short['cts_id'])]
+        return seq, seq_to_short
 
     def _generate_soi(self):
         """
-        Generate target sequence of interest by extractin subsequence according to position and query_length column
+        Generate target sequence of interest by extracting 
+        subsequence according to position and query_length column
+        
         :return:
         """
         self.sequence_table['query_sequence'] = \
@@ -75,11 +85,13 @@ class Annotator:
     def _generate_short_sequence(cts_seq, pos, length):
         """
         Generate sequence of interest to query in kmer index e.g. the fusion breakpoint, splice junction. If length
-        is null the original sequence is returned for search in index
+        is null the original sequence is returned for search in index e.g. a full length transcript or SNP sequence
+        
         :param cts_seq: A context sequence
         :param pos:  Position of interest in cts to query
         :param length: The length of the query sequence
-        :return:
+        
+        :return: context sequence string
         """
         if pd.isnull(pos) or pd.isnull(length):
             return cts_seq
@@ -100,7 +112,7 @@ class Annotator:
         Wrapper to call FastaHandler class
         :return:
         """
-        logger.info(f"Writing context sequences to fasta file {self.query_fasta}")
+        logger.info(f"Writing context sequences to fasta file: {self.query_fasta}")
         FastaHandler.write_fasta(self.sequence_table, self.query_fasta)
 
     def prepare_cts(self):
@@ -111,9 +123,9 @@ class Annotator:
         """
         logger.info("Generating breakpoint sequences...")
         self._generate_soi()
-        logger.info("Generating cts_id for search sequences")
+        logger.info("Generating cts_id for search sequences...")
         self._generate_soi_cts_id()
-        logger.info("Dumping query sequences to disk")
+        logger.info("Dumping query sequences to disk...")
         self._write_to_fasta()
 
     def search_cts(self,
@@ -121,7 +133,6 @@ class Annotator:
                    index: pathlib.Path,
                    method: str = "raptor",
                    kmer_ratio: float = 0.5,
-                   reindeer_sample_mapping: str = None,
                    raptor_sample_mapping: str = None,
                    kmindex_cutoff: float = 0.7,
                    slurm: bool = False):
@@ -131,7 +142,6 @@ class Annotator:
         index = KmerIndex(pipeline=pipeline,
                           index=index,
                           method=method,
-                          reindeer_sample_mapping=reindeer_sample_mapping,
                           raptor_sample_mapping=raptor_sample_mapping,
                           kmer_ratio=kmer_ratio,
                           kmindex_cutoff=kmindex_cutoff
@@ -190,9 +200,11 @@ class Annotator:
     def _split_found(parsed_results: pd.DataFrame):
         """
         When the index returns queries not to be expressed we split them
-        apart and handle them separately
-        :param parsed_results:
-        :return:
+        apart and handle them separately.
+
+        :param parsed_results: DataFrame with index hits
+        
+        :return: A DataFrame of non-found sequences
         """
         not_expressed = \
             parsed_results.loc[
@@ -256,6 +268,9 @@ class Annotator:
         df.drop('cts_id_y', inplace=True, axis=1)
         df.rename(columns={'cts_id_x': 'cts_id'}, inplace=True)
         df["total"] = pd.to_numeric(df["total"])
+        # Merge non-queryable sequences back to annotated results filling
+        # missing values with NA
+        df = pd.concat([df, self.non_queryable])
         return df
 
 

@@ -1,4 +1,4 @@
-
+import sys
 import pathlib
 from argparse import ArgumentParser
 from logzero import logger
@@ -102,15 +102,11 @@ def parse_output():
         type=float
     )
     args = parser.parse_args()
-    reindeer_sample_mapping = None
     raptor_sample_mapping = None
     if args.tool == 'raptor':
         raptor_sample_mapping = args.sample_table
-    if args.tool == 'reindeer':
-        reinder_sample_mapping = args.sample_table
     logger.info("Starting query result parsing...")
     parser = IndexResultParser(args.index_table, args.tool,
-                               reindeer_sample_mapping=reindeer_sample_mapping,
                                raptor_sample_mapping=raptor_sample_mapping,
                                kmindex_cutoff=args.kmindex_cutoff)
     results = parser.parse_results()
@@ -211,13 +207,14 @@ def annotate():
         '--method',
         dest='method',
         help='K-mer indexing method',
-        required=True
+        required=True,
+        default="raptor"
     )
     parser.add_argument(
         '--ratio',
         dest='kmer_ratio',
         help='Number of shared k-mers between query and sample to report as hit',
-        default=0.45
+        default=0.7
     )
     parser.add_argument(
         '--working-dir',
@@ -234,7 +231,7 @@ def annotate():
     parser.add_argument(
         '--sample-table',
         dest='sample_table',
-        help='Sample table mapping index ids to samples. Only required for Reindeer and Raptor HIBF'
+        help='Sample table mapping index ids to samples. Only required for Raptor HIBF'
     )
     parser.add_argument(
         '--kmindex-cutoff',
@@ -243,13 +240,20 @@ def annotate():
         default=0.7,
         type=float
     )
+    parser.add_argument(
+        '--kmer',
+        dest='kmer_size',
+        help='K-mer size of search index',
+        default=21,
+        type=int
+    )
     args = parser.parse_args()
-    reindeer_sample_mapping = None
     raptor_sample_mapping = None
     if args.method == 'raptor':
         raptor_sample_mapping = args.sample_table
-    if args.method == 'reindeer':
-        reinder_sample_mapping = args.sample_table
+    if args.method == 'raptor' and raptor_sample_mapping is None:
+        logger.error("Can not query raptor index without sample mapping")
+        sys.exit(1)
     working_dir = pathlib.Path(args.working_dir).resolve()
     pipeline = pathlib.Path(args.workflow).resolve()
     annotator = Annotator(working_dir,
@@ -259,10 +263,10 @@ def annotate():
     result = annotator.search_cts(pipeline=pipeline,
                                   index=pathlib.Path(args.index),
                                   method=args.method,
-                                  reindeer_sample_mapping=reindeer_sample_mapping,
                                   raptor_sample_mapping=raptor_sample_mapping,
                                   kmer_ratio=args.kmer_ratio,
                                   kmindex_cutoff=args.kmindex_cutoff)
+
     results = annotator.annotate_cts(result)
     results = annotator.annotate_sequences(results)
     with open(args.output, "w") as file_handle:

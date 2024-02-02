@@ -11,7 +11,6 @@ class KmerIndex(object):
                  pipeline: str,
                  index: str,
                  method: str,
-                 reindeer_sample_mapping: str = None,
                  raptor_sample_mapping: str = None,
                  kmindex_cutoff: float = 0.7,
                  kmer_ratio: float = 0.45):
@@ -21,7 +20,6 @@ class KmerIndex(object):
         self.pipeline = pipeline
         self.method = method
         self.index = index
-        self.reindeer_sample_mapping = reindeer_sample_mapping
         self.raptor_sample_mapping = raptor_sample_mapping
         self.kmindex_cutoff = kmindex_cutoff
 
@@ -39,13 +37,10 @@ class KmerIndex(object):
 
     def result_parser(self, result):
         sample_mapping = None
-        if self.method == 'reindeer':
-            sample_mapping = self.reindeer_sample_mapping
         if self.method == 'raptor':
             sample_mapping = self.raptor_sample_mapping
         parser = IndexResultParser(result.query_path,
                                    self.method,
-                                   reindeer_sample_mapping=sample_mapping,
                                    raptor_sample_mapping=sample_mapping,
                                    kmindex_cutoff=self.kmindex_cutoff
                                    )

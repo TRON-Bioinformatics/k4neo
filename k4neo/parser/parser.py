@@ -61,7 +61,6 @@ class IndexResultParser:
     def __init__(self, 
                  indexing_table: str, 
                  tool: str,
-                 reindeer_sample_mapping:str = None,
                  raptor_sample_mapping:str = None,
                  kmindex_cutoff: float = 0.7) -> None:
 
@@ -69,11 +68,7 @@ class IndexResultParser:
         assert tool in SUPPORTED_TOOLS, f"Selected method '{tool}' not supported by neokant..."
         self.tool = tool
         # Parameters specific for prediction tools
-        self.reindeer_sample_mapping = reindeer_sample_mapping
         self.raptor_sample_mapping = raptor_sample_mapping
-        if self.tool == "reindeer":
-            assert self.reindeer_sample_mapping is not None and self.reindeer_sample_mapping != "",\
-                "Parsing REINDEER results requires a sample/index mapping file..."
         if self.tool == "raptor":
             assert self.raptor_sample_mapping is not None and self.raptor_sample_mapping != "",\
                 "Parsing Raptor results requires a sample/index mapping file"
@@ -82,12 +77,6 @@ class IndexResultParser:
     def parse_results(self) -> dict:
         result = {}
         match self.tool:
-            case "reindeer":
-                logger.info("Parsing REINDEER index query results...")
-                result = self._parse_reindeer()
-            case "cobs":
-                logger.info("Parsing COBS index query results...")
-                result = self._parse_cobs()
             case "kmindex":
                 logger.info("Parsing KMINDEX index query results...")
                 result = self._parse_kmindex()
@@ -111,37 +100,6 @@ class IndexResultParser:
                 for sample in samples:
                     line = f"{query}\t{sample}\n"
                     file_handle.write(line)
-
-
-    def _parse_reindeer(self) -> dict:
-        """
-        Parse reindeer results into dictionary format showing mapping of
-        
-        """
-        dataset_mapping = {}
-        results = {}
-        with open(self.reindeer_sample_mapping, 'r') as file_handle:
-            logger.info("Reading sample index mapping table")
-            for line in file_handle:
-                elements = line.rstrip().split("\t")
-                dataset_mapping[int(elements[0])] = elements[1]
-        with open(self.indexing_table) as file_handle:
-            for line in file_handle:
-                elements = line.rstrip().split()
-                query_name = elements[0].lstrip(">")
-                found_list = []
-                results[query_name] = []
-                for i, ele in enumerate(elements[1:]):
-                    for item in ele.split(","):
-                        if item == "*":
-                            break
-                        key, val = item.split(":")
-                        if val != "*":
-                            found_list.append(dataset_mapping[i])
-                            break
-                results[query_name].extend(found_list)       
-        logger.info(f"Parsed {len(results)} target sequences")
-        return results
     
     def _parse_kmindex(self) -> dict:
         results = {}
@@ -207,21 +165,4 @@ class IndexResultParser:
         logger.info(f"Parsed {len(results)} target sequences")
         return results
 
-    def _parse_cobs(self) -> dict:
-        results = {}
-        cts_id = ""
-        with open(self.indexing_table) as file_handle:
-            for line in file_handle:
-                elements = line.rstrip().split('\t')
-                if line.startswith("*"):
-                    cts_id = elements[0].lstrip('*')
-                    results[cts_id] = []
-                # If the line does not start with an asteriks it is a sample hit
-                else:
-                    results[cts_id].append(elements[0])
-        # This dict comprehension will create an empty (askteriks) for each cts withoput a hit, so that the user
-        # gets the information that the cts was not found
-        results = {key: (val if val else [None]) for (key, val) in results.items()}
-        logger.info(f"Parsed {len(results)} target sequences")
-        return results
                 

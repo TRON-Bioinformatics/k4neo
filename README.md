@@ -1,4 +1,4 @@
-## k4neo (kmer for neoantigen annotation)
+## k4neo (k-mer for neoantigen annotation)
 
 k4neo is a package to leverage the information provided by large transcriptomic databases by using 
 powerful k-mer indexing methods to annotate the expression of novel (neo)antigen target sequences in healthy tissues.
@@ -9,7 +9,7 @@ of the query sequence. The input data is annotated with expression in different
 tissues, developmental and disease states. We support multiple state of the art
 k-mer indexerd and provide for COBS, Kmindex and Raptor pre-built indices of a collection
 of 1663 non-cancerous (healthy) tissue samples from SRA, GEO and ENCODE. At it's core
-neoKant consists of an annotation package that handles manually curated metadata
+k4neo consists of an annotation package that handles manually curated metadata
 and a workflow to query and create matching k-mer search indices.
 
 ## Dependencies
@@ -87,7 +87,7 @@ isoforms such as putative tumor-associated antigens.
 
 # Query with kmindex
 
-neokant-annotator \
+k4neo-annotator \
   --database kmer_index_data/healthy_tissue_database/d5_annotation.db \
   --indexXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
   --queries /path/to/cts.tsv \
@@ -97,7 +97,7 @@ neokant-annotator \
   
 # Query with COBS
  
-neokant-annotator \
+k4neo-annotator \
   --database kmer_index_data/healthy_tissue_database/d5_annotation.db \
   --index XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
   --queries /path/to/cts.tsv \
@@ -107,7 +107,7 @@ neokant-annotator \
 
 # Query with Raptor
 
-neokant-annotator \
+k4neo-annotator \
   --database kmer_index_data/healthy_tissue_database/d5_annotation.db \
   --index XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
   --queries /path/to/cts.tsv \
