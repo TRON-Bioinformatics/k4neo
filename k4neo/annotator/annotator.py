@@ -270,7 +270,7 @@ class Annotator:
         df["total"] = pd.to_numeric(df["total"])
         # Merge non-queryable sequences back to annotated results filling
         # missing values with NA
-        df = pd.concat([df, self.non_queryable])
+        #df = pd.concat([df, self.non_queryable])
         return df
 
 

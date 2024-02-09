@@ -271,6 +271,11 @@ def annotate():
     results = annotator.annotate_sequences(results)
     with open(args.output, "w") as file_handle:
         results.to_csv(file_handle, sep="\t", index=False)
+    non_queryable = pathlib.Path(args.output).resolve().parent / 'non_queryable.tsv'
+    if len(annotator.non_queryable.index > 0):
+        logger.info("Writing non-queryable sequences to disk")
+        with open(non_queryable, "w") as file_handle:
+            annotator.non_queryable.to_csv(file_handle, sep="\t", index=False)
 
 
 def query_pipeline():
