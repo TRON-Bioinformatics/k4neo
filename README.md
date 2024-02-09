@@ -8,7 +8,7 @@ k4neo requires only a sequence of interest and optionally a custom position and 
 of the query sequence. The input data is annotated with expression in different
 tissues, developmental and disease states. We support multiple state of the art
 k-mer indexerd and provide for COBS, Kmindex and Raptor pre-built indices of a collection
-of 1663 non-cancerous (healthy) tissue samples from SRA, GEO and ENCODE. At it's core
+of 1,663 non-cancerous (healthy) tissue samples from SRA, GEO and ENCODE. At it's core
 k4neo consists of an annotation package that handles manually curated metadata
 and a workflow to query and create matching k-mer search indices.
 
@@ -22,7 +22,7 @@ and a workflow to query and create matching k-mer search indices.
     * xxhash==3.4.1
     * snakemake-minimal
     
-* cobs=0.2.1
+
 * raptor=3.0.1
 * kmindex=0.5.2
 
@@ -42,7 +42,7 @@ git clone https://gitlab.rlp.net/tron/k4neo.git
 
 # Install conda dependencies
 
-conda create -n k4neo -c bioconda -c tlemane python python-pip cobs kmindex raptor snakemake-minimal
+conda create -n k4neo -c bioconda -c tlemane python python-pip kmindex raptor snakemake-minimal
 
 # Install k4neo into environment
 
@@ -58,12 +58,6 @@ K-mer indices of data release d5 are available on scratch for queries.
 
 ```
 /scratch/info/projects/CM29_RNA_Seq/kmer_scalability_test/big_index/kmindex/kmindex_21/G21
-```
-
-### COBS
-
-```
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ### Raptor
@@ -83,7 +77,9 @@ isoforms such as putative tumor-associated antigens.
 
 ## Example commands
 
-```
+### Query arbitrary sequences against k-mer indices
+
+```{bash}
 
 # Query with kmindex
 
@@ -95,16 +91,6 @@ k4neo-annotator \
   --method kmindex  \
   --kmindex-cutoff 0.7
   
-# Query with COBS
- 
-k4neo-annotator \
-  --database kmer_index_data/healthy_tissue_database/d5_annotation.db \
-  --index XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX \
-  --queries /path/to/cts.tsv \
-  --output /path/to/cts.annot \
-  --method cobs  \
-  --ratio 0.7
-
 # Query with Raptor
 
 k4neo-annotator \
@@ -116,15 +102,60 @@ k4neo-annotator \
   --ratio 0.7 \
   --sample-tableXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+```
+
+### Index building
+
+You can use k4neo to build a k-mer index of your samples. However, you will need
+to create a custom annotation database to quer the index in k4neo.
+
+
+The sample table with fastq files expects two tab-separated columns with a header. 
+Multiple FASTQs can be provided separated by commas. This input is compatible with the TronFlow workflows
+
+| bin_id   | fastq                                                   |
+|:--------:|:-------------------------------------------------------:|
+| sample_1 | /path/to/sample_1.fastq.gz                              |
+| sample_2 | /path/to/sample_2.fastq.gz,/path/to/sample_2_2.fastq.gz |
+
+
+
+
+```{bash}
+
+Build index with Raptor
+
+k4neo-index \
+  --samples /path/to/your/samples.tsv \
+  --index /path/to/your/output_dir \
+  --kmer_size 21 \
+  --cutoff 2 \
+  --fpr 0.05 \
+  --method raptor \
+  --slurm 
+
+
+Build index with kmindex
+
+k4neo-index \
+  --samples /path/to/your/samples.tsv \
+  --index /path/to/your/output_dir \
+  --kmer_size 21 \
+  --cutoff 2 \
+  --fpr 0.05 \
+  --method kmindex \
+  --slurm 
 
 ```
+
+
 
 ## ToDo
 
 * Implement different search modes
-    * High level
+    - [ ] High level
     - [x] Standard level with tissue, developmental and diasease counts per study  
-    * sample level
+    - [ ] sample level
     
 * Implement k-mer indexing with automatic downloading from SRA in pipeline
 
