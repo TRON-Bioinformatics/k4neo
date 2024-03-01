@@ -27,7 +27,7 @@ class Pipeline:
         self.config = config
         self.target_rule = target_rule
 
-    def run(self, dryrun: bool = False, slurm: bool = True) -> bool:
+    def run(self, dryrun: bool = False, slurm: bool = True, cores: int = 8) -> bool:
         """
         Run snakemake pipeline using the selected executor
         """
@@ -37,7 +37,8 @@ class Pipeline:
                                 config=self.config,
                                 dryrun=dryrun,
                                 slurm=slurm,
-                                rerun_triggers="mtime")
+                                rerun_triggers="mtime",
+                                cores=cores)
         return return_code
 
     def determine_final_query(self):
@@ -84,13 +85,13 @@ class QueryPipeline(Pipeline):
         logger.info("Initialising k4neo query pipeline...")
         super().__init__(workflow, config, working_dir, target_rule="query")
 
-    def run_pipeline(self, slurm: bool = True) -> QueryPipelineResult:
+    def run_pipeline(self, slurm: bool = True, cores: int = 8) -> QueryPipelineResult:
         """
         Execute query pipeline
         """
         final_query = self.determine_final_query()
         logger.info("Submitting query pipeline...")
-        return_code = self.run(dryrun=False, slurm=slurm)
+        return_code = self.run(dryrun=False, slurm=slurm, cores=cores)
         if not return_code:
             raise K4neoPipelineException("Pipeline failed to execute")
         logger.info("Finished query pipeline")

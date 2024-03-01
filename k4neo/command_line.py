@@ -201,7 +201,7 @@ def annotate():
     parser.add_argument(
         '--output',
         dest='output',
-        help='Annotated output sequences'
+        help='Output prefix for annotated sequences'
     )
     parser.add_argument(
         '--method',
@@ -234,18 +234,24 @@ def annotate():
         help='Sample table mapping index ids to samples. Only required for Raptor HIBF'
     )
     parser.add_argument(
-        '--kmindex-cutoff',
-        dest='kmindex_cutoff',
-        help='Kmindex cutoff to filter results',
-        default=0.7,
-        type=float
-    )
-    parser.add_argument(
         '--kmer',
         dest='kmer_size',
         help='K-mer size of search index',
         default=21,
         type=int
+    )
+    parser.add_argument(
+        '--cpu',
+        dest='cpu',
+        help='Number of cpus for local execution',
+        default=16,
+        type=int
+    )
+    parser.add_argument(
+        '--slurm',
+        dest='slurm',
+        help='Submit query job to slurm',
+        action='store_true'
     )
     args = parser.parse_args()
     raptor_sample_mapping = None
@@ -265,16 +271,25 @@ def annotate():
                                   method=args.method,
                                   raptor_sample_mapping=raptor_sample_mapping,
                                   kmer_ratio=args.kmer_ratio,
-                                  kmindex_cutoff=args.kmindex_cutoff)
+                                  cores=args.cpu,
+                                  slurm=args.slurm)
 
     results = annotator.annotate_cts(result)
-    results = annotator.annotate_sequences(results)
-    with open(args.output, "w") as file_handle:
-        results.to_csv(file_handle, sep="\t", index=False)
-    non_queryable = pathlib.Path(args.output).resolve().parent / 'non_queryable.tsv'
+    sample_hits = annotator.annotate_sequences(results)
+    sample_rate = annotator.annotate_sample_rate(results)
+    # Write index hits to output
+    output_annotated = pathlib.Path(args.output + "_annotated.tsv")
+    output_rate = pathlib.Path(args.output +  "_sample_rate.tsv")
+    output_non_queryable = pathlib.Path(args.output +  "_non_querable.tsv")
+    with open(output_annotated, "w") as file_handle:
+        sample_hits.to_csv(file_handle, sep="\t", index=False)
+    # Write sample rate to output
+    with open(output_rate, "w") as file_handle:
+        sample_rate.to_csv(file_handle, sep="\t", index=False)
+    # Write non-queryable sequences to disk
     if len(annotator.non_queryable.index > 0):
         logger.info("Writing non-queryable sequences to disk")
-        with open(non_queryable, "w") as file_handle:
+        with open(output_non_queryable, "w") as file_handle:
             annotator.non_queryable.to_csv(file_handle, sep="\t", index=False)
 
 
@@ -299,20 +314,9 @@ def query_pipeline():
         default="raptor"
     )
     args = parser.parse_args()
-    if args.method not in ['raptor', 'cobs', 'reindeer', 'kmindex']:
+    if args.method not in ['raptor', 'kmindex']:
         raise ValueError()
 
     logger.info("Starting query pipeline...")
 
     return
-
-## To test the functionality
-
-def main():
-    #build_database()
-    #parse_output()
-    #annotate()
-    build_index()
-
-if __name__ == '__main__':
-    main()

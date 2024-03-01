@@ -7,7 +7,7 @@ powerful k-mer indexing methods to annotate the expression of novel (neo)antigen
 k4neo requires only a sequence of interest and optionally a custom position and length
 of the query sequence. The input data is annotated with expression in different
 tissues, developmental and disease states. We support multiple state of the art
-k-mer indexerd and provide for Kmindex and Raptor pre-built indices of a collection
+k-mer indexing methods and provide for Kmindex and Raptor pre-built indices of a collection
 of 1,663 non-cancerous (healthy) tissue samples from SRA, GEO and ENCODE. At it's core
 k4neo consists of an annotation package that handles manually curated metadata
 and a workflow to query and create matching k-mer search indices.
@@ -107,7 +107,7 @@ k4neo-annotator \
 ### Index building
 
 You can use k4neo to build a k-mer index of your samples. However, you will need
-to create a custom annotation database to quer the index in k4neo.
+to create a custom annotation database to query the index in k4neo.
 
 
 The sample table with fastq files expects two tab-separated columns with a header. 
@@ -155,7 +155,7 @@ k4neo-index \
 * Implement different search modes
     - [ ] High level
     - [x] Standard level with tissue, developmental and diasease counts per study  
-    - [ ] sample level
+    - [x] sample rate
     
 * Implement k-mer indexing with automatic downloading from SRA in pipeline
 

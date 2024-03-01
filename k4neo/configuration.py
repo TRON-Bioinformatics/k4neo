@@ -4,7 +4,7 @@ from snakemake import snakemake
 
 class Configuration:
     """
-    neoKant configuration object to manage annotation pipeline and others
+    k4neo configuration object to manage annotation pipeline and others
     """
 
     def __init__(self, config_file, verbose=False):

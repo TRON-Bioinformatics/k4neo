@@ -13,10 +13,10 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
-
-
 class FastaHandler:
-    
+    """
+    Generic class to handle FASTA operations
+    """
     @staticmethod
     def write_fasta(entries: pd.DataFrame, fasta_file: str):
         """
@@ -36,6 +36,9 @@ class FastaHandler:
             SeqIO.write(fasta_entries, file_handle, "fasta")
 
 class Annotator:
+    """
+    Annotator class
+    """
     def __init__(self, working_dir: str, sequence_table: str, db_file: str, index_kmer_size: int = 21) -> None:
         self.working_dir = pathlib.Path(working_dir)
         self.sequence_table, self.non_queryable = self.read_context_seq(sequence_table, index_kmer_size)
@@ -132,21 +135,20 @@ class Annotator:
                    pipeline: pathlib.Path,
                    index: pathlib.Path,
                    method: str = "raptor",
-                   kmer_ratio: float = 0.5,
+                   kmer_ratio: float = 0.7,
                    raptor_sample_mapping: str = None,
-                   kmindex_cutoff: float = 0.7,
-                   slurm: bool = False):
+                   slurm: bool = False,
+                   cores: int = 16):
         """
-        Call query pipeline and parse results into pandas DataFrame
+        Search sequences in KmerIndex and parse results into pandas DataFrame
         """
         index = KmerIndex(pipeline=pipeline,
                           index=index,
                           method=method,
                           raptor_sample_mapping=raptor_sample_mapping,
-                          kmer_ratio=kmer_ratio,
-                          kmindex_cutoff=kmindex_cutoff
+                          kmer_ratio=kmer_ratio
                           )
-        hits = index.search_index(self.query_fasta, self.working_dir, slurm=slurm)
+        hits = index.search_index(self.query_fasta, self.working_dir, slurm=slurm, cores=cores)
         parsed_results = index.result_parser(hits)
 
         dict_to_pandas = []
@@ -157,6 +159,11 @@ class Annotator:
         return parsed_results
 
     def _annotate_studies(self, parsed_results: pd.DataFrame):
+        """
+        Get sample to study mapping and merge back to 
+        parsed results to annotate with study name.
+
+        """
         study_annotation = self.queries.get_sample_study()
         parsed_results = parsed_results.merge(study_annotation,
                                               how="left",
@@ -216,18 +223,34 @@ class Annotator:
         not_expressed['tissue'] = np.nan
         return not_expressed
 
-    def _basic_aggregate(self, parsed_results: pd.DataFrame):
+    def _calculate_sample_rate(self, parsed_results: pd.DataFrame):
+        """
+        High level aggregate. Sum all tissue hits of a developmental stage
+        per cts_id an calculate sample rate. The number of samples per tissue
+        containing the sequence of interest.
+        """
+        tissue_counts = self.queries.get_tissue_counts()
+        tissue_counts = tissue_counts.groupby(['developmental_stage', 'tissue']).\
+            size().to_frame('total').reset_index()
+        parsed_results = parsed_results.groupby(
+            ['cts_id', 'developmental_stage', 'tissue'])['count'].\
+                sum().reset_index()
+        df = parsed_results[['cts_id']].drop_duplicates()
+        df = pd.merge(df, parsed_results, how="left")
+        df['count'] = df['count'].fillna(0).astype('int')
+        df = pd.merge(df, tissue_counts, how="left")
+        df['sample_rate'] = df.apply(lambda row: round(row.count / row.total, 2))
+        
+        return df
+
+    def _calculate_sample_rate(self, parsed_results: pd.DataFrame):
         tissue_counts = self.queries.get_tissue_counts()
         tissue_counts = tissue_counts.groupby(['developmental_stage', 'tissue']).\
             size().to_frame('count').reset_index()
         parsed_results = parsed_results.groupby(
             ['cts_id', 'developmental_stage', 'tissue'])[
             ['developmental_stage', 'tissue']].size().to_frame('count').reset_index()
-        df = parsed_results[['cts_id']].drop_duplicates()
-        df = pd.merge(df, parsed_results, how="left")
-        df['count'] = df['count'].fillna(0).astype('int')
-        df = pd.merge(df, tissue_counts, how="left")
-        return df
+            
 
     def annotate_cts(self, parsed_results: pd.DataFrame, annot_style: str = "normal"):
         """
@@ -262,15 +285,25 @@ class Annotator:
         """
         Merge annotated cts results with original table supplied by the user
         :param annotated_cts:
-        :return:
+        :return: Annotated search table
         """
         df = pd.merge(self.sequence_table, annotated_cts, left_on="query_cts_id", right_on="cts_id")
         df.drop('cts_id_y', inplace=True, axis=1)
         df.rename(columns={'cts_id_x': 'cts_id'}, inplace=True)
         df["total"] = pd.to_numeric(df["total"])
-        # Merge non-queryable sequences back to annotated results filling
-        # missing values with NA
-        #df = pd.concat([df, self.non_queryable])
+
         return df
+    
+    def annotate_sample_rate(self, sample_rate_df):
+        """
+        Add sample rate to sequences
+        """
+        df = pd.merge(self.sequence_table, sample_rate_df, left_on="query_cts_id", right_on="cts_id")
+        df.drop('cts_id_y', inplace=True, axis=1)
+        df.rename(columns={'cts_id_x': 'cts_id'}, inplace=True)
+        df["sample_rate"] = pd.to_numeric(df["rate"])
+
+        return df
+
 
 
