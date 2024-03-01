@@ -230,8 +230,8 @@ class Annotator:
         containing the sequence of interest.
         """
         tissue_counts = self.queries.get_tissue_counts()
-        tissue_counts = tissue_counts.groupby(['developmental_stage', 'tissue']).\
-            size().to_frame('total').reset_index()
+        tissue_counts = tissue_counts.groupby(['developmental_stage', 'tissue'])['total'].\
+            sum().reset_index()
         parsed_results = parsed_results.groupby(
             ['cts_id', 'developmental_stage', 'tissue'])['count'].\
                 sum().reset_index()
@@ -239,18 +239,9 @@ class Annotator:
         df = pd.merge(df, parsed_results, how="left")
         df['count'] = df['count'].fillna(0).astype('int')
         df = pd.merge(df, tissue_counts, how="left")
-        df['sample_rate'] = df.apply(lambda row: round(row.count / row.total, 2))
+        df['sample_rate'] = df.apply(lambda row: round(row['count'] / row['total'], 2), axis=1)
         
         return df
-
-    def _calculate_sample_rate(self, parsed_results: pd.DataFrame):
-        tissue_counts = self.queries.get_tissue_counts()
-        tissue_counts = tissue_counts.groupby(['developmental_stage', 'tissue']).\
-            size().to_frame('count').reset_index()
-        parsed_results = parsed_results.groupby(
-            ['cts_id', 'developmental_stage', 'tissue'])[
-            ['developmental_stage', 'tissue']].size().to_frame('count').reset_index()
-            
 
     def annotate_cts(self, parsed_results: pd.DataFrame, annot_style: str = "normal"):
         """
@@ -294,14 +285,15 @@ class Annotator:
 
         return df
     
-    def annotate_sample_rate(self, sample_rate_df):
+    def annotate_sample_rate(self, annotated_cts):
         """
         Add sample rate to sequences
         """
+        sample_rate_df = self._calculate_sample_rate(annotated_cts)
         df = pd.merge(self.sequence_table, sample_rate_df, left_on="query_cts_id", right_on="cts_id")
         df.drop('cts_id_y', inplace=True, axis=1)
         df.rename(columns={'cts_id_x': 'cts_id'}, inplace=True)
-        df["sample_rate"] = pd.to_numeric(df["rate"])
+        df["sample_rate"] = pd.to_numeric(df["sample_rate"])
 
         return df
 
