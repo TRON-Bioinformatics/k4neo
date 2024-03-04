@@ -226,7 +226,7 @@ def annotate():
         '--workflow',
         dest='workflow',
         help='path to k4neo pipeline',
-        default=pathlib.Path(__file__).parent / 'pipeline' / 'workflow' / 'Snakefile'
+        default=pathlib.Path(__file__).parent / 'pipeline' / 'tronmake-kmer-pipeline' / 'Snakefile'
     )
     parser.add_argument(
         '--sample-table',
