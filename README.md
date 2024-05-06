@@ -3,10 +3,9 @@
 k4neo is a package to leverage the information provided by large transcriptomic databases by using 
 powerful k-mer indexing methods to annotate the expression of novel (neo)antigen target sequences in healthy tissues.
 
-
-k4neo requires only a sequence of interest and optionally a custom position and length
+k4neo requires a sequence of interest and optionally a custom position and length
 of the query sequence. The input data is annotated with expression in different
-tissues, developmental and disease states. We support multiple state of the art
+tissues, developmental- and disease-states. We support multiple state of the art
 k-mer indexing methods and provide for Kmindex and Raptor pre-built indices of a collection
 of 1,663 non-cancerous (healthy) tissue samples from SRA, GEO and ENCODE. At it's core
 k4neo consists of an annotation package that handles manually curated metadata
@@ -14,7 +13,7 @@ and a workflow to query and create matching k-mer search indices.
 
 ## Dependencies
 
-* python3
+* python3 >= 3.10
     * logzero~=1.7.0
     * tinydb==4.8.0
     * pandas==2.0.3
@@ -30,6 +29,10 @@ and a workflow to query and create matching k-mer search indices.
 
 
 ## Installation
+
+k4neo requires a pre-built k-mer index and a metadata database of the samples in the index. 
+
+
 ```
 
 # Download data repository including metadata database
@@ -37,7 +40,7 @@ and a workflow to query and create matching k-mer search indices.
 git clone https://gitlab.rlp.net/tron/kmer_index_data.git
 
 
-# Clone neoKant package
+# Clone k4neo package
 git clone https://gitlab.rlp.net/tron/k4neo.git
 
 # Install conda dependencies
@@ -52,7 +55,7 @@ pip install -e ./k4neo
 
 ## Pre-built indices
 
-K-mer indices of data release d5 are available on scratch for queries.
+K-mer indices of data release d5 are available for download:
 
 ### Kmindex
 
@@ -74,6 +77,9 @@ searched for in the index. If the columns "pos" and "query_length" are specified
 the defined positions of the context sequence are queried against the index. If one of these two 
 columns is NaN, the entire cts is queried. This mode can be used to annotate entire transcript 
 isoforms such as putative tumor-associated antigens.
+
+
+
 
 ## Example commands
 
