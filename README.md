@@ -2,10 +2,10 @@
 
 <!-- badges: start -->
 
-[![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)]
-[![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white)]
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://opensource.org/licenses/MIT)
-[![Release](https://img.shields.io/badge/release-v0.0.1-blue?style=flat)]
+![Release](https://img.shields.io/badge/release-v0.0.1-blue?style=flat)
 [![Snakemake](https://img.shields.io/badge/snakemake-7.32.4-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io)
 
 <!-- badges: end -->
@@ -89,11 +89,55 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 As input TSV table should be given holding the query sequence (cts_seq) with unique identifier (cts_id) and optionally the relative position of a region of intereset, e.g. splice junction / fusion breakpoint (pos), as well as the length of the query (query_length). The columns pos and query_length are only
 required when defined positions of the input sequence should be queried against the index. Please set them to NaN, when the entire sequence should be annotated.
 
+Example format of the input table:
+
+|cts_id   | cts_seq       | pos       | query_length |
+|:--------|:--------------|:----------|:-------------|
+|seq1     | AACCGCCACCG   |           |              |
+|seq2     | GTCCGTTGGCG   |5          |6             |
+|seq3     | AACCGCCCTGT   |           |              |
+|seq4     | CGGCATCATCG   |6          |10            |
+
+In this example the following operations and annotations would be performed:
+
+* seq1 and seq3: All k-mers of the sequences would be searched in the index
+
+* seq2: The k-mers in a window of +- 3bp around position 5 are searched in the index (CCG|TTG)
+
+* seq4: The k-mers in a window of +- 5bp around position 6 are searched in the index (GGCAT|CATCG)
+
+
+## Usage
+
+```
+usage: k4neo-annotator [-h] --database DATABASE --index INDEX --queries QUERIES [--output OUTPUT] --method METHOD [--ratio KMER_RATIO] [--working-dir WORKING_DIR] [--workflow WORKFLOW]
+                       [--sample-table SAMPLE_TABLE] [--kmer KMER_SIZE] [--cpu CPU] [--slurm]
+
+k4neo 0.0.1 annotator
+
+options:
+  -h, --help            show this help message and exit
+  --database DATABASE   Annotation database file.
+  --index INDEX         kmer index to query.
+  --queries QUERIES     Tabular format with context sequence and position of interest
+  --output OUTPUT       Output prefix for annotated sequences
+  --method METHOD       K-mer indexing method
+  --ratio KMER_RATIO    Number of shared k-mers between query and sample to report as hit
+  --working-dir WORKING_DIR
+                        Working directory of k4neo pipeline
+  --workflow WORKFLOW   path to tronmake k-mer pipeline
+  --sample-table SAMPLE_TABLE
+                        Sample table mapping index ids to samples. Only required for Raptor HIBF
+  --kmer KMER_SIZE      K-mer size of search index
+  --cpu CPU             Number of cpus for local execution
+  --slurm               Submit query job to slurm
+
+```
 
 
 ## Example commands
 
-### Query transcript varianst against healthy k-mer indices
+### Query transcript variants against healthy k-mer indices
 
 ```{bash}
 
