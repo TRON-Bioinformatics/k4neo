@@ -6,7 +6,7 @@
 ![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://opensource.org/licenses/MIT)
 [![Snakemake](https://img.shields.io/badge/snakemake-7.32.4-brightgreen.svg?style=flat)](https://snakemake.readthedocs.io)
-![Release](https://img.shields.io/badge/release-v0.0.1-blue?style=flat)
+]![Release](https://img.shields.io/badge/release-v0.0.1-blue?style=flat)](https://gitlab.rlp.net/tron/k4neo/-/tags)
 
 <!-- badges: end -->
 
