@@ -93,6 +93,9 @@ class Queries:
         return samples
 
     def get_tissue_counts(self):
+        """
+        Return precomputed total tissue counts per developmental state.
+        """
         table = self.db.table("tissue_counts")
         tissue_counts = pd.DataFrame.from_dict(table)
         tissue_counts.rename(columns={"count": "total"}, inplace=True)
