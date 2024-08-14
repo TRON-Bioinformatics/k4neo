@@ -285,7 +285,7 @@ class Annotator:
 
         return df
     
-    def annotate_sample_rate(self, annotated_cts):
+    def annotate_sample_rate(self, annotated_cts, min_total=15):
         """
         Add sample rate to sequences
         """
@@ -294,6 +294,7 @@ class Annotator:
         df.drop('cts_id_y', inplace=True, axis=1)
         df.rename(columns={'cts_id_x': 'cts_id'}, inplace=True)
         df["sample_rate"] = pd.to_numeric(df["sample_rate"])
+        df = df.loc[df['total'] >= min_total]
 
         return df
 
