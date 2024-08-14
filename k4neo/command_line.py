@@ -214,7 +214,8 @@ def annotate():
         '--ratio',
         dest='kmer_ratio',
         help='Number of shared k-mers between query and sample to report as hit',
-        default=0.7
+        default=0.7,
+        type=float
     )
     parser.add_argument(
         '--working-dir',
@@ -225,7 +226,7 @@ def annotate():
     parser.add_argument(
         '--workflow',
         dest='workflow',
-        help='path to k4neo pipeline',
+        help='path to tronmake k-mer pipeline',
         default=pathlib.Path(__file__).parent / 'pipeline' / 'tronmake-kmer-pipeline' / 'Snakefile'
     )
     parser.add_argument(

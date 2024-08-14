@@ -164,5 +164,3 @@ class IndexResultParser:
 
         logger.info(f"Parsed {len(results)} target sequences")
         return results
-
-                

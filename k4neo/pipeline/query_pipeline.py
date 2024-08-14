@@ -50,16 +50,12 @@ class Pipeline:
         if not method:
             raise ValueError("Pipeline config is missing attribute 'method'. Can not determine final output file")
         match method:
-            case 'cobs':
-                result = self.working_dir / 'query' / 'cobs' / 'cobs_search.txt'
             case 'raptor':
                 result = self.working_dir / 'query' / 'raptor' / 'raptor_search.txt'
-            case 'reindeer':
-                result = self.working_dir / 'query' / 'reindeer' / 'reindeer_search.txt'
             case'kmindex':
                 result = self.working_dir / 'query' / 'kmindex' / 'kmindex_search.txt'
             case _:
-                logger.error("Tool not supported by k4neo pipeline")
+                logger.error("Tool not supported by k4neo query pipeline")
         return result
 
     def determine_final_index(self):
