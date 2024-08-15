@@ -3,6 +3,10 @@ import sys
 import csv
 import pandas as pd
 from logzero import logger
+import pyarrow
+import pyarrow.parquet as pq
+from typing import Any
+from collections.abc import Iterator
 from k4neo.parser import EXPECTED_SAMPLE_COLUMNS, EXPECTED_TISSUE_COLUMNS, SUPPORTED_TOOLS
 
 
@@ -10,7 +14,7 @@ class Parser:
     @staticmethod
     def _read_tissue_map(tissue_map):
         """
-        Read neokant tissue map to homogenize tissue identifiers and make them compatible with ExBio.
+        Read k4eno tissue map to homogenize tissue identifiers and make them compatible with GTEx.
         :return:
         """
         tissue_mapping = []
@@ -164,3 +168,56 @@ class IndexResultParser:
 
         logger.info(f"Parsed {len(results)} target sequences")
         return results
+
+class IndexResultParser:
+    """
+    Class provides functions to parse table formats
+    returned by kmer indexing tools and map to sample names
+    if required.
+    """
+    def __init__(self, 
+                 query_tables: dict[str]) -> None:
+
+        self.query_table = query_tables
+
+    def parse_results(self) -> dict:
+        result = self.parse_parquet(self.query_table)
+        return result
+
+    @staticmethod
+    def write_result(results: dict, out_file: str):
+        """
+        Write parsed results into tabular format to be processed by user
+        :param results: A dictionary qith cts as key and sample hits as value
+        :param out_file: Output file
+        :return:
+        """
+        with open(out_file, "w") as file_handle:
+            for query, samples in results.items():
+                for sample in samples:
+                    line = f"{query}\t{sample}\n"
+                    file_handle.write(line)
+    @staticmethod
+    def parse_parquet():
+        query_results = {}
+        for this_batch in _iterate_parquet_in_batches(path, batch_size):
+            cts_id = ""
+            detected_samples = []
+            for key, value in this_batch.items():
+                if key == "":
+                    cts_id = ""
+                else:
+                    if value is None:
+                        continue
+                    detected_samples.append(key)
+            query_results[cts_id] = detected_samples
+        return query_results
+
+
+    @staticmethod
+    def _iterate_parquet_in_batches(path: pathlib.Path, batch_size = 100):
+        
+        parquet_file = pq.ParquetFile(path)
+        for batch in parquet_file.iter_batches(batch_size=batch_size):
+            yield from batch.to_pylist()
+    

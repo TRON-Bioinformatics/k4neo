@@ -1,6 +1,8 @@
 import pathlib
+import tempfile
+import subprocess
+import yaml
 from logzero import logger
-from snakemake import snakemake
 from k4neo.exceptions import K4neoPipelineException
 from dataclasses import dataclass
 
@@ -10,7 +12,7 @@ class QueryPipelineResult:
     """
     Data class to hold results from query pipeline
     """
-    query_path: str
+    query_path: list[str]
 
 @dataclass
 class IndexPipelineResult:
@@ -26,37 +28,52 @@ class Pipeline:
         self.working_dir = working_dir
         self.config = config
         self.target_rule = target_rule
+    
+    @staticmethod
+    def execute_cmd(cmd, working_dir = "."):
+        """This function runs a command into a subprocess."""
+        logger.info("-> Executing CMD: {}".format(" ".join(cmd)))
+        p = subprocess.run(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = working_dir, shell=False)
+        if p.returncode != 0:
+            logger.error(p.stderr)
+        return p.returncode
 
-    def run(self, dryrun: bool = False, slurm: bool = True, cores: int = 8) -> bool:
+    def run(self, dryrun: bool = False, slurm: bool = True, cores: int = 8) -> int:
         """
-        Run snakemake pipeline using the selected executor
+        Run snakemake pipeline using the selected executor to orchestrate search arcoss subindices
         """
-        return_code = snakemake(
-                                self.workflow,
-                                workdir=self.working_dir,
-                                config=self.config,
-                                dryrun=dryrun,
-                                slurm=slurm,
-                                rerun_triggers="mtime",
-                                cores=cores)
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, dir=self.workdir) as temp_config:
+            yaml.dump(self.config, temp_config)
+            temp_config.close()
+        cmd = ['snakemake',
+               '--snakefile', self.workflow,
+               '--local-cores', str(self.cores),
+               '--jobs', str(self.cores),
+               '--configfile', str(temp_config.name),
+               '--use-conda',
+               '--directory', str(self.self.working_dir),
+               '--rerun-triggers', 'mtime']
+        if slurm:
+            cmd.extend(['--executor', 'slurm'])
+        return_code = Pipeline.execute_cmd(cmd)
         return return_code
 
     def determine_final_query(self):
         """
-        Find query output of selected query method
+        Based on selected methods in index manifest, find query output that qould be created by pipeline
         """
-        result = ''
-        method = self.config.get('query', dict()).get('method', '')
-        if not method:
+        results = []
+        if not self.methods:
             raise ValueError("Pipeline config is missing attribute 'method'. Can not determine final output file")
-        match method:
-            case 'raptor':
-                result = self.working_dir / 'query' / 'raptor' / 'raptor_search.txt'
-            case'kmindex':
-                result = self.working_dir / 'query' / 'kmindex' / 'kmindex_search.txt'
-            case _:
-                logger.error("Tool not supported by k4neo query pipeline")
-        return result
+        for this_method in self.methods:
+            match this_method:
+                case 'raptor':
+                    results.append(self.working_dir / 'query' / 'raptor' / 'search.parquet')
+                case'kmindex':
+                    results.append(self.working_dir / 'query' / 'kmindex' / 'search.parquet')
+                case _:
+                    raise ValueError(f"Tool {this_method} not supported by k4neo query pipeline")
+        return results
 
     def determine_final_index(self):
         """
@@ -77,9 +94,10 @@ class Pipeline:
 
 
 class QueryPipeline(Pipeline):
-    def __init__(self, workflow: str, config: dict, working_dir: pathlib.Path):
+    def __init__(self, workflow: str, config: dict, working_dir: pathlib.Path, methods: list):
         logger.info("Initialising k4neo query pipeline...")
         super().__init__(workflow, config, working_dir, target_rule="query")
+        self.methods = methods
 
     def run_pipeline(self, slurm: bool = True, cores: int = 8) -> QueryPipelineResult:
         """
@@ -88,7 +106,7 @@ class QueryPipeline(Pipeline):
         final_query = self.determine_final_query()
         logger.info("Submitting query pipeline...")
         return_code = self.run(dryrun=False, slurm=slurm, cores=cores)
-        if not return_code:
+        if return_code != 0:
             raise K4neoPipelineException("Pipeline failed to execute")
         logger.info("Finished query pipeline")
         return QueryPipelineResult(query_path=final_query)
@@ -100,7 +118,7 @@ class QueryPipeline(Pipeline):
         """
         logger.info("Starting dry run..")
         return_code = self.run(dryrun=True, slurm=False)
-        if not return_code:
+        if return_code != 0:
             raise K4neoPipelineException("Pipeline failed to execute")
 
 class IndexPipeline(Pipeline):
@@ -160,14 +178,12 @@ class QueryPipelineConfig(PipelineConfig):
     """
     def __init__(self,
                  index: str,
-                 method: str,
                  kmer_ratio: float,
                  verbose = True):
         super().__init__(query=True, indexing=False)
         # Generate config object to be used with
         self.config = {"query": {
                                 "index": index,
-                                "method": method,
                                 "kmer_ratio": kmer_ratio}}
         if verbose:
             self.log_configuration()
