@@ -19,65 +19,48 @@ tissues, developmental- and disease-states. We support multiple state of the art
 k-mer indexing methods and provide for Kmindex and Raptor pre-built indices of a collection
 of 1,663 non-cancerous (healthy) tissue samples from SRA, GEO and ENCODE.
 
-## Dependencies
-
-* python3 >= 3.10
-    * logzero~=1.7.0
-    * tinydb==4.8.0
-    * pandas==2.0.3
-    * numpy==1.25.1
-    * xxhash==3.4.1
-    * snakemake-minimal
-    
-
-* raptor=3.0.1
-* kmindex=0.5.2
-
 
 ## Installation
 
-k4neo can be installed from our [github](https://github.com/TRON-Bioinformatics/k4neo) repository.
-The k4neo pipeline is pulled as submodule during checkout.
+### Conda dependencies
+
+Create a conda environment with all non-python dependencies
 
 ```
-# Clone k4neo package
-git clone --recursive https://gitlab.rlp.net/tron/k4neo.git
-
-# Install conda dependencies
-
-conda create -n k4neo -c bioconda -c tlemane python=3.10 python-pip kmindex=0.5.2 raptor=3.0.1 snakemake-minimal=7.32
-conda activate k4neo
-
-# Install k4neo
-
-pip install -e ./k4neo
-
+conda env create -f k4neo.yaml -p k4neo
+conda activate k4neo/
 ```
 
-The metadata database for pre-built k-mer indices can be downloaded from our repository.
+### Install package with poetry
+
+k4neo can be installed with poetry. 
 
 ```
+poetry install 
+```
 
+### Metadata database
+
+The metadata database for pre-built k-mer indices can be downloaded from the following repository.
+
+```
 # Download data repository including metadata database
 
 git clone https://gitlab.rlp.net/tron/kmer_index_data.git
-
-wget XXX
-
 ```
 
 
-## Pre-built indices
+### Pre-built k-mer indices
 
 K-mer indices of release d5 (publication release) are available for download:
 
-### Kmindex
+#### Kmindex
 
 ```
 /scratch/info/projects/CM29_RNA_Seq/kmer_scalability_test/big_index/kmindex/kmindex_21/G21
 ```
 
-### Raptor
+#### Raptor
 
 ```
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -86,8 +69,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ## Input
 
-As input TSV table should be given holding the query sequence (cts_seq) with unique identifier (cts_id) and optionally the relative position of a region of intereset, e.g. splice junction / fusion breakpoint (pos), as well as the length of the query (query_length). The columns pos and query_length are only
-required when defined positions of the input sequence should be queried against the index. Please set them to NaN, when the entire sequence should be annotated.
+As input TSV table should be given holding the query sequence (cts_seq) with a unique identifier (cts_id) and optionally the relative position of a region of interest, e.g. splice junction / fusion breakpoint (pos), as well as the length of the query (query_length). 
+The columns pos and query_length are only required when defined positions of the input sequence should be queried against the index. Please set them to NaN, when the entire sequence should be annotated such as full-length transcript variants (e.g. cancer testis antigens).
 
 Example format of the input table:
 
@@ -100,11 +83,11 @@ Example format of the input table:
 
 In this example the following operations and annotations would be performed:
 
-* seq1 and seq3: All k-mers of the sequences would be searched in the index
+* seq1 and seq3: All k-mers of the sequences would be searched in the index (full-lenght search)
 
-* seq2: The k-mers in a window of +- 3bp around position 5 are searched in the index (CCG|TTG)
+* seq2: The k-mers in a window of +/- 3bp around position 5 are searched in the index (CCG|TTG)
 
-* seq4: The k-mers in a window of +- 5bp around position 6 are searched in the index (GGCAT|CATCG)
+* seq4: The k-mers in a window of +/- 5bp around position 6 are searched in the index (GGCAT|CATCG)
 
 
 ## Usage
@@ -164,7 +147,6 @@ k4neo-annotator \
 
 ```
 
-Note for raptor you need to provide a sample mapping table, that we ship with the index. This is required 
 
 ### Index building
 

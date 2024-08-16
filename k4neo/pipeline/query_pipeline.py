@@ -12,7 +12,7 @@ class QueryPipelineResult:
     """
     Data class to hold results from query pipeline
     """
-    query_path: list[str]
+    query_path: dict
 
 @dataclass
 class IndexPipelineResult:
@@ -62,15 +62,14 @@ class Pipeline:
         """
         Based on selected methods in index manifest, find query output that qould be created by pipeline
         """
-        results = []
-        if not self.methods:
-            raise ValueError("Pipeline config is missing attribute 'method'. Can not determine final output file")
-        for this_method in self.methods:
+        results = {}
+        methods = self.config.get('query', dict()).get('methods', [])
+        for this_method in methods:
             match this_method:
                 case 'raptor':
-                    results.append(self.working_dir / 'query' / 'raptor' / 'search.parquet')
+                    results['raptor'] = self.working_dir / 'query' / 'raptor' / 'search.parquet'
                 case'kmindex':
-                    results.append(self.working_dir / 'query' / 'kmindex' / 'search.parquet')
+                    results['kmindex'] = self.working_dir / 'query' / 'kmindex' / 'search.parquet'
                 case _:
                     raise ValueError(f"Tool {this_method} not supported by k4neo query pipeline")
         return results
@@ -94,10 +93,9 @@ class Pipeline:
 
 
 class QueryPipeline(Pipeline):
-    def __init__(self, workflow: str, config: dict, working_dir: pathlib.Path, methods: list):
+    def __init__(self, workflow: str, config: dict, working_dir: pathlib.Path):
         logger.info("Initialising k4neo query pipeline...")
         super().__init__(workflow, config, working_dir, target_rule="query")
-        self.methods = methods
 
     def run_pipeline(self, slurm: bool = True, cores: int = 8) -> QueryPipelineResult:
         """
@@ -179,12 +177,14 @@ class QueryPipelineConfig(PipelineConfig):
     def __init__(self,
                  index: str,
                  kmer_ratio: float,
+                 methods: set,
                  verbose = True):
         super().__init__(query=True, indexing=False)
         # Generate config object to be used with
         self.config = {"query": {
                                 "index": index,
-                                "kmer_ratio": kmer_ratio}}
+                                "kmer_ratio": kmer_ratio,
+                                "methods": list(methods)}}
         if verbose:
             self.log_configuration()
 

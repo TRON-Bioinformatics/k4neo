@@ -22,21 +22,25 @@ class KmerIndex(object):
         self.index_manifest = index_manifest,
         self.kmer_ratio = kmer_ratio
 
-        self.pipeline_config = QueryPipelineConfig(index=self.index_manifest, kmer_ratio=self.kmer_ratio)
         self.index_struct = self.read_index_struct(self.index_manifest)
+        self.index_methods = self._get_index_methods()
+        logger.info(f"-> Executing queries against {' & '.join(self.index_methods)} k-mer indices")
+        self.pipeline_config = QueryPipelineConfig(index=self.index_manifest, kmer_ratio=self.kmer_ratio, methods=self.index_methods)
 
     def read_index_struct(file):
         """
-        Read meta index of different raptor indices
+        Read k4neo meta index definition file.
         """
         with open(file, 'r') as file_handle:
             index_struct = yaml.safe_load(file_handle)
         # ToDo add sanity checks if meta index file is correctly formatted
         return index_struct
     
-    def get_index_methods(self):
-        """
-        Results of indices of the same method are aggregated into one query file.
+    def _get_index_methods(self):
+        """Collect k-mer index methods
+
+        Results of sub-indices of the same method are aggregated into one query file.
+        
         """
         index_methods = set()
         for index_id, index_properties in self.index_struct.items():
@@ -47,8 +51,20 @@ class KmerIndex(object):
         return index_methods
 
     def search_index(self, query_sequences: pathlib.Path, working_dir: pathlib.Path, slurm: bool = True, cores: int = 8):
-        """
-        Execute k-mer query pipeline on query sequences
+        """Execute k-mer query pipeline
+
+        Method calls the QueryPipeline to execute a search of sequences in fasta format
+        against sub-indices provided in the index manifest
+
+        Args:
+            query_sequences: File path of sequences in FASTA format
+            working_dir: Path of pipeline workdir
+            slurm: If True, QueryPipeline will submit jobs to slurm scheduler.
+            cores: Number of threads
+
+        Returns:
+            result: A dictionary mapping search sequences to detected samples
+
         """
         #  To make this class reusable for multiple queries, we extend in this function
         # the config with the search sequence. Here execution specific modifications can be applied
@@ -59,14 +75,12 @@ class KmerIndex(object):
         result = pipeline.run_pipeline(slurm=slurm, cores=cores)
         return result
 
-    def result_parser(self, result):
+    def result_parser(self, query_tables, cores=8):
         """
         Parse results returned by k-mer index
         """
-        parser = IndexResultParser(result.query_path,
-                                   self.method,
-                                   kmindex_cutoff=self.kmer_ratio
-                                   )
-        query_hits = parser.parse_results()
+        parser = IndexResultParser(query_tables = query_tables,
+                                   cores = cores)
+        query_hits = parser.parse_results(kmer_ratio=self.kmer_ratio)
         return query_hits
 

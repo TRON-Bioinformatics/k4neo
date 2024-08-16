@@ -7,12 +7,4 @@ dependencies:
   - snakemake-minimal=7.34.2
   - python=3.12
   - pip
-  - pip:
-    - logzero~=1.7.0
-    - tinydb==4.8.0
-    - pandas==2.0.3
-    - numpy==1.25.1
-    - xxhash==3.4.1
-    - pytest==8.0.2
-    - pytest-workflow==2.0.1
-    - biopython
+  - poetry
