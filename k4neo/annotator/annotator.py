@@ -150,17 +150,16 @@ class Annotator:
                           index_manifest=index_manifest,
                           kmer_ratio=kmer_ratio
                           )
-        query_tables = index.search_index(self.query_fasta, self.working_dir, slurm=slurm, cores=cores)
-        parsed_results = index.result_parser(query_tables=query_tables, cores=cores)
-
-        parsed_results = {}
+        query_pipeline_results = index.search_index(self.query_fasta, self.working_dir, slurm=slurm, cores=cores)
+        parsed_results = index.result_parser(query_pipeline_results=query_pipeline_results, cores=cores)
+        method_results = {}
         for this_method, this_parsed_results in parsed_results.items():
             dict_to_pandas = []
             # This could be done more efficiently by zipping samples to cts
             for cts, samples in this_parsed_results.items():
                 dict_to_pandas.extend([(cts, this_sample) for this_sample in samples])
-            parsed_results[this_method] = pd.DataFrame(dict_to_pandas, columns=['cts_id', 'sample_name'])
-        return parsed_results
+            method_results[this_method] = pd.DataFrame(dict_to_pandas, columns=['cts_id', 'sample_name'])
+        return method_results
 
     def _annotate_studies(self, parsed_results: pd.DataFrame):
         """

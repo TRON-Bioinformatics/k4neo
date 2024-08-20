@@ -13,15 +13,25 @@ from k4neo.parser import EXPECTED_SAMPLE_COLUMNS, EXPECTED_TISSUE_COLUMNS, SUPPO
 
 
 class Parser:
+    """
+    Class to provide generic parser functions
+    """
     @staticmethod
-    def _read_tissue_map(tissue_map):
-        """
-        Read k4eno tissue map to homogenize tissue identifiers and make them compatible with GTEx.
-        :return:
+    def _read_tissue_map(tissue_map: pathlib.Path) -> dict:
+        """Read k4neo tissue map
+
+        The k4neo index metadata library provides a mapping of public tissue 
+        identifiers to internal tissue definitions.
+
+        Args:
+            tissue_map (pathlib.Path): The path to the tissue mapping file
+
+        Returns:
+            dict: A mapping of public tissue identifiers to k4neo tissue definitions
         """
         tissue_mapping = []
-        with open(tissue_map) as file_handle:
-            reader = csv.DictReader(file_handle, delimiter="\t")
+        with open(tissue_map, 'r') as file_handle:
+            reader = csv.DictReader(file_handle, delimiter='\t')
             for line in reader:
                 assert all([x in line.keys() for x in EXPECTED_TISSUE_COLUMNS]), "Missing columns in input"
                 tissue_mapping.append({'tissue_public': line['tissue_description_found_in_public_data'],
@@ -31,13 +41,16 @@ class Parser:
 
     @staticmethod
     def parse_tissuemap_into_document(tissue_map):
+        """
+        High level function to import tissue map
+        """
         return Parser._read_tissue_map(tissue_map)
 
     @staticmethod
-    def _read_sample_file(data_table):
+    def _read_sample_file(data_table: pathlib.Path) -> list[str]:
         """
-        Read neokant sample sheets
-        :return: file_content
+        Reader for k4neo annotation files. Make sure required fieldnames are present to ensure
+        compatibility with document db.
         """
         file_content = []
         with open(data_table, 'r') as file_handle:
@@ -50,11 +63,9 @@ class Parser:
 
 
     @staticmethod
-    def parse_sample_into_document(data_table):
+    def parse_sample_into_document(data_table: pathlib.Path):
         """
-        Parse sample sheets into document format. Make sure required fieldnames are present to ensure
-        compatibility with document db.
-        :return: Set of dictionaries
+        High level function to import study tissue sheets.
         """
         return Parser._read_sample_file(data_table)
 
@@ -65,10 +76,10 @@ class IndexResultParser:
     if required.
     """
     def __init__(self, 
-                 query_tables: dict,
+                 query_pipeline_results,
                  cores: int = 8) -> None:
 
-        self.query_tables = query_tables
+        self.query_tables = query_pipeline_results.query_path
         self.cores = cores
 
     def parse_results(self, kmer_ratio=0.7) -> dict:
@@ -136,7 +147,7 @@ class IndexResultParser:
                     pool.map(partial(IndexResultParser._parse_table_row, method=method, kmer_ratio=kmer_ratio),
                         this_batch)
                 query_results.extend(detected_samples_list)
-        query_results = ChainMap(query_results)
+        query_results = ChainMap(*query_results)
         return query_results
 
     @staticmethod

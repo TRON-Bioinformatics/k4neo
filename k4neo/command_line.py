@@ -20,16 +20,19 @@ def build_database():
         '--sample-tables',
         dest='sample_table',
         help='Archive with standardized sample metadata tables to include in annotation db',
+        required=True
     )
     parser.add_argument(
         '--database',
         dest='database',
-        help='Database file to create'
+        help='Database file to create',
+        required=True
     )
     parser.add_argument(
         '--tissue-map',
         dest='tissue_map',
-        help='Mapping of different tissue identifiers found across public data to their corresponding GTEx identifier'
+        help='Mapping of different tissue identifiers found across public data to their corresponding GTEx identifier',
+        required=True
 
     )
     args = parser.parse_args()
@@ -38,40 +41,6 @@ def build_database():
     db.setup_db()
     db.precomputations()
     logger.info("-> Finished metadata database creation.")
-
-
-def register_index():
-    parser = ArgumentParser(
-        description=f"k4neo {k4neo.VERSION} index register",
-        formatter_class=ArgumentDefaultsHelpFormatter,
-        epilog=epilog,
-    )
-    parser.add_argument(
-        '--database',
-        dest='database',
-        help='Annotation database file.',
-        required=True
-    )
-    parser.add_argument(
-        '--index',
-        dest='index',
-        help='kmer index to query.',
-        required=True
-    )
-    parser.add_argument(
-        '--method',
-        dest='method',
-        help='K-mer indexing method',
-        required=True
-    )
-    parser.add_argument(
-        '--global-index',
-        dest='global_index',
-        help="Directory where index should be registered"
-    )
-    args = parser.parse_args()
-    logger.info("Index registration...")
-
 
 def parse_output():
     parser = ArgumentParser(
@@ -221,7 +190,7 @@ def annotate():
         '--workflow',
         dest='workflow',
         help='path to tronmake k-mer pipeline',
-        default=pathlib.Path(__file__).parent / 'pipeline' / 'tronmake-kmer-pipeline' / 'Snakefile'
+        default=pathlib.Path(__file__).parent / 'pipeline' / 'tronmake-kmer-pipeline' / 'workflow' / 'Snakefile'
     )
     parser.add_argument(
         '--kmer',
@@ -246,12 +215,13 @@ def annotate():
     args = parser.parse_args()
     working_dir = pathlib.Path(args.working_dir).resolve()
     pipeline = pathlib.Path(args.workflow).resolve()
+    index_manifest = pathlib.Path(args.index_manifest).resolve()
     annotator = Annotator(working_dir,
                           args.queries,
                           args.database)
     annotator.prepare_cts()
     result_dict = annotator.search_cts(pipeline=pipeline,
-                                       index_manifest=pathlib.Path(args.index_manifest),
+                                       index_manifest=index_manifest,
                                        kmer_ratio=args.kmer_ratio,
                                        cores=args.cpu,
                                        slurm=args.slurm)
