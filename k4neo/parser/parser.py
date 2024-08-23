@@ -47,7 +47,7 @@ class Parser:
         return Parser._read_tissue_map(tissue_map)
 
     @staticmethod
-    def _read_sample_file(data_table: pathlib.Path) -> list[str]:
+    def _read_sample_file(data_table: pathlib.Path) -> list[dict]:
         """
         Reader for k4neo annotation files. Make sure required fieldnames are present to ensure
         compatibility with document db.

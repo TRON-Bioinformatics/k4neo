@@ -52,7 +52,7 @@ git clone https://gitlab.rlp.net/tron/kmer_index_data.git
 
 ### Pre-built k-mer indices
 
-K-mer indices of release d5 (publication release) are available for download:
+K-mer indices of release d5 and d6 (publication release) are available for download:
 
 #### Kmindex
 
@@ -93,27 +93,27 @@ In this example the following operations and annotations would be performed:
 ## Usage
 
 ```
-usage: k4neo-annotator [-h] --database DATABASE --index INDEX --queries QUERIES [--output OUTPUT] --method METHOD [--ratio KMER_RATIO] [--working-dir WORKING_DIR] [--workflow WORKFLOW]
-                       [--sample-table SAMPLE_TABLE] [--kmer KMER_SIZE] [--cpu CPU] [--slurm]
+usage: k4neo-annotator [-h] --database DATABASE --index INDEX_MANIFEST --queries QUERIES [--output OUTPUT] [--ratio KMER_RATIO] [--working-dir WORKING_DIR] [--workflow WORKFLOW] [--kmer KMER_SIZE] [--cpu CPU] [--slurm]
 
 k4neo 0.0.1 annotator
 
 options:
   -h, --help            show this help message and exit
   --database DATABASE   Annotation database file.
-  --index INDEX         kmer index to query.
+  --index INDEX_MANIFEST
+                        k-mer index to query.
   --queries QUERIES     Tabular format with context sequence and position of interest
   --output OUTPUT       Output prefix for annotated sequences
-  --method METHOD       K-mer indexing method
-  --ratio KMER_RATIO    Number of shared k-mers between query and sample to report as hit
+  --ratio KMER_RATIO    Number of shared k-mers between query and sample to report as hit (default: 0.7)
   --working-dir WORKING_DIR
-                        Working directory of k4neo pipeline
+                        Working directory of k4neo pipeline (default: ./k4neo_query)
   --workflow WORKFLOW   path to tronmake k-mer pipeline
-  --sample-table SAMPLE_TABLE
-                        Sample table mapping index ids to samples. Only required for Raptor HIBF
-  --kmer KMER_SIZE      K-mer size of search index
-  --cpu CPU             Number of cpus for local execution
-  --slurm               Submit query job to slurm
+  --kmer KMER_SIZE      K-mer size of search index (default: 21)
+  --cpu CPU             Number of cpus for local execution (default: 16)
+  --slurm               Submit query job to slurm (default: False)
+
+Copyright (c) 2024 TRON gGmbH (See LICENSE for licensing details)
+
 
 ```
 
@@ -124,26 +124,12 @@ options:
 
 ```{bash}
 
-# Query with kmindex
-
 k4neo-annotator \
-  --database kmer_index_data/healthy_tissue_database/d5_annotation.db \
-  --index kmindex/kmindex_21/G_21 \
+  --database kmer_index_data/healthy_tissue_database/d7_annotation.db \
+  --index index/index_manifest.yaml \
   --queries /path/to/cts.tsv \
   --output /path/to/cts.annot \
-  --method kmindex  \
-  --kmindex-cutoff 0.7
-  
-# Query with Raptor
-
-k4neo-annotator \
-  --database kmer_index_data/healthy_tissue_database/d5_annotation.db \
-  --index raptor/raptor_21/hibf_wk/raptor.index \
-  --queries /path/to/cts.tsv \
-  --output /path/to/cts.annot \
-  --method raptor  \
-  --ratio 0.7 \
-  --sample-table raptor/raptor_21/raptor_hibf_sample_mapping.tsv
+  --ratio 0.7
 
 ```
 

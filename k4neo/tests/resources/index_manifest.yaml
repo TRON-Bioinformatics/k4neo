@@ -1,0 +1,5 @@
+test_index:
+  samples: 2
+  path: 'k4neo/tests/resources/index/raptor.index'
+  sample_mapping: 'k4neo/tests/resources/index/index_mapping.txt'
+  method: raptor

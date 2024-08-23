@@ -247,33 +247,3 @@ def annotate():
         with open(output_rate, "w") as file_handle:
             sample_rate.to_csv(file_handle, sep="\t", index=False)
 
-
-def query_pipeline():
-    parser = ArgumentParser(
-        description=f"Run k4neo {k4neo.VERSION} query pipeline for testing",
-        formatter_class=ArgumentDefaultsHelpFormatter,
-        epilog=epilog,
-    )
-    parser.add_argument(
-        '--query-fasta',
-        dest='query_fasta',
-        help='FASTA file with query sequences',
-    )
-    parser.add_argument(
-        '--index',
-        dest='index',
-        help='Index/Indexing directory'
-    )
-    parser.add_argument(
-        '--method',
-        dest='method',
-        help='Method used to create index',
-        default="raptor"
-    )
-    args = parser.parse_args()
-    if args.method not in ['raptor', 'kmindex']:
-        raise ValueError()
-
-    logger.info("Starting query pipeline...")
-
-    return

@@ -47,16 +47,18 @@ class Annotator:
         self.queries = Queries(self.db)
 
     @staticmethod
-    def read_context_seq(sequence_table, index_kmer_size):
-        """
-        Read context sequence table into dataframe.
-        Filter out search sequences that do not fullfill 
-        the minimum length criteria
+    def read_context_seq(sequence_table: pathlib.Path, index_kmer_size: int) -> tuple:
+        """Read context sequenc table.
 
-        :param sequence_table: Path to sequence table
-        :param index_kmer_size: Integer giving k-mer size of index
+        Read context sequence table and filter sequences that do not fullfill the minimal
+        query length requirement of Raptor. (query_len + 4)
 
-        :return: pandas DataFrame
+        Args:
+            sequence_table (pathlib.Path): Path to context sequence table
+            index_kmer_size (int): K-mer size of index. Used to determine minimal query length.
+
+        Returns:
+            tuple: Returns two dataframes with sequences to process and sequences that can be queried.
         """
         with open(sequence_table, "r") as file_handle:
             seq = pd.read_csv(file_handle, sep="\t")
@@ -76,22 +78,25 @@ class Annotator:
 
     def _generate_soi_cts_id(self):
         """
-        Generate cts_id of target sequence of interest
+        Generate cts_id of target sequence of interest. ID is hash value of the query sequence
         """
         self.sequence_table['query_cts_id'] = \
             self.sequence_table.apply(lambda x: xxhash.xxh64(x.query_sequence).hexdigest(), axis=1)
 
     @staticmethod
-    def _generate_short_sequence(cts_seq, pos, length):
-        """
+    def _generate_short_sequence(cts_seq: str, pos: int = None, length: int = None) -> str:
+        """Generate query sequence
+
         Generate sequence of interest to query in kmer index e.g. the fusion breakpoint, splice junction. If length
-        is null the original sequence is returned for search in index e.g. a full length transcript or SNP sequence
-        
-        :param cts_seq: A context sequence
-        :param pos:  Position of interest in cts to query
-        :param length: The length of the query sequence
-        
-        :return: context sequence string
+        is null the original sequence is returned for search in index e.g. a full length transcript or SNP sequence.
+
+        Args:
+            cts_seq (str): The full-length context sequence.
+            pos (int, optional): Position in context sequence to extract query seqeunce from. Defaults to None.
+            length (int, optional): Length of query sequence. +/- length/2 around pos. Defaults to None.
+
+        Returns:
+            str: Context sequence string
         """
         if pd.isnull(pos) or pd.isnull(length):
             return cts_seq
@@ -111,7 +116,7 @@ class Annotator:
         """
         Wrapper to call FastaHandler class
         """
-        logger.info(f"Writing context sequences to fasta file: {self.query_fasta}")
+        logger.info(f"-> Writing context sequences to fasta file: {self.query_fasta}")
         FastaHandler.write_fasta(self.sequence_table, self.query_fasta)
 
     def prepare_cts(self):
@@ -119,11 +124,11 @@ class Annotator:
         Prepare context sequences provided by user for targeted search and
         dump into fasta format for query
         """
-        logger.info("Generating breakpoint sequences...")
+        logger.info("-> Generating breakpoint sequences.")
         self._generate_soi()
-        logger.info("Generating cts_id for search sequences...")
+        logger.info("-> Generating cts_id for search sequences.")
         self._generate_soi_cts_id()
-        logger.info("Dumping query sequences to disk...")
+        logger.info("-> Dumping query sequences to disk.")
         self._write_to_fasta()
 
     def search_cts(self,
@@ -161,11 +166,16 @@ class Annotator:
             method_results[this_method] = pd.DataFrame(dict_to_pandas, columns=['cts_id', 'sample_name'])
         return method_results
 
-    def _annotate_studies(self, parsed_results: pd.DataFrame):
-        """
-        Get sample to study mapping and merge back to 
-        parsed results to annotate with study name.
+    def _annotate_studies(self, parsed_results: pd.DataFrame) -> pd.DataFrame:
+        """Annotate sample hits with study id
 
+        Retrive sample to study mapping from database and merge with search results.
+
+        Args:
+            parsed_results (pd.DataFrame): Parsed results of k-mer pipeline.
+
+        Returns:
+            pd.DataFrame: Updated DataFrame with study column.
         """
         study_annotation = self.queries.get_sample_study()
         parsed_results = parsed_results.merge(study_annotation,
@@ -173,11 +183,23 @@ class Annotator:
                                               on="sample_name")
         return parsed_results
 
-    def _annotate_sample_metadata(self, parsed_results: pd.DataFrame):
-        """
-        Add sample metadata
-        :param parsed_results:
-        :return:
+    def _annotate_sample_metadata(self, parsed_results: pd.DataFrame) -> pd.DataFrame:
+        """Annotate sample hits with metadata
+
+        Each occurence of the query sequence in the k-mer index is annotated with
+        the sample-level metadata from the database.
+        Sample hits are aggregated for each study by tissue, developmental state and disease
+        to determine the occurence of the sequence. 
+
+        cts_1   5   healthy adult   liver   study1
+        cts_1   4   healthy fetal   liver   study2
+
+        Args:
+            parsed_results (pd.DataFrame): Parsed results of k-mer pipeline.
+
+        Returns:
+            pd.DataFrame: Aggregated DataFrame with counts for each combination of tissue,
+            developmental_stage and tissue per study.
         """
         parsed_results = \
             parsed_results.groupby('study_id', dropna=False).apply(
@@ -197,7 +219,19 @@ class Annotator:
         df['count'] = df['count'].fillna(0).astype('int')
         return df
 
-    def _annotate_counts(self, parsed_results: pd.DataFrame):
+    def _annotate_counts(self, parsed_results: pd.DataFrame) -> pd.DataFrame:
+        """Add pre-computed tissue counts.
+
+        Retrieve pre-computed total tissue counts from database and add to
+        DataFrame.
+
+        Args:
+            parsed_results (pd.DataFrame): Parsed results of k-mer pipeline.
+
+        Returns:
+            pd.DataFrame: A DataFrame with total counts for each combination of tissue,
+            developmental_stage and tissue per study.
+        """
         parsed_results =\
             parsed_results.groupby('study_id', group_keys=False).apply(
                 lambda sub_df: self.queries.annotate_tissue_counts(sub_df)
@@ -207,15 +241,20 @@ class Annotator:
         return parsed_results
 
     @staticmethod
-    def _split_found(parsed_results: pd.DataFrame):
-        """
-        When the index returns queries not to be expressed we split them
-        apart and handle them separately.
+    def _split_found(parsed_results: pd.DataFrame) -> pd.DataFrame:
+        """Remove sequences not detected in index
 
-        :param parsed_results: DataFrame with index hits
-        
-        :return: A DataFrame of non-found sequences
+        Sequences that were not detected in any sample of the index
+        are removed from the result DataFrame to handle and annotate
+        them separately.
+
+        Args:
+            parsed_results (pd.DataFrame): Parsed results of k-mer pipeline.
+
+        Returns:
+            pd.DataFrame: DataFrame of non-detected sequences in final output format.
         """
+        
         not_expressed = \
             parsed_results.loc[
                 parsed_results['sample_name'].isnull(), ["cts_id"]]
