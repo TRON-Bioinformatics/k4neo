@@ -2,22 +2,25 @@ from k4neo.parser.parser import Parser
 from tinydb import TinyDB, Query
 from logzero import logger as loggy
 import pandas as pd
-
+from tinydb.storages import MemoryStorage
 
 class DataBase:
-    def __init__(self, db_file):
+    def __init__(self, db_file, test: bool=False):
         self.db_file = db_file
-        self.database = TinyDB(self.db_file, sort_keys=True, indent=4)
+        if test:
+            self.database = TinyDB(storage=MemoryStorage)
+        else:
+            self.database = TinyDB(self.db_file, sort_keys=True, indent=4)
 
 
 class CreateDataBase(DataBase):
-    def __init__(self, db_file, data_set_file, tissue_map):
+    def __init__(self, db_file, data_set_file, tissue_map, test: bool=False):
         """
         Database initialization
         """
-        super().__init__(db_file)
+        super().__init__(db_file, test=test)
         self.data_set_file = data_set_file
-        self.tissue_map = Parser.parse_tissuemap_into_document(tissue_map)
+        self.tissue_map = tissue_map
 
     def _parse_study_table(self):
         """
@@ -78,7 +81,8 @@ class CreateDataBase(DataBase):
         counter = 0
         tissue_table = self.database.table('tissue_map')
         tissue_query = Query()
-        for element in self.tissue_map:
+        available_tissues = Parser.parse_tissuemap_into_document(self.tissue_map)
+        for element in available_tissues:
             exists = tissue_table.contains(
                 (tissue_query.tissue_public == element['tissue_public']) &
                 (tissue_query.tissue == element['tissue']) &
@@ -109,7 +113,7 @@ class CreateDataBase(DataBase):
         # Find tissue match of public tissue identifier
         tissue_match = tissue_map.get(tissue_query.tissue_public == tissue_public)
         if not tissue_match:
-            loggy.warning(f"-> Could not find for sample {sample['index_name']} a tissue match. Ignoring for annotation")
+            loggy.warning(f"-> Could not find for sample {sample['sample_name']} a tissue match. Ignoring for annotation")
             return sample, False
 
         sample['tissue'] = tissue_match.get('tissue')
