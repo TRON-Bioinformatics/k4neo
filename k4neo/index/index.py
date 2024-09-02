@@ -47,7 +47,8 @@ class KmerIndex(object):
         for index_id, index_properties in self.index_struct.items():
             method = index_properties.get('method', None)
             if method is None:
-                logger.warning(f"k-mer method not specified for index: {index_id}. Pipeline will probably fail")
+                logger.warning(f"-> k-mer method is missing for index: {index_id}. Ignoring")
+                continue
             index_methods.add(method)
         return index_methods
 

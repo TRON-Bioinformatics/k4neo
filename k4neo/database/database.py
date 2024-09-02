@@ -120,7 +120,7 @@ class CreateDataBase(DataBase):
         sample['subtissue'] = tissue_match.get('subtissue')
         return sample, True
 
-    def _init_database(self):
+    def setup_db(self):
         """
         Initialize when establishing database handle
         """
@@ -136,13 +136,6 @@ class CreateDataBase(DataBase):
             study_elements = [x[0] for x in study_elements if x[1]]
             self._sample_study_table(study_id, study_elements)
             self._add_samples(study_id, study_elements, sample_count)
-
-    def setup_db(self):
-        """
-        Prepare document db to work on it
-        :return:
-        """
-        self._init_database()
 
     def precomputations(self):
         """
