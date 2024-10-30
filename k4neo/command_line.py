@@ -2,11 +2,12 @@ import sys
 import pathlib
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from logzero import logger
+import pandas as pd
 import k4neo
 from k4neo.database.database import DataBase, CreateDataBase
 from k4neo.annotator.annotator import Annotator
 from k4neo.parser.parser import IndexResultParser
-from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
+from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig, QueryPipelineResult
 
 epilog = "Copyright (c) 2024 TRON gGmbH (See LICENSE for licensing details)"
 
@@ -41,44 +42,6 @@ def build_database():
     db.setup_db()
     db.precomputations()
     logger.info("-> Finished metadata database creation.")
-
-def parse_output():
-    parser = ArgumentParser(
-        description=f"k4neo {k4neo.VERSION} result parser",
-        formatter_class=ArgumentDefaultsHelpFormatter,
-        epilog=epilog,
-    )
-    parser.add_argument(
-        '--index-results',
-        dest='index_table',
-        help='Query results from k-mer index',
-    )
-    parser.add_argument(
-        '--tool',
-        dest='tool',
-        help='indexing method'
-    )
-    parser.add_argument(
-        '--output-table',
-        dest='output_table',
-        help='Output table'
-    )
-    parser.add_argument(
-        '--kmindex-cutoff',
-        dest='kmindex_cutoff',
-        help='Kmindex cutoff to filter results',
-        default=0.7,
-        type=float
-    )
-    args = parser.parse_args()
-    logger.info("Starting query result parsing...")
-    parser = IndexResultParser(args.index_table, args.tool,
-                               raptor_sample_mapping=raptor_sample_mapping,
-                               kmindex_cutoff=args.kmindex_cutoff)
-    results = parser.parse_results()
-    parser.write_result(results, args.output_table)
-    logger.info("Parsed query results into table")
-
 
 def build_index():
     parser = ArgumentParser(
