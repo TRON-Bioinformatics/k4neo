@@ -1,3 +1,3 @@
 [submodule "k4neo/pipeline/tronmake-kmer-pipeline"]
 	path = k4neo/pipeline/tronmake-kmer-pipeline
-	url = https://gitlab.rlp.net/tron/tronmake-kmer-pipeline.git
+	url = ../tronmake-kmer-pipeline.git

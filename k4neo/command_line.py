@@ -1,6 +1,6 @@
 import sys
 import pathlib
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from logzero import logger
 import k4neo
 from k4neo.database.database import DataBase, CreateDataBase
@@ -8,69 +8,45 @@ from k4neo.annotator.annotator import Annotator
 from k4neo.parser.parser import IndexResultParser
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 
+epilog = "Copyright (c) 2024 TRON gGmbH (See LICENSE for licensing details)"
 
 def build_database():
     parser = ArgumentParser(
-        description=f"k4neo {k4neo.VERSION} database builder"
+        description=f"k4neo {k4neo.VERSION} database builder",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog=epilog
     )
     parser.add_argument(
         '--sample-tables',
         dest='sample_table',
         help='Archive with standardized sample metadata tables to include in annotation db',
+        required=True
     )
     parser.add_argument(
         '--database',
         dest='database',
-        help='Database file to create'
+        help='Database file to create',
+        required=True
     )
     parser.add_argument(
         '--tissue-map',
         dest='tissue_map',
-        help='Mapping of different tissue identifiers found across public data to their corresponding GTEx identifier'
+        help='Mapping of different tissue identifiers found across public data to their corresponding GTEx identifier',
+        required=True
 
     )
     args = parser.parse_args()
-    logger.info("Starting database creation...")
+    logger.info("-> Starting metadata database creation.")
     db = CreateDataBase(args.database, args.sample_table, args.tissue_map)
     db.setup_db()
     db.precomputations()
-    logger.info("Created database")
-
-
-def register_index():
-    parser = ArgumentParser(
-        description=f"k4neo {k4neo.VERSION} index register"
-    )
-    parser.add_argument(
-        '--database',
-        dest='database',
-        help='Annotation database file.',
-        required=True
-    )
-    parser.add_argument(
-        '--index',
-        dest='index',
-        help='kmer index to query.',
-        required=True
-    )
-    parser.add_argument(
-        '--method',
-        dest='method',
-        help='K-mer indexing method',
-        required=True
-    )
-    parser.add_argument(
-        '--global-index',
-        dest='global_index',
-        help="Directory where index should be registered"
-    )
-    args = parser.parse_args()
-    logger.info("Index registration...")
-
+    logger.info("-> Finished metadata database creation.")
 
 def parse_output():
     parser = ArgumentParser(
-        description=f"k4neo {k4neo.VERSION} result parser"
+        description=f"k4neo {k4neo.VERSION} result parser",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog=epilog,
     )
     parser.add_argument(
         '--index-results',
@@ -83,16 +59,9 @@ def parse_output():
         help='indexing method'
     )
     parser.add_argument(
-        '--sample-table',
-        dest='sample_table',
-        help='Sample table mapping index ids to samples. Only required for Reindeer and Raptor HIBF'
-
-    )
-    parser.add_argument(
         '--output-table',
         dest='output_table',
         help='Output table'
-
     )
     parser.add_argument(
         '--kmindex-cutoff',
@@ -102,9 +71,6 @@ def parse_output():
         type=float
     )
     args = parser.parse_args()
-    raptor_sample_mapping = None
-    if args.tool == 'raptor':
-        raptor_sample_mapping = args.sample_table
     logger.info("Starting query result parsing...")
     parser = IndexResultParser(args.index_table, args.tool,
                                raptor_sample_mapping=raptor_sample_mapping,
@@ -116,7 +82,9 @@ def parse_output():
 
 def build_index():
     parser = ArgumentParser(
-        description=f"k4neo {k4neo.VERSION} indexing pipeline"
+        description=f"k4neo {k4neo.VERSION} indexing pipeline",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog=epilog,
     )
     parser.add_argument(
         '--samples',
@@ -167,18 +135,20 @@ def build_index():
                                           kmer_size=args.kmer_size,
                                           cutoff=args.cutoff,
                                           fpr=args.fpr)
-    logger.info("Starting indexing pipeline...")
+    logger.info("-> Starting indexing pipeline.")
     index_pipeline = IndexPipeline(pipeline,
                                    working_dir=working_dir,
                                    config=pipeline_config.config)
     index_pipeline.run_pipeline(slurm=args.slurm)
-    logger.info("Finished indexing pipeline...")
+    logger.info("-> Finished indexing pipeline.")
 
     return
 
 def annotate():
     parser = ArgumentParser(
-        description=f"k4neo {k4neo.VERSION} annotator"
+        description=f"k4neo {k4neo.VERSION} annotator",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog=epilog,
     )
     parser.add_argument(
         '--database',
@@ -188,8 +158,8 @@ def annotate():
     )
     parser.add_argument(
         '--index',
-        dest='index',
-        help='kmer index to query.',
+        dest='index_manifest',
+        help='k-mer index to query.',
         required=True
     )
     parser.add_argument(
@@ -202,13 +172,6 @@ def annotate():
         '--output',
         dest='output',
         help='Output prefix for annotated sequences'
-    )
-    parser.add_argument(
-        '--method',
-        dest='method',
-        help='K-mer indexing method',
-        required=True,
-        default="raptor"
     )
     parser.add_argument(
         '--ratio',
@@ -227,12 +190,7 @@ def annotate():
         '--workflow',
         dest='workflow',
         help='path to tronmake k-mer pipeline',
-        default=pathlib.Path(__file__).parent / 'pipeline' / 'tronmake-kmer-pipeline' / 'Snakefile'
-    )
-    parser.add_argument(
-        '--sample-table',
-        dest='sample_table',
-        help='Sample table mapping index ids to samples. Only required for Raptor HIBF'
+        default=pathlib.Path(__file__).parent / 'pipeline' / 'tronmake-kmer-pipeline' / 'workflow' / 'Snakefile'
     )
     parser.add_argument(
         '--kmer',
@@ -255,69 +213,37 @@ def annotate():
         action='store_true'
     )
     args = parser.parse_args()
-    raptor_sample_mapping = None
-    if args.method == 'raptor':
-        raptor_sample_mapping = args.sample_table
-    if args.method == 'raptor' and raptor_sample_mapping is None:
-        logger.error("Can not query raptor index without sample mapping")
-        sys.exit(1)
     working_dir = pathlib.Path(args.working_dir).resolve()
     pipeline = pathlib.Path(args.workflow).resolve()
+    index_manifest = pathlib.Path(args.index_manifest).resolve()
     annotator = Annotator(working_dir,
                           args.queries,
                           args.database)
     annotator.prepare_cts()
-    result = annotator.search_cts(pipeline=pipeline,
-                                  index=pathlib.Path(args.index),
-                                  method=args.method,
-                                  raptor_sample_mapping=raptor_sample_mapping,
-                                  kmer_ratio=args.kmer_ratio,
-                                  cores=args.cpu,
-                                  slurm=args.slurm)
-
-    results = annotator.annotate_cts(result)
-    sample_hits = annotator.annotate_sequences(results)
-    sample_rate = annotator.annotate_sample_rate(results)
-    # Write index hits to output
-    output_annotated = pathlib.Path(args.output + "_annotated.tsv")
-    output_rate = pathlib.Path(args.output +  "_sample_rate.tsv")
-    output_non_queryable = pathlib.Path(args.output +  "_non_querable.tsv")
-    with open(output_annotated, "w") as file_handle:
-        sample_hits.to_csv(file_handle, sep="\t", index=False)
-    # Write sample rate to output
-    with open(output_rate, "w") as file_handle:
-        sample_rate.to_csv(file_handle, sep="\t", index=False)
+    result_dict = annotator.search_cts(pipeline=pipeline,
+                                       index_manifest=index_manifest,
+                                       kmer_ratio=args.kmer_ratio,
+                                       cores=args.cpu,
+                                       slurm=args.slurm)
     # Write non-queryable sequences to disk
+    output_non_queryable = pathlib.Path(args.output +  "_non_querable.tsv")
     if len(annotator.non_queryable.index > 0):
-        logger.info("Writing non-queryable sequences to disk")
+        logger.info("-> Writing non-queryable sequences to disk")
         with open(output_non_queryable, "w") as file_handle:
             annotator.non_queryable.to_csv(file_handle, sep="\t", index=False)
 
+    for this_method, this_df in result_dict.items():
+        logger.info("-> Annotating query results of method: {this_method}")
+        results = annotator.annotate_cts(this_df)
+        sample_hits = annotator.annotate_sequences(results)
+        sample_rate = annotator.annotate_sample_rate(results)
 
-def query_pipeline():
-    parser = ArgumentParser(
-        description=f"Run k4neo {k4neo.VERSION} query pipeline for testing"
-    )
-    parser.add_argument(
-        '--query-fasta',
-        dest='query_fasta',
-        help='FASTA file with query sequences',
-    )
-    parser.add_argument(
-        '--index',
-        dest='index',
-        help='Index/Indexing directory'
-    )
-    parser.add_argument(
-        '--method',
-        dest='method',
-        help='Method used to create index',
-        default="raptor"
-    )
-    args = parser.parse_args()
-    if args.method not in ['raptor', 'kmindex']:
-        raise ValueError()
+        # Write index hits to output
+        output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv")
+        output_rate = pathlib.Path(args.output +  f"_sample_rate_{this_method}.tsv")
+        with open(output_annotated, "w") as file_handle:
+            sample_hits.to_csv(file_handle, sep="\t", index=False)
+        # Write sample rate to output
+        with open(output_rate, "w") as file_handle:
+            sample_rate.to_csv(file_handle, sep="\t", index=False)
 
-    logger.info("Starting query pipeline...")
-
-    return

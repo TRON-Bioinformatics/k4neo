@@ -1,0 +1,3 @@
+minimiser_id	sample_name
+minimiser/SRR7634511_R1.minimiser	SRR7634511
+minimiser/SRR7634512_R1.minimiser	SRR7634512
