@@ -6,7 +6,7 @@ from logzero import logger
 from k4neo.index.index import KmerIndex
 from k4neo.database.database import DataBase
 from k4neo.database.queries import Queries
-from k4neo.annotator import EXPECTED_CTS_COLUMNS
+from k4neo.annotator import EXPECTED_CTS_COLUMNS, NON_TUMOR_TISSUE
 import xxhash
 import numpy as np
 from Bio import SeqIO
@@ -116,8 +116,11 @@ class Annotator:
         """
         Wrapper to call FastaHandler class
         """
-        logger.info(f"-> Writing context sequences to fasta file: {self.query_fasta}")
-        FastaHandler.write_fasta(self.sequence_table, self.query_fasta)
+        if not self.query_fasta.exists():
+            logger.info(f"-> Writing context sequences to fasta file: {self.query_fasta}")
+            FastaHandler.write_fasta(self.sequence_table, self.query_fasta)
+            return
+        logger.info(f"-> Fasta file: {self.query_fasta} already exists in working directory. Re-using for annotation")
 
     def prepare_cts(self):
         """
@@ -139,7 +142,7 @@ class Annotator:
                    cores: int = 16) -> pd.DataFrame:
         """Search context sequence in k-mer indices
 
-        Search query fasta in k-mer indices of manifest with QueryPipeline.
+        Search query fasta in k-mer indices of manifest with instance of QueryPipeline.
 
         Args:
             pipeline (pathlib.Path): Path to SnakeMake pipeline (Snakefile)
@@ -283,6 +286,57 @@ class Annotator:
         df = pd.merge(df, tissue_counts, how="left")
         df['sample_rate'] = df.apply(lambda row: round(row['count'] / row['total'], 2), axis=1)
         
+        return df
+    
+    @staticmethod
+    def _calculate_non_tumor_sample_rate(parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
+        """
+        High level aggregate. Sum all tissue hits of a developmental stage
+        per cts_id an calculate sample rate. The number of samples per tissue
+        containing the sequence of interest.
+        """
+        # Remove TCGA and other tumor tissues
+        tissue_counts = tissue_counts.loc[df['tissue'].isin(NON_TUMOR_TISSUE)]
+        # Get number of samples per tissue and developmental state
+        tissue_counts = tissue_counts.groupby(['developmental_stage', 'tissue'])['total'].\
+            sum().reset_index()
+        tissue_counts = tissue_counts.rename(columns={'total': 'samples_per_tissue'})
+        tissue_counts['samples_per_index'] = tissue_counts['samples_per_tissue'].sum()
+
+        # Count hits for each context sequence
+        parsed_results = (parsed_results = parsed_results.groupby(
+            ['cts_id', 'developmental_stage', 'tissue'], as_index=False).\
+            agg(count=('count', 'sum')).\
+            merge(tissue_counts, on=['tissue', 'developmental_stage'], how='outer').\
+            fillna({'count': 0}))
+
+        df['tissue_sample_rate'] = df['count'] / df['samples_per_tissue']
+        df['index_sample_rate'] = df['total_index_count'] / df['samples_per_index']
+        
+        return df
+
+    @staticmethod
+    def _calculate_tumor_sample_rate(parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
+        """
+        High level aggregate. Sum all tissue hits of a developmental stage
+        per cts_id an calculate sample rate. The number of samples per tissue
+        containing the sequence of interest.
+        """
+        # Subset for valid TCGA cancers
+        tumor_counts = tissue_counts.loc[df['tissue'].isin(TUMOR_TISSUE)]
+        # Get number of samples per cancer entity
+        tumor_counts = tumor_counts.groupby(['disease', 'tissue'])['total'].\
+            sum().reset_index()
+        tumor_counts = tumor_counts.rename(columns={'total': 'index_count'})
+
+        # Count hits for each context sequence
+        parsed_results = (parsed_results = parsed_results.groupby(
+            ['cts_id', 'disease', 'tissue'], as_index=False).\
+            agg(count=('count', 'sum')).\
+            merge(tumor_counts, on=['tissue', 'disease'], how='outer').\
+            fillna({'count': 0}))
+
+        df['cancer_sample_rate'] = df['count'] / df['index_count']
         return df
 
     def annotate_cts(self, parsed_results: pd.DataFrame, annot_style: str = "normal"):
