@@ -289,19 +289,19 @@ class Annotator:
         return df
     
     @staticmethod
-    def _calculate_non_tumor_sample_rate(parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
+    def _calculate_healthy_sample_rate(parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
         """
         High level aggregate. Sum all tissue hits of a developmental stage
         per cts_id an calculate sample rate. The number of samples per tissue
         containing the sequence of interest.
         """
         # Remove TCGA and other tumor tissues
-        tissue_counts = tissue_counts.loc[df['tissue'].isin(NON_TUMOR_TISSUE)]
+        tissue_counts = tissue_counts.loc[tissue_counts['disease'].isin(NON_TUMOR_TISSUE)]
         # Get number of samples per tissue and developmental state
         tissue_counts = tissue_counts.groupby(['developmental_stage', 'tissue'])['total'].\
             sum().reset_index()
         tissue_counts = tissue_counts.rename(columns={'total': 'samples_per_tissue'})
-        tissue_counts['samples_per_index'] = tissue_counts['samples_per_tissue'].sum()
+        #tissue_counts['samples_per_index'] = tissue_counts['samples_per_tissue'].sum()
 
         # Count hits for each context sequence
         parsed_results = (parsed_results.groupby(
@@ -310,10 +310,10 @@ class Annotator:
             merge(tissue_counts, on=['tissue', 'developmental_stage'], how='outer').\
             fillna({'count': 0}))
 
-        df['tissue_sample_rate'] = df['count'] / df['samples_per_tissue']
-        df['index_sample_rate'] = df['total_index_count'] / df['samples_per_index']
+        parsed_results['tissue_sample_rate'] = parsed_results['count'] / parsed_results['samples_per_tissue']
+        #parsed_results['index_sample_rate'] = parsed_results['total_index_count'] / parsed_results['samples_per_index']
         
-        return df
+        return parsed_results
 
     @staticmethod
     def _calculate_tumor_sample_rate(parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
@@ -338,6 +338,12 @@ class Annotator:
 
         parsed_results['cancer_sample_rate'] = parsed_results['count'] / parsed_results['index_count']
         return parsed_results
+    
+    def _annotate_tumor_specificity(healthy_ts_rate: pd.DataFrame):
+        """
+        Annotate tumor specificity criteria based on expression in healthy tissues
+        """
+        pass
 
     def annotate_cts(self, parsed_results: pd.DataFrame, annot_style: str = "normal"):
         """
