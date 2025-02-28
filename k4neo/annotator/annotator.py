@@ -6,7 +6,7 @@ from logzero import logger
 from k4neo.index.index import KmerIndex
 from k4neo.database.database import DataBase
 from k4neo.database.queries import Queries
-from k4neo.annotator import EXPECTED_CTS_COLUMNS, NON_TUMOR_TISSUE
+from k4neo.annotator import EXPECTED_CTS_COLUMNS, NON_TUMOR_TISSUE, TUMOR_TISSUE
 import xxhash
 import numpy as np
 from Bio import SeqIO
@@ -304,7 +304,7 @@ class Annotator:
         tissue_counts['samples_per_index'] = tissue_counts['samples_per_tissue'].sum()
 
         # Count hits for each context sequence
-        parsed_results = (parsed_results = parsed_results.groupby(
+        parsed_results = (parsed_results.groupby(
             ['cts_id', 'developmental_stage', 'tissue'], as_index=False).\
             agg(count=('count', 'sum')).\
             merge(tissue_counts, on=['tissue', 'developmental_stage'], how='outer').\
@@ -323,21 +323,21 @@ class Annotator:
         containing the sequence of interest.
         """
         # Subset for valid TCGA cancers
-        tumor_counts = tissue_counts.loc[df['tissue'].isin(TUMOR_TISSUE)]
+        tumor_counts = tissue_counts.loc[tissue_counts['disease'].isin(TUMOR_TISSUE)]
         # Get number of samples per cancer entity
         tumor_counts = tumor_counts.groupby(['disease', 'tissue'])['total'].\
             sum().reset_index()
         tumor_counts = tumor_counts.rename(columns={'total': 'index_count'})
 
         # Count hits for each context sequence
-        parsed_results = (parsed_results = parsed_results.groupby(
+        parsed_results = (parsed_results.groupby(
             ['cts_id', 'disease', 'tissue'], as_index=False).\
             agg(count=('count', 'sum')).\
             merge(tumor_counts, on=['tissue', 'disease'], how='outer').\
             fillna({'count': 0}))
 
-        df['cancer_sample_rate'] = df['count'] / df['index_count']
-        return df
+        parsed_results['cancer_sample_rate'] = parsed_results['count'] / parsed_results['index_count']
+        return parsed_results
 
     def annotate_cts(self, parsed_results: pd.DataFrame, annot_style: str = "normal"):
         """
