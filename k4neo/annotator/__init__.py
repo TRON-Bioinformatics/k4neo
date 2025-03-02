@@ -5,3 +5,5 @@ NON_TUMOR_TISSUE = ["healthy", "T2D", "high BMI",
                     "normal", "IGT", "Osteoporosis"]
 
 TUMOR_TISSUE = ["primary blood tumor", "primary solid tumor", "metastatic"]
+
+IMMUNO_PRIVILIGED_TISSUE = ["testis", "ovary", "retina"]

@@ -6,7 +6,7 @@ from logzero import logger
 from k4neo.index.index import KmerIndex
 from k4neo.database.database import DataBase
 from k4neo.database.queries import Queries
-from k4neo.annotator import EXPECTED_CTS_COLUMNS, NON_TUMOR_TISSUE, TUMOR_TISSUE
+from k4neo.annotator import EXPECTED_CTS_COLUMNS, NON_TUMOR_TISSUE, TUMOR_TISSUE, IMMUNO_PRIVILIGED_TISSUE
 import xxhash
 import numpy as np
 from Bio import SeqIO
@@ -303,17 +303,22 @@ class Annotator:
         tissue_counts = tissue_counts.rename(columns={'total': 'samples_per_tissue'})
         #tissue_counts['samples_per_index'] = tissue_counts['samples_per_tissue'].sum()
 
-        # Count hits for each context sequence
-        parsed_results = (parsed_results.groupby(
-            ['cts_id', 'developmental_stage', 'tissue'], as_index=False).\
-            agg(count=('count', 'sum')).\
-            merge(tissue_counts, on=['tissue', 'developmental_stage'], how='outer').\
-            fillna({'count': 0}))
+        # Generate all tissue / cts combinations
+        cts_tissue_comb = (parsed_results[['cts_id']].
+                           drop_duplicates().
+                           merge(tissue_counts,how="cross"))
+        # Count occurence of each cts per tissue
+        parsed_counts = (parsed_results.groupby(
+            ['cts_id', 'developmental_stage', 'tissue'], as_index=False, dropna=False).\
+            agg(count=('count', 'sum')))
 
-        parsed_results['tissue_sample_rate'] = parsed_results['count'] / parsed_results['samples_per_tissue']
+        # Merge and calculate sample rate
+        count_table = cts_tissue_comb.merge(parsed_counts,
+            how="left", on=["cts_id", "developmental_stage", "tissue"]).fillna({'count':0})
+        count_table['tissue_sample_rate'] = count_table['count'] / count_table['samples_per_tissue']
         #parsed_results['index_sample_rate'] = parsed_results['total_index_count'] / parsed_results['samples_per_index']
         
-        return parsed_results
+        return count_table
 
     @staticmethod
     def _calculate_tumor_sample_rate(parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
@@ -329,15 +334,21 @@ class Annotator:
             sum().reset_index()
         tumor_counts = tumor_counts.rename(columns={'total': 'index_count'})
 
-        # Count hits for each context sequence
-        parsed_results = (parsed_results.groupby(
-            ['cts_id', 'disease', 'tissue'], as_index=False).\
-            agg(count=('count', 'sum')).\
-            merge(tumor_counts, on=['tissue', 'disease'], how='outer').\
-            fillna({'count': 0}))
+        # Generate all tumor / cts combinations
+        cts_tumor_comb = (parsed_results[['cts_id']].
+                          drop_duplicates().
+                          merge(tumor_counts, how="cross"))
+        # Count occurence of each cts per tumor
+        parsed_counts = (parsed_results.groupby(
+            ['cts_id', 'disease', 'tissue'], as_index=False, dropna=False).\
+            agg(count=('count', 'sum')))
 
-        parsed_results['cancer_sample_rate'] = parsed_results['count'] / parsed_results['index_count']
-        return parsed_results
+        # Merge and calculate tumor rate
+        count_table = cts_tumor_comb.merge(parsed_counts,
+            how="left", on=["cts_id", "disease", "tissue"]).fillna({'count':0})
+        count_table['cancer_sample_rate'] = count_table['count'] / count_table['index_count']
+
+        return count_table
     
     def _annotate_tumor_specificity(healthy_ts_rate: pd.DataFrame):
         """

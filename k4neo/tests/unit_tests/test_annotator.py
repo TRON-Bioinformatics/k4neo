@@ -2,6 +2,7 @@
 import pytest
 from k4neo.annotator.annotator import Annotator
 import pandas as pd
+import numpy as np
 
 @pytest.fixture
 def sample_tumor_data():
@@ -28,7 +29,6 @@ def test_calculate_tumor_sample_rate(sample_tumor_data):
     # Get test data
     parsed_results, tissue_counts = sample_tumor_data
     result = Annotator._calculate_tumor_sample_rate(parsed_results, tissue_counts)
-
     # Test that expected column is present in result
     assert 'cancer_sample_rate' in result.columns
 
@@ -54,11 +54,11 @@ def test_calculate_tumor_sample_rate(sample_tumor_data):
 @pytest.fixture
 def sample_healthy_data():
     parsed_results = pd.DataFrame.from_dict({
-        'cts_id': [1, 1, 1, 2, 2, 2, 2],
-        'disease': ['healthy', 'healthy', 'high BMI', 'IGT', 'healthy', 'healthy', 'healthy'],
-        'developmental_stage': ['adult', 'adult', 'adult', 'adult', 'adult', 'fetal', 'adult'],
-        'tissue': ['lung', 'kidney', 'adipose', 'pancreatic islets', 'pancreatic islets', 'brain', 'brain'],
-        'count': [10, 20, 30, 4, 8, 2, 1]
+        'cts_id': [1, 1, 1, 2, 2, 2, 2, 3],
+        'disease': ['healthy', 'healthy', 'high BMI', 'IGT', 'healthy', 'healthy', 'healthy', np.nan],
+        'developmental_stage': ['adult', 'adult', 'adult', 'adult', 'adult', 'fetal', 'adult', np.nan],
+        'tissue': ['lung', 'kidney', 'adipose', 'pancreatic islets', 'pancreatic islets', 'brain', 'brain', np.nan],
+        'count': [10, 20, 30, 4, 8, 2, 1, 0]
     })
 
     tissue_counts = pd.DataFrame.from_dict({
@@ -70,13 +70,12 @@ def sample_healthy_data():
 
     return parsed_results, tissue_counts
 
-def test_calculate_halthy_sample_rate(sample_healthy_data):
+def test_calculate_healthy_sample_rate(sample_healthy_data):
     '''
     '''
     # Get test data
     parsed_results, tissue_counts = sample_healthy_data
     result = Annotator._calculate_healthy_sample_rate(parsed_results, tissue_counts)
-
     # Test that expected column is present in result
     assert 'tissue_sample_rate' in result.columns
 
@@ -95,9 +94,14 @@ def test_calculate_halthy_sample_rate(sample_healthy_data):
         (2, 'pancreatic islets', 'adult'): 12 / 50,
         (2, 'brain', 'fetal'): 2 / 10,
         (2, 'brain', 'adult'): 1 / 100,
+        (3, 'lung', 'adult'): 0.0,
+        (3, 'kidney', 'adult'): 0.0,
+        (3, 'adipose', 'adult'): 0.0,
+        (3, 'pancreatic islets', 'adult'): 0.0,
+        (3, 'brain', 'fetal'): 0.0,
+        (3, 'brain', 'adult'): 0.0,
     }
     # Float might be different between CPUs and architectures. Therefore we test approximately
     for _, row in result.iterrows():
-        print(row)
         key = (row['cts_id'], row['tissue'], row['developmental_stage'])
         assert pytest.approx(row['tissue_sample_rate'], rel=1e-2) == expected_rates.get(key)
