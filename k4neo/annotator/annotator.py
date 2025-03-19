@@ -306,7 +306,7 @@ class Annotator:
         # Generate all tissue / cts combinations
         cts_tissue_comb = (parsed_results[['cts_id']].
                            drop_duplicates().
-                           merge(tissue_counts,how="cross"))
+                           merge(tissue_counts, how="cross"))
         # Count occurence of each cts per tissue
         parsed_counts = (parsed_results.groupby(
             ['cts_id', 'developmental_stage', 'tissue'], as_index=False, dropna=False).\
@@ -410,6 +410,27 @@ class Annotator:
         df = df.loc[df['total'] >= min_total]
 
         return df
+
+    def annotate_sample_rate2(self, annotated_cts, min_total=15):
+        """
+        Add sample rate to sequences
+        """
+        tissue_counts = self.queries.get_tissue_counts()
+        healthy_sample_rate = self._calculate_healthy_sample_rate(annotated_cts, tissue_counts)
+        healthy_sample_rate = pd.merge(self.sequence_table, healthy_sample_rate, left_on="query_cts_id", right_on="cts_id")
+        healthy_sample_rate.drop('cts_id_y', inplace=True, axis=1)
+        healthy_sample_rate.rename(columns={'cts_id_x': 'cts_id'}, inplace=True)
+        healthy_sample_rate["sample_rate"] = pd.to_numeric(healthy_sample_rate["sample_rate"])
+        healthy_sample_rate = healthy_sample_rate.loc[df['total'] >= min_total]
+        
+        tumor_sample_rate = self._calculate_tumor_sample_rate(annotated_cts, tissue_counts)
+        tumor_sample_rate = pd.merge(self.sequence_table, tumor_sample_rate, left_on="query_cts_id", right_on="cts_id")
+        tumor_sample_rate.drop('cts_id_y', inplace=True, axis=1)
+        tumor_sample_rate.rename(columns={'cts_id_x': 'cts_id'}, inplace=True)
+        tumor_sample_rate["sample_rate"] = pd.to_numeric(tumor_sample_rate["sample_rate"])
+        tumor_sample_rate = tumor_sample_rate.loc[df['total'] >= min_total]
+
+        return healthy_sample_rate, tumor_sample_rate
 
 
 

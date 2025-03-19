@@ -233,17 +233,20 @@ def annotate():
             annotator.non_queryable.to_csv(file_handle, sep="\t", index=False)
 
     for this_method, this_df in result_dict.items():
-        logger.info("-> Annotating query results of method: {this_method}")
+        logger.info(f"-> Annotating query results of method: {this_method}")
         results = annotator.annotate_cts(this_df)
         sample_hits = annotator.annotate_sequences(results)
-        sample_rate = annotator.annotate_sample_rate(results)
+        healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate(results)
 
         # Write index hits to output
         output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
-        output_rate = pathlib.Path(args.output +  f"_sample_rate_{this_method}.tsv.gz")
+        output_healthy_rate = pathlib.Path(args.output +  f"_healthy_sample_rate_{this_method}.tsv.gz")
+        output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv.gz")
         with open(output_annotated, "w") as file_handle:
             sample_hits.to_csv(file_handle, sep="\t", index=False)
         # Write sample rate to output
-        with open(output_rate, "w") as file_handle:
-            sample_rate.to_csv(file_handle, sep="\t", index=False)
+        with open(output_healthy_rate, "w") as file_handle:
+            healthy_sample_rate.to_csv(file_handle, sep="\t", index=False)
+        with open(output_tumor_rate, "w") as file_handle:
+            tumor_sample_rate.to_csv(file_handle, sep="\t", index=False)
 
