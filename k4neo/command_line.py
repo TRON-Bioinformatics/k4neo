@@ -226,7 +226,7 @@ def annotate():
                                        cores=args.cpu,
                                        slurm=args.slurm)
     # Write non-queryable sequences to disk
-    output_non_queryable = pathlib.Path(args.output +  "_non_querable.tsv")
+    output_non_queryable = pathlib.Path(args.output +  "_non_querable.tsv.gz")
     if len(annotator.non_queryable.index > 0):
         logger.info("-> Writing non-queryable sequences to disk")
         with open(output_non_queryable, "w") as file_handle:
@@ -239,8 +239,8 @@ def annotate():
         sample_rate = annotator.annotate_sample_rate(results)
 
         # Write index hits to output
-        output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv")
-        output_rate = pathlib.Path(args.output +  f"_sample_rate_{this_method}.tsv")
+        output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
+        output_rate = pathlib.Path(args.output +  f"_sample_rate_{this_method}.tsv.gz")
         with open(output_annotated, "w") as file_handle:
             sample_hits.to_csv(file_handle, sep="\t", index=False)
         # Write sample rate to output
