@@ -11,6 +11,7 @@ class Queries:
     Generic query class that provides methods to query the document database and
     add document information to annotation table
     """
+
     def __init__(self, db: DataBase):
         self.db = db.database
         self.query = Query()
@@ -39,9 +40,10 @@ class Queries:
         :param samples:
         :return:
         """
-        study = samples['study_id'].unique()
-        assert len(study) == 1, \
-            "More than one project in samples dataframe. Function supports only query for one study"
+        study = samples["study_id"].unique()
+        assert (
+            len(study) == 1
+        ), "More than one project in samples dataframe. Function supports only query for one study"
         study = study.item()
         # Get corresponding study table
         table = self.db.table(study)
@@ -50,13 +52,13 @@ class Queries:
         annotation = table.search(self.query.sample_name.one_of(sample_query))
         # In case there is noting matching the query
         if not annotation:
-            samples['tissue'] = np.nan
-            samples['developmental_stage'] = np.nan
-            samples['disease'] = np.nan
+            samples["tissue"] = np.nan
+            samples["developmental_stage"] = np.nan
+            samples["disease"] = np.nan
             return samples
         # Merge group df with annotation features
         annotation = pd.DataFrame.from_dict(annotation)
-        samples = pd.merge(samples, annotation, on="sample_name", how='left')
+        samples = pd.merge(samples, annotation, on="sample_name", how="left")
         return samples
 
     def document_to_pd(self, document: dict):
@@ -76,9 +78,8 @@ class Queries:
         :return:
         """
 
-        study = samples['study_id'].unique()
-        assert len(study) == 1, \
-            "Dataframe can only contain one study to search for "
+        study = samples["study_id"].unique()
+        assert len(study) == 1, "Dataframe can only contain one study to search for "
         study_id = study.item()
         # Get corresponding study table
         table = self.db.table("tissue_counts")

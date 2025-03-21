@@ -4,8 +4,9 @@ from logzero import logger as loggy
 import pandas as pd
 from tinydb.storages import MemoryStorage
 
+
 class DataBase:
-    def __init__(self, db_file, test: bool=False):
+    def __init__(self, db_file, test: bool = False):
         self.db_file = db_file
         if test:
             self.database = TinyDB(storage=MemoryStorage)
@@ -14,7 +15,7 @@ class DataBase:
 
 
 class CreateDataBase(DataBase):
-    def __init__(self, db_file, data_set_file, tissue_map, test: bool=False):
+    def __init__(self, db_file, data_set_file, tissue_map, test: bool = False):
         """
         Database initialization
         """
@@ -41,10 +42,14 @@ class CreateDataBase(DataBase):
         sample_study_query = Query()
         sample_study_table = self.database.table("sample_study_table")
         for this_sample in study_annot:
-            exists = sample_study_table.contains((sample_study_query.sample_name == this_sample["sample_name"]) &
-                                                 (sample_study_query.study_id == study_id))
+            exists = sample_study_table.contains(
+                (sample_study_query.sample_name == this_sample["sample_name"])
+                & (sample_study_query.study_id == study_id)
+            )
             if not exists:
-                sample_study_table.insert({"sample_name": this_sample["sample_name"], "study_id": study_id})
+                sample_study_table.insert(
+                    {"sample_name": this_sample["sample_name"], "study_id": study_id}
+                )
 
     def _add_samples(self, study_id: str, study_annot: dict, sample_count: str):
         """
@@ -65,7 +70,9 @@ class CreateDataBase(DataBase):
         elif len(study_table) != sample_count:
             counter = 0
             for element in study_annot:
-                exists = study_table.contains(study_query.sample_name == element["sample_name"])
+                exists = study_table.contains(
+                    study_query.sample_name == element["sample_name"]
+                )
                 if not exists:
                     study_table.insert(element)
                     counter += 1
@@ -79,20 +86,19 @@ class CreateDataBase(DataBase):
         :return:
         """
         counter = 0
-        tissue_table = self.database.table('tissue_map')
+        tissue_table = self.database.table("tissue_map")
         tissue_query = Query()
         available_tissues = Parser.parse_tissuemap_into_document(self.tissue_map)
         for element in available_tissues:
             exists = tissue_table.contains(
-                (tissue_query.tissue_public == element['tissue_public']) &
-                (tissue_query.tissue == element['tissue']) &
-                (tissue_query.subtissue == element['subtissue'])
+                (tissue_query.tissue_public == element["tissue_public"])
+                & (tissue_query.tissue == element["tissue"])
+                & (tissue_query.subtissue == element["subtissue"])
             )
             if not exists:
                 tissue_table.insert(element)
                 counter += 1
         loggy.info(f"-> Loaded {counter} tissue map documents into tissue_map table")
-
 
     def _update_sample_document_with_tissue(self, sample: dict) -> dict:
         """
@@ -104,20 +110,24 @@ class CreateDataBase(DataBase):
         ## Query database for tissue
         ## Match if not leave out
         tissue_query = Query()
-        tissue_map = self.database.table('tissue_map')
+        tissue_map = self.database.table("tissue_map")
         if len(tissue_map) == 0:
-            loggy.warning("-> Tissue map is not initialized. Can not update tissue identifier")
+            loggy.warning(
+                "-> Tissue map is not initialized. Can not update tissue identifier"
+            )
             return sample, False
-        
-        tissue_public = sample['tissue']
+
+        tissue_public = sample["tissue"]
         # Find tissue match of public tissue identifier
         tissue_match = tissue_map.get(tissue_query.tissue_public == tissue_public)
         if not tissue_match:
-            loggy.warning(f"-> Could not find for sample {sample['sample_name']} a tissue match. Ignoring for annotation")
+            loggy.warning(
+                f"-> Could not find for sample {sample['sample_name']} a tissue match. Ignoring for annotation"
+            )
             return sample, False
 
-        sample['tissue'] = tissue_match.get('tissue')
-        sample['subtissue'] = tissue_match.get('subtissue')
+        sample["tissue"] = tissue_match.get("tissue")
+        sample["subtissue"] = tissue_match.get("subtissue")
         return sample, True
 
     def setup_db(self):
@@ -131,7 +141,9 @@ class CreateDataBase(DataBase):
             # If study is not in database parse table into document format
             study_elements = Parser.parse_sample_into_document(study_annot)
             # Update samples with tissue mapping and add subtissue section
-            study_elements = [self._update_sample_document_with_tissue(x) for x in study_elements]
+            study_elements = [
+                self._update_sample_document_with_tissue(x) for x in study_elements
+            ]
             # Drop samples without a tissue match
             study_elements = [x[0] for x in study_elements if x[1]]
             self._sample_study_table(study_id, study_elements)
@@ -146,15 +158,23 @@ class CreateDataBase(DataBase):
         tissue_count_table = self.database.table("tissue_counts")
         tissue_count_query = Query()
         for study_id, _, _ in self._parse_study_table():
-            exists = tissue_count_table.contains(tissue_count_query.study_id == study_id)
+            exists = tissue_count_table.contains(
+                tissue_count_query.study_id == study_id
+            )
             if exists:
-                loggy.info(f'-> Precomputed counts for {study_id} already in database. Skipping calculation')
+                loggy.info(
+                    f"-> Precomputed counts for {study_id} already in database. Skipping calculation"
+                )
                 continue
 
             table = pd.DataFrame(self.database.table(study_id))
-            table['study_id'] = study_id
-            table = table[['tissue', 'developmental_stage', 'disease', 'study_id']].value_counts()
+            table["study_id"] = study_id
+            table = table[
+                ["tissue", "developmental_stage", "disease", "study_id"]
+            ].value_counts()
             # Returns record in document format
             tissue_counts = table.to_frame().reset_index().to_dict(orient="records")
             tissue_count_table.insert_multiple(tissue_counts)
-            loggy.info(f"-> Added {len(tissue_counts)} precomputed tissue counts for {study_id} into database")
+            loggy.info(
+                f"-> Added {len(tissue_counts)} precomputed tissue counts for {study_id} into database"
+            )
