@@ -4,7 +4,7 @@ import pathlib
 from multiprocessing import Pool
 from collections import ChainMap
 from functools import partial
-from logzero import logger
+from loguru import logger
 import pyarrow.parquet as pq
 from typing import Any
 from k4neo.parser import (

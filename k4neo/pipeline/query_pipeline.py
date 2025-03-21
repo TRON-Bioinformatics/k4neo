@@ -1,10 +1,10 @@
 import pathlib
 import tempfile
 import yaml
-from logzero import logger
+from dataclasses import dataclass
 from k4neo.exceptions import K4neoPipelineException
 from k4neo.helper.helper import ShellExec
-from dataclasses import dataclass
+from loguru import logger
 
 
 @dataclass

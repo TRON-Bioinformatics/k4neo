@@ -2,7 +2,6 @@
 
 import pathlib
 import pandas as pd
-from logzero import logger
 from k4neo.index.index import KmerIndex
 from k4neo.database.database import DataBase
 from k4neo.database.queries import Queries
@@ -14,9 +13,7 @@ from k4neo.annotator import (
 )
 from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation
 import numpy as np
-from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
+from loguru import logger
 
 
 class Annotator:

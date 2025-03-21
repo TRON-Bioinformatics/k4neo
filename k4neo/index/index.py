@@ -1,11 +1,8 @@
-import os
-import sys
 import pathlib
 import yaml
 from k4neo.pipeline.query_pipeline import QueryPipeline, QueryPipelineConfig
 from k4neo.parser.parser import IndexResultParser
-from typing import Any
-from logzero import logger
+from loguru import logger
 
 
 class KmerIndex(object):

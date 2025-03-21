@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 from typing import List, Tuple
 import pathlib
-import pandas as pd
 import subprocess
 import xxhash
+import pandas as pd
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from logzero import logger
+from loguru import logger
 
 
 class FastaHandler:

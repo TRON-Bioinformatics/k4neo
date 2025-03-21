@@ -1,8 +1,8 @@
 from k4neo.parser.parser import Parser
 from tinydb import TinyDB, Query
-from logzero import logger as loggy
 import pandas as pd
 from tinydb.storages import MemoryStorage
+from loguru import logger
 
 
 class DataBase:
@@ -60,12 +60,12 @@ class CreateDataBase(DataBase):
         study_table = self.database.table(study_id)
         # Check if sampe table is already initialiazed
         if len(study_table) == sample_count:
-            loggy.info(f"-> Sample table {study_id} already in database")
+            logger.info(f"-> Sample table {study_id} already in database")
             return
         if len(study_table) == 0:
-            loggy.info(f"-> Initializing table for study {study_id}")
+            logger.info(f"-> Initializing table for study {study_id}")
             study_table.insert_multiple(study_annot)
-            loggy.info(f"-> Loaded {len(study_annot)} documents into study table")
+            logger.info(f"-> Loaded {len(study_annot)} documents into study table")
         # Query DB for missing entries
         elif len(study_table) != sample_count:
             counter = 0
@@ -76,9 +76,9 @@ class CreateDataBase(DataBase):
                 if not exists:
                     study_table.insert(element)
                     counter += 1
-            loggy.info(f"-> Loaded {counter} missing documents into {study_id} table")
+            logger.info(f"-> Loaded {counter} missing documents into {study_id} table")
         else:
-            loggy.error("-> Don't know what to do here")
+            logger.error("-> Don't know what to do here")
 
     def _add_tissues(self):
         """
@@ -98,7 +98,7 @@ class CreateDataBase(DataBase):
             if not exists:
                 tissue_table.insert(element)
                 counter += 1
-        loggy.info(f"-> Loaded {counter} tissue map documents into tissue_map table")
+        logger.info(f"-> Loaded {counter} tissue map documents into tissue_map table")
 
     def _update_sample_document_with_tissue(self, sample: dict) -> dict:
         """
@@ -112,7 +112,7 @@ class CreateDataBase(DataBase):
         tissue_query = Query()
         tissue_map = self.database.table("tissue_map")
         if len(tissue_map) == 0:
-            loggy.warning(
+            logger.warning(
                 "-> Tissue map is not initialized. Can not update tissue identifier"
             )
             return sample, False
@@ -121,7 +121,7 @@ class CreateDataBase(DataBase):
         # Find tissue match of public tissue identifier
         tissue_match = tissue_map.get(tissue_query.tissue_public == tissue_public)
         if not tissue_match:
-            loggy.warning(
+            logger.warning(
                 f"-> Could not find for sample {sample['sample_name']} a tissue match. Ignoring for annotation"
             )
             return sample, False
@@ -134,9 +134,9 @@ class CreateDataBase(DataBase):
         """
         Initialize when establishing database handle
         """
-        loggy.info("-> Adding tissue mapping into database")
+        logger.info("-> Adding tissue mapping into database")
         self._add_tissues()
-        loggy.info("-> Adding samples into database")
+        logger.info("-> Adding samples into database")
         for study_id, study_annot, sample_count in self._parse_study_table():
             # If study is not in database parse table into document format
             study_elements = Parser.parse_sample_into_document(study_annot)
@@ -162,7 +162,7 @@ class CreateDataBase(DataBase):
                 tissue_count_query.study_id == study_id
             )
             if exists:
-                loggy.info(
+                logger.info(
                     f"-> Precomputed counts for {study_id} already in database. Skipping calculation"
                 )
                 continue
@@ -175,6 +175,6 @@ class CreateDataBase(DataBase):
             # Returns record in document format
             tissue_counts = table.to_frame().reset_index().to_dict(orient="records")
             tissue_count_table.insert_multiple(tissue_counts)
-            loggy.info(
+            logger.info(
                 f"-> Added {len(tissue_counts)} precomputed tissue counts for {study_id} into database"
             )

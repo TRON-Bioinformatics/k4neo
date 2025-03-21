@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "k4neo"
-version = "0.0.1"
+version = "0.0.2"
 description = ""
 authors = [
     "TRON - Translational Oncology at the University Medical Center", 
@@ -27,13 +27,12 @@ include = [
 python = ">=3.9 <=3.12.4"
 pandas = "==2.2.2"
 biopython = "==1.84"
-logzero = "==1.7.0"
 pyarrow = "==17.0.0"
 fastparquet = "==2024.5.0"
 pyyaml = "==6.0.2"
 tinydb = "==4.8.0"
 xxhash = "==3.4.1"
-
+loguru = "==0.7.3"
 
 [tool.poetry.scripts]
 k4neo-annotator = "k4neo.command_line:annotate"
@@ -51,3 +50,9 @@ filterwarnings = [
     # note the use of single quote below to denote "raw" strings in TOML
     'ignore:function ham\(\) is deprecated:DeprecationWarning',
 ]
+
+[tool.black]
+force-exclude = "k4neo/pipeline/tronmake-kmer-pipeline"
+line-length = 100
+target-version = ["py312"]
+

@@ -1,12 +1,12 @@
 import sys
 import pathlib
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from logzero import logger
 import k4neo
 from k4neo.database.database import DataBase, CreateDataBase
 from k4neo.annotator.annotator import Annotator
 from k4neo.parser.parser import IndexResultParser
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
+from loguru import logger
 
 epilog = "Copyright (c) 2025 TRON gGmbH (See LICENSE for licensing details)"
 
