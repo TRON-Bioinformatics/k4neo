@@ -82,7 +82,7 @@ class CreateDataBase(DataBase):
 
     def _add_tissues(self):
         """
-        Add tissue map to database to match public tissue identifiers to neoKant tissue types
+        Add tissue map to database to match public tissue identifiers to k4neo tissue types
         :return:
         """
         counter = 0

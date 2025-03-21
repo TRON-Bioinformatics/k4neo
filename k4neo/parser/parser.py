@@ -85,7 +85,7 @@ class Parser:
 class IndexResultParser:
     """
     Class provides functions to parse table formats
-    returned by kmer indexing tools and map to sample names
+    returned by kmer indexing pipeline and map to sample names
     if required.
     """
 

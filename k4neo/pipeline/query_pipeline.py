@@ -30,8 +30,8 @@ class Pipeline:
     Generic representation of a snakemake pipeline. The pipeline class
     holds the path to workflow (snakefile), a configuration object, the working directory
     and the requested target rule. Upon exeuction the config object is written into a
-    yaml file and the pipeline executed. The class `pipeline` is intended to be an interface
-    for specific pipelines.
+    yaml file and the pipeline executed. The class `pipeline` is intended to be a reusable 
+    interface for specific pipelines.
     """
 
     def __init__(
@@ -59,12 +59,12 @@ class Pipeline:
 
         The run method implements the execution of the pipeline. It takes care
         of writing the class config object into yaml file and constructing
-        the snakemake shell command for execution as subprocess. 
+        the snakemake shell command for execution in a subprocess. 
 
         Args:
-            dryrun (bool, optional): _description_. Defaults to False.
-            slurm (bool, optional): _description_. Defaults to True.
-            cores (int, optional): _description_. Defaults to 8.
+            dryrun (bool, optional): Execute pipeline without performing any operation. Defaults to False.
+            slurm (bool, optional): Execute pipeline with slurm support. Defaults to True.
+            cores (int, optional): Number of cores. Defaults to 8.
 
         Returns:
             int: _description_
@@ -102,7 +102,6 @@ class Pipeline:
 class QueryPipeline(Pipeline):
     """
     The QueryPipeline class implements the search mode of the TronMake k-mer pipeline.
-
     """
 
     def __init__(self, workflow: str, config: dict, working_dir: pathlib.Path):
@@ -149,7 +148,9 @@ class QueryPipeline(Pipeline):
 
 
 class IndexPipeline(Pipeline):
-    """Indexing pipeline wrapper"""
+    """
+    The IndexPipeline class implements the indexing of the TronMake k-mer pipeline.
+    """
 
     def __init__(self, worklow: str, config: dict, working_dir: pathlib.Path):
         """Parameter initialization"""
@@ -175,11 +176,11 @@ class IndexPipeline(Pipeline):
     def run_pipeline(self, slurm: bool = True) -> IndexPipelineResult:
         """Execute indexing pipeline"""
         final_index = self.determine_final_index()
-        logger.info("Submitting indexing pipeline")
+        logger.info("-> Submitting indexing pipeline")
         return_code = self.run(dryrun=False, slurm=slurm)
         if not return_code:
-            raise K4neoPipelineException("Indexing pipeline failed to execute")
-        logger.info("Finished indexing pipeline")
+            raise K4neoPipelineException("-> Indexing pipeline failed to execute")
+        logger.info("-> Finished indexing pipeline")
         return IndexPipelineResult(index_path=final_index)
 
     def _test_pipeline(self):
@@ -192,9 +193,33 @@ class IndexPipeline(Pipeline):
 
 class PipelineConfig:
     """
-    Class to represent SnakeMake pipeline configuration
+    Class to represent a generic pipeline configuration.
     """
 
+    def __init__(self, verbose=True):
+        """Parameter initialization
+
+        Args:
+            verbose (bool, optional): Print configuation details. Defaults to True.
+        """
+
+        if verbose:
+            self.log_configuration()
+
+    def log_configuration(self):
+        """Log configuration dictionary on command line"""
+        logger.info("-> Pipeline configuration:")
+        for item in self.config:
+            for k, v in self.config[item].items():
+                logger.info("{}={}".format(k, v))
+
+
+class KmerPipelineConfig(PipelineConfig):
+    """
+    Class to represent a base TronMake k-mer pipeline configuration.
+    """
+
+    
     def __init__(self, query: bool, indexing: bool, verbose=True):
         """Parameter initialization
 
@@ -203,20 +228,11 @@ class PipelineConfig:
             indexing (bool): Pipeline should run in indexing mode.
             verbose (bool, optional): Print configuation details. Defaults to True.
         """
-        # Generate config object to be used with
+        super().__init__(verbose = verbose)
         self.config = {"modus": {"query": query, "indexing": indexing}}
-        if verbose:
-            self.log_configuration()
-
-    def log_configuration(self):
-        """Log configuration dictionary on command line"""
-        logger.info("-> Query pipeline configuration:")
-        for item in self.config:
-            for k, v in self.config[item].items():
-                logger.info("{}={}".format(k, v))
 
 
-class QueryPipelineConfig(PipelineConfig):
+class QueryPipelineConfig(KmerPipelineConfig):
     """Generate config for query modus"""
 
     def __init__(
@@ -241,7 +257,7 @@ class QueryPipelineConfig(PipelineConfig):
             self.log_configuration()
 
 
-class IndexPipelineConfig(PipelineConfig):
+class IndexPipelineConfig(KmerPipelineConfig):
     """Generate config for indexing modus"""
 
     def __init__(
