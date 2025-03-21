@@ -26,7 +26,13 @@ class IndexPipelineResult:
 
 
 class Pipeline:
-    """Generic representation of a SnakeMake pipeline"""
+    """
+    Generic representation of a snakemake pipeline. The pipeline class
+    holds the path to workflow (snakefile), a configuration object, the working directory
+    and the requested target rule. Upon exeuction the config object is written into a
+    yaml file and the pipeline executed. The class `pipeline` is intended to be an interface
+    for specific pipelines.
+    """
 
     def __init__(
         self,
@@ -49,7 +55,20 @@ class Pipeline:
         self.target_rule = target_rule
 
     def run(self, dryrun: bool = False, slurm: bool = True, cores: int = 8) -> int:
-        """Run snakemake pipeline using configuration object"""
+        """Build and execute pipeline
+
+        The run method implements the execution of the pipeline. It takes care
+        of writing the class config object into yaml file and constructing
+        the snakemake shell command for execution as subprocess. 
+
+        Args:
+            dryrun (bool, optional): _description_. Defaults to False.
+            slurm (bool, optional): _description_. Defaults to True.
+            cores (int, optional): _description_. Defaults to 8.
+
+        Returns:
+            int: _description_
+        """
         with tempfile.NamedTemporaryFile(
             mode="w", delete=False, dir=self.working_dir
         ) as temp_config:
@@ -74,12 +93,17 @@ class Pipeline:
         ]
         if slurm:
             cmd.extend(["--executor", "slurm"])
+        if dryrun:
+            cmd.extend(["--dry-run"])
         return_code = ShellExec.execute_cmd(cmd)
         return return_code
 
 
 class QueryPipeline(Pipeline):
-    """Query pipeline wrapper"""
+    """
+    The QueryPipeline class implements the search mode of the TronMake k-mer pipeline.
+
+    """
 
     def __init__(self, workflow: str, config: dict, working_dir: pathlib.Path):
         """Parameter initialization"""
