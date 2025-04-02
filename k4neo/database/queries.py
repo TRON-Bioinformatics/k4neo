@@ -1,21 +1,24 @@
-import sys
-import os
 import pandas as pd
-from tinydb import TinyDB, Query
+from tinydb import Query
 from k4neo.database.database import DataBase
 import numpy as np
 
 
 class Queries:
     """
-    Generic query class that provides methods to query the document database and
-    add document information to annotation table
+    Generic query class that provides methods to query the k4neo TinyDB database.
     """
+
     def __init__(self, db: DataBase):
+        """Parameter initialization
+
+        Args:
+            db (DataBase): An instance of the k4neo DataBase.
+        """
         self.db = db.database
         self.query = Query()
 
-    def get_project_id(self, sample_name):
+    def get_project_id(self, sample_name: str) -> str:
         """
         For a given sample_name search the matching study_id. Studies
         are organized in tables requiring to query the matching study table for each sample
@@ -28,20 +31,21 @@ class Queries:
             return
         return project_id.get("study_id")
 
-    def get_sample_study(self):
+    def get_sample_study(self) -> pd.DataFrame:
         table = self.db.table("sample_study_table")
         return pd.DataFrame.from_dict(table)
 
-    def annotate_samples_of_project(self, samples: pd.DataFrame):
+    def annotate_samples_of_project(self, samples: pd.DataFrame) -> pd.DataFrame:
         """
         Given a dataframe containing all sample hist of a single study, query the database
         for sample documents and annotate each sample with tissue, developmental_stage and disease
         :param samples:
         :return:
         """
-        study = samples['study_id'].unique()
-        assert len(study) == 1, \
-            "More than one project in samples dataframe. Function supports only query for one study"
+        study = samples["study_id"].unique()
+        assert (
+            len(study) == 1
+        ), "More than one project in samples dataframe. Function supports only query for one study"
         study = study.item()
         # Get corresponding study table
         table = self.db.table(study)
@@ -50,16 +54,16 @@ class Queries:
         annotation = table.search(self.query.sample_name.one_of(sample_query))
         # In case there is noting matching the query
         if not annotation:
-            samples['tissue'] = np.nan
-            samples['developmental_stage'] = np.nan
-            samples['disease'] = np.nan
+            samples["tissue"] = np.nan
+            samples["developmental_stage"] = np.nan
+            samples["disease"] = np.nan
             return samples
         # Merge group df with annotation features
         annotation = pd.DataFrame.from_dict(annotation)
-        samples = pd.merge(samples, annotation, on="sample_name", how='left')
+        samples = pd.merge(samples, annotation, on="sample_name", how="left")
         return samples
 
-    def document_to_pd(self, document: dict):
+    def document_to_pd(self, document: dict) -> pd.DataFrame:
         """
         Convert document to pandas dataframe
         :param document:
@@ -68,7 +72,7 @@ class Queries:
         df = pd.DataFrame.from_dict(document)
         return df
 
-    def annotate_tissue_counts(self, samples: pd.DataFrame):
+    def annotate_tissue_counts(self, samples: pd.DataFrame) -> pd.DataFrame:
         """
         Given a dataframe containing all tissue hits in a single study, query the database
         for precomputed tissue counts and annotate
@@ -76,9 +80,8 @@ class Queries:
         :return:
         """
 
-        study = samples['study_id'].unique()
-        assert len(study) == 1, \
-            "Dataframe can only contain one study to search for "
+        study = samples["study_id"].unique()
+        assert len(study) == 1, "Dataframe can only contain one study to search for "
         study_id = study.item()
         # Get corresponding study table
         table = self.db.table("tissue_counts")
@@ -92,7 +95,7 @@ class Queries:
         samples = pd.merge(samples, tissue_counts, how="left")
         return samples
 
-    def get_tissue_counts(self):
+    def get_tissue_counts(self) -> pd.DataFrame:
         """
         Return precomputed total tissue counts per developmental state.
         """

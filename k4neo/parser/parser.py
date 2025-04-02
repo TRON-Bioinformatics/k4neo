@@ -1,26 +1,29 @@
-import os
-import sys
 import csv
 import pandas as pd
 import pathlib
 from multiprocessing import Pool
 from collections import ChainMap
 from functools import partial
-from logzero import logger
+from loguru import logger
 import pyarrow.parquet as pq
 from typing import Any
-from k4neo.parser import EXPECTED_SAMPLE_COLUMNS, EXPECTED_TISSUE_COLUMNS, SUPPORTED_TOOLS
+from k4neo.parser import (
+    EXPECTED_SAMPLE_COLUMNS,
+    EXPECTED_TISSUE_COLUMNS,
+    SUPPORTED_TOOLS,
+)
 
 
 class Parser:
     """
     Class to provide generic parser functions
     """
+
     @staticmethod
     def _read_tissue_map(tissue_map: pathlib.Path) -> dict:
         """Read k4neo tissue map
 
-        The k4neo index metadata library provides a mapping of public tissue 
+        The k4neo index metadata library provides a mapping of public tissue
         identifiers to internal tissue definitions.
 
         Args:
@@ -30,13 +33,21 @@ class Parser:
             dict: A mapping of public tissue identifiers to k4neo tissue definitions
         """
         tissue_mapping = []
-        with open(tissue_map, 'r') as file_handle:
-            reader = csv.DictReader(file_handle, delimiter='\t')
+        with open(tissue_map, "r") as file_handle:
+            reader = csv.DictReader(file_handle, delimiter="\t")
             for line in reader:
-                assert all([x in line.keys() for x in EXPECTED_TISSUE_COLUMNS]), "Missing columns in input"
-                tissue_mapping.append({'tissue_public': line['tissue_description_found_in_public_data'],
-                                       'tissue': line['tissue'],
-                                       'subtissue': line['subtissue']})
+                assert all(
+                    [x in line.keys() for x in EXPECTED_TISSUE_COLUMNS]
+                ), "Missing columns in input"
+                tissue_mapping.append(
+                    {
+                        "tissue_public": line[
+                            "tissue_description_found_in_public_data"
+                        ],
+                        "tissue": line["tissue"],
+                        "subtissue": line["subtissue"],
+                    }
+                )
         return tissue_mapping
 
     @staticmethod
@@ -53,14 +64,15 @@ class Parser:
         compatibility with document db.
         """
         file_content = []
-        with open(data_table, 'r') as file_handle:
-            reader = csv.DictReader(file_handle, delimiter='\t')
+        with open(data_table, "r") as file_handle:
+            reader = csv.DictReader(file_handle, delimiter="\t")
             for line in reader:
-                assert all([x in line.keys() for x in EXPECTED_SAMPLE_COLUMNS]), "Missing columns in input file"
+                assert all(
+                    [x in line.keys() for x in EXPECTED_SAMPLE_COLUMNS]
+                ), "Missing columns in input file"
                 file_content.append(line)
 
         return file_content
-
 
     @staticmethod
     def parse_sample_into_document(data_table: pathlib.Path):
@@ -69,15 +81,15 @@ class Parser:
         """
         return Parser._read_sample_file(data_table)
 
+
 class IndexResultParser:
     """
     Class provides functions to parse table formats
-    returned by kmer indexing tools and map to sample names
+    returned by kmer indexing pipeline and map to sample names
     if required.
     """
-    def __init__(self, 
-                 query_pipeline_results,
-                 cores: int = 8) -> None:
+
+    def __init__(self, query_pipeline_results, cores: int = 8) -> None:
 
         self.query_tables = query_pipeline_results.query_path
         self.cores = cores
@@ -87,11 +99,11 @@ class IndexResultParser:
 
         Args:
             kmer_ratio (float, optional):
-                Required fraction of shared k-mers between query and sample. Only required for kmindex results. 
+                Required fraction of shared k-mers between query and sample. Only required for kmindex results.
                 Defaults to 0.7.
 
         Returns:
-            dict: A dictionary containing parsed results of k-mer methods. 
+            dict: A dictionary containing parsed results of k-mer methods.
             For example:
                 {'raptor': {cts: set(P1,P2,P3), cts_2: set(P1)},
                  'kimindex': {cts: set(P2,P3), cts_2: set(P1,P2)}
@@ -101,7 +113,9 @@ class IndexResultParser:
         logger.info("-> Parsing parquet file of k-mer query pipeline")
         for this_method, result_parquet in self.query_tables.items():
             logger.info(f"-> Parsing query results of method: {this_method}")
-            parsed_result = self.parse_parquet(result_parquet, self.cores, method=this_method, kmer_ratio=kmer_ratio)
+            parsed_result = self.parse_parquet(
+                result_parquet, self.cores, method=this_method, kmer_ratio=kmer_ratio
+            )
             result[this_method] = parsed_result
         return result
 
@@ -119,15 +133,20 @@ class IndexResultParser:
                 for sample in samples:
                     line = f"{query}\t{sample}\n"
                     file_handle.write(line)
-    
+
     @staticmethod
-    def parse_parquet(path: pathlib.Path, batch_size: int = 1000, 
-        cores:int = 8, method:str = "raptor", kmer_ratio:float = 0.7) -> dict:
+    def parse_parquet(
+        path: pathlib.Path,
+        batch_size: int = 1000,
+        cores: int = 8,
+        method: str = "raptor",
+        kmer_ratio: float = 0.7,
+    ) -> dict:
         """Parse k-mer pipeline output
 
-        The k-mer pipeline saves index hits in Apache Parquet format. 
+        The k-mer pipeline saves index hits in Apache Parquet format.
         Depending on the index size, it is not feasible to hold the dataframe
-        in memory. Therefore, this function iterates in chunks over the parquet 
+        in memory. Therefore, this function iterates in chunks over the parquet
         files and stores results in a dictionary mapping context sequences to samples.
 
         Args:
@@ -141,11 +160,18 @@ class IndexResultParser:
 
         """
         query_results = []
-        with Pool(processes = cores) as pool:
-            for this_batch in IndexResultParser._iterate_parquet_in_batches(path, batch_size):
-                detected_samples_list = \
-                    pool.map(partial(IndexResultParser._parse_table_row, method=method, kmer_ratio=kmer_ratio),
-                        this_batch)
+        with Pool(processes=cores) as pool:
+            for this_batch in IndexResultParser._iterate_parquet_in_batches(
+                path, batch_size
+            ):
+                detected_samples_list = pool.map(
+                    partial(
+                        IndexResultParser._parse_table_row,
+                        method=method,
+                        kmer_ratio=kmer_ratio,
+                    ),
+                    this_batch,
+                )
                 query_results.extend(detected_samples_list)
         query_results = ChainMap(*query_results)
         return query_results
@@ -182,16 +208,19 @@ class IndexResultParser:
                         continue
                 detected_samples.add(this_key)
         if not detected_samples:
-            query_results[cts_id] = set([None,])
+            query_results[cts_id] = set(
+                [
+                    None,
+                ]
+            )
         else:
             query_results[cts_id] = detected_samples
-        
+
         return query_results
 
-
     @staticmethod
-    def _iterate_parquet_in_batches(path: pathlib.Path, batch_size = 1000) -> list:
-        """"Iterate over a parquet file in batches.
+    def _iterate_parquet_in_batches(path: pathlib.Path, batch_size=1000) -> list:
+        """ "Iterate over a parquet file in batches.
 
         Each row in the "dataframe" is represented by a dict.
 
@@ -203,8 +232,7 @@ class IndexResultParser:
         Yields:
             Rows of Table/RecordBatch as a list of dictionaries.
         """
-        
+
         parquet_file = pq.ParquetFile(path)
         for batch in parquet_file.iter_batches(batch_size=batch_size):
             yield batch.to_pylist()
-    
