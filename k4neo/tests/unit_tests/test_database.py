@@ -49,6 +49,8 @@ def test_tissue_table_initialisation(mocker):
     assert inserted_elements.shape[0] == 3
     assert inserted_elements.get("tissue", pd.Series()).unique().shape[0] == 2
     assert inserted_elements.get("tissue", pd.Series()).unique().tolist() == ['adipose tissue', 'adrenal gland']
+    assert inserted_elements.get("subtissue", pd.Series()).unique().shape[0] == 3
+    assert inserted_elements.get("subtissue", pd.Series()).unique().tolist() == ['subcutaneous', 'mesenteric fat pad', 'NA']
 
 def test_sample_study_table_initialisation(mocker):
     pass
