@@ -23,7 +23,7 @@ class FastaHandler:
         ret, miss_cols = InputValidation.columns_missing(
             entries, ["query_cts_id", "query_sequence"]
         )
-        assert ret, f"Columns: {miss_cols} are missing from dataframe"
+        assert not ret, f"-> Columns: {miss_cols} are missing from dataframe"
 
         sequences = entries[["query_cts_id", "query_sequence"]].drop_duplicates()
         fasta_entries = []
