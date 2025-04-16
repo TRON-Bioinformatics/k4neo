@@ -30,7 +30,7 @@ def test_calculate_tumor_sample_rate(sample_tumor_data):
     parsed_results, tissue_counts = sample_tumor_data
     result = Annotator._calculate_tumor_sample_rate(parsed_results, tissue_counts)
     # Test that expected column is present in result
-    assert 'cancer_sample_rate' in result.columns
+    assert 'sample_rate' in result.columns
 
     # Generate expected data
     expected_rates = {
@@ -47,7 +47,7 @@ def test_calculate_tumor_sample_rate(sample_tumor_data):
     # Float might be different between CPUs and architectures. Therefore we test approximately
     for _, row in result.iterrows():
         key = (row['cts_id'], row['tissue'], row['disease'])
-        assert pytest.approx(row['cancer_sample_rate'], rel=1e-2) == expected_rates.get(key)
+        assert pytest.approx(row['sample_rate'], rel=1e-2) == expected_rates.get(key)
 
 
 
@@ -77,7 +77,7 @@ def test_calculate_healthy_sample_rate(sample_healthy_data):
     parsed_results, tissue_counts = sample_healthy_data
     result = Annotator._calculate_healthy_sample_rate(parsed_results, tissue_counts)
     # Test that expected column is present in result
-    assert 'tissue_sample_rate' in result.columns
+    assert 'sample_rate' in result.columns
 
     # Generate expected data
     expected_rates = {
@@ -104,4 +104,4 @@ def test_calculate_healthy_sample_rate(sample_healthy_data):
     # Float might be different between CPUs and architectures. Therefore we test approximately
     for _, row in result.iterrows():
         key = (row['cts_id'], row['tissue'], row['developmental_stage'])
-        assert pytest.approx(row['tissue_sample_rate'], rel=1e-2) == expected_rates.get(key)
+        assert pytest.approx(row['sample_rate'], rel=1e-2) == expected_rates.get(key)
