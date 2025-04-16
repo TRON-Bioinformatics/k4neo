@@ -53,7 +53,7 @@ class Annotator:
         with open(sequence_table, "r") as file_handle:
             seq = pd.read_csv(file_handle, sep="\t")
         ret, missing_cols = InputValidation.columns_missing(seq, EXPECTED_CTS_COLUMNS)
-        assert ret, f"-> Missing columns: {missing_cols} in input table"
+        assert not ret, f"-> Missing columns: {missing_cols} in input table"
 
         # Sequences that are shorter than minimiser_size are excluded from search
         seq_to_short = seq[seq["cts_seq"].str.len() < index_kmer_size + 4]
@@ -71,7 +71,7 @@ class Annotator:
         )
 
         self.sequence_table["query_cts_id"] = self.sequence_table.apply(
-            lambda x: SequenceOperation.cts_id(x.query_sequence).hexdigest(), axis=1
+            lambda x: SequenceOperation.cts_id(x.query_sequence), axis=1
         )
 
     def _write_to_fasta(self):
@@ -315,7 +315,7 @@ class Annotator:
         count_table = cts_tissue_comb.merge(
             parsed_counts, how="left", on=["cts_id", "developmental_stage", "tissue"]
         ).fillna({"count": 0})
-        count_table["tissue_sample_rate"] = (
+        count_table["sample_rate"] = (
             count_table["count"] / count_table["samples_per_tissue"]
         )
         # parsed_results['index_sample_rate'] = parsed_results['total_index_count'] / parsed_results['samples_per_index']
@@ -354,7 +354,7 @@ class Annotator:
         count_table = cts_tumor_comb.merge(
             parsed_counts, how="left", on=["cts_id", "disease", "tissue"]
         ).fillna({"count": 0})
-        count_table["cancer_sample_rate"] = (
+        count_table["sample_rate"] = (
             count_table["count"] / count_table["index_count"]
         )
 
@@ -459,7 +459,7 @@ class Annotator:
         healthy_sample_rate["sample_rate"] = pd.to_numeric(
             healthy_sample_rate["sample_rate"]
         )
-        healthy_sample_rate = healthy_sample_rate.loc[df["total"] >= min_total]
+        healthy_sample_rate = healthy_sample_rate.loc[healthy_sample_rate["samples_per_tissue"] >= min_total]
 
         tumor_sample_rate = self._calculate_tumor_sample_rate(
             annotated_cts, tissue_counts
@@ -475,6 +475,6 @@ class Annotator:
         tumor_sample_rate["sample_rate"] = pd.to_numeric(
             tumor_sample_rate["sample_rate"]
         )
-        tumor_sample_rate = tumor_sample_rate.loc[df["total"] >= min_total]
+        tumor_sample_rate = tumor_sample_rate.loc[tumor_sample_rate["index_count"] >= min_total]
 
         return healthy_sample_rate, tumor_sample_rate
