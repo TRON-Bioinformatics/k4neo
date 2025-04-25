@@ -1,2 +1,2 @@
-VERSION = '0.0.1'
-PIPELINE = '0.0.1'
+VERSION = '0.0.2'
+PIPELINE = '2.0.0'

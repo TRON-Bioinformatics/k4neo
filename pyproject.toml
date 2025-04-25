@@ -1,0 +1,58 @@
+[tool.poetry]
+name = "k4neo"
+version = "0.0.2"
+description = ""
+authors = [
+    "TRON - Translational Oncology at the University Medical Center", 
+    "of the Johannes Gutenberg University Mainz - ",
+    "Computational Medicine group ",
+    "Johannes Hausmann <johannes.hausmann@tron-mainz.de>"
+]
+
+maintainers = [
+  "Johannes Hausmann <johannes.hausmann@tron-mainz.de>",
+  "Jonas Ibn-Salem <jonas.ibn-salem@tron-mainz.de>"
+]
+
+readme = "README.md"
+packages = [
+    {include = "k4neo"}
+]
+
+include = [
+    { path = "k4neo/pipeline/tronmake-kmer-pipeline", format = ["sdist", "wheel"] }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.9 <=3.12.4"
+pandas = "==2.2.2"
+biopython = "==1.84"
+pyarrow = "==17.0.0"
+fastparquet = "==2024.5.0"
+pyyaml = "==6.0.2"
+tinydb = "==4.8.0"
+xxhash = "==3.4.1"
+loguru = "==0.7.3"
+
+[tool.poetry.scripts]
+k4neo-annotator = "k4neo.command_line:annotate"
+k4neo-database = "k4neo.command_line:build_database"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    # note the use of single quote below to denote "raw" strings in TOML
+    'ignore:function ham\(\) is deprecated:DeprecationWarning',
+]
+
+[tool.black]
+force-exclude = "k4neo/pipeline/tronmake-kmer-pipeline"
+line-length = 100
+target-version = ["py312"]
+

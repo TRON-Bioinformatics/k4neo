@@ -13,4 +13,6 @@ query*
 build
 dist
 k4neo.egg-info
-
+.snakemake
+tmp*
+k4neo_env/

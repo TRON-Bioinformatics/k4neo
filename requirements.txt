@@ -1,6 +1,0 @@
-logzero~=1.7.0
-tinydb==4.8.0
-pandas==2.0.3
-numpy==1.25.1
-xxhash==3.4.1
-biopython

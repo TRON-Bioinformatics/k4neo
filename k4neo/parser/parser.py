@@ -1,166 +1,238 @@
-import os
-import sys
 import csv
 import pandas as pd
-from logzero import logger
-from k4neo.parser import EXPECTED_SAMPLE_COLUMNS, EXPECTED_TISSUE_COLUMNS, SUPPORTED_TOOLS
+import pathlib
+from multiprocessing import Pool
+from collections import ChainMap
+from functools import partial
+from loguru import logger
+import pyarrow.parquet as pq
+from typing import Any
+from k4neo.parser import (
+    EXPECTED_SAMPLE_COLUMNS,
+    EXPECTED_TISSUE_COLUMNS,
+    SUPPORTED_TOOLS,
+)
 
 
 class Parser:
+    """
+    Class to provide generic parser functions
+    """
+
     @staticmethod
-    def _read_tissue_map(tissue_map):
-        """
-        Read neokant tissue map to homogenize tissue identifiers and make them compatible with ExBio.
-        :return:
+    def _read_tissue_map(tissue_map: pathlib.Path) -> dict:
+        """Read k4neo tissue map
+
+        The k4neo index metadata library provides a mapping of public tissue
+        identifiers to internal tissue definitions.
+
+        Args:
+            tissue_map (pathlib.Path): The path to the tissue mapping file
+
+        Returns:
+            dict: A mapping of public tissue identifiers to k4neo tissue definitions
         """
         tissue_mapping = []
-        with open(tissue_map) as file_handle:
+        with open(tissue_map, "r") as file_handle:
             reader = csv.DictReader(file_handle, delimiter="\t")
             for line in reader:
-                assert all([x in line.keys() for x in EXPECTED_TISSUE_COLUMNS]), "Missing columns"
-                tissue_mapping.append({'tissue_public': line['tissue_description_found_in_public_data'],
-                                       'tissue': line['tissue'],
-                                       'subtissue': line['subtissue']})
+                assert all(
+                    [x in line.keys() for x in EXPECTED_TISSUE_COLUMNS]
+                ), "Missing columns in input"
+                tissue_mapping.append(
+                    {
+                        "tissue_public": line[
+                            "tissue_description_found_in_public_data"
+                        ],
+                        "tissue": line["tissue"],
+                        "subtissue": line["subtissue"],
+                    }
+                )
         return tissue_mapping
 
     @staticmethod
     def parse_tissuemap_into_document(tissue_map):
+        """
+        High level function to import tissue map
+        """
         return Parser._read_tissue_map(tissue_map)
 
     @staticmethod
-    def _read_sample_file(data_table):
+    def _read_sample_file(data_table: pathlib.Path) -> list[dict]:
         """
-        Read neokant sample sheets
-        :return: file_content
+        Reader for k4neo annotation files. Make sure required fieldnames are present to ensure
+        compatibility with document db.
         """
         file_content = []
-        with open(data_table, 'r') as file_handle:
-            reader = csv.DictReader(file_handle, delimiter='\t')
+        with open(data_table, "r") as file_handle:
+            reader = csv.DictReader(file_handle, delimiter="\t")
             for line in reader:
-                assert all([x in line.keys() for x in EXPECTED_SAMPLE_COLUMNS]), "Missing columns"
+                assert all(
+                    [x in line.keys() for x in EXPECTED_SAMPLE_COLUMNS]
+                ), "Missing columns in input file"
                 file_content.append(line)
 
         return file_content
 
-
     @staticmethod
-    def parse_sample_into_document(data_table):
+    def parse_sample_into_document(data_table: pathlib.Path):
         """
-        Parse sample sheets into document format. Make sure required fieldnames are present to ensure
-        compatibility with document db.
-        :return: Set of dictionaries
+        High level function to import study tissue sheets.
         """
         return Parser._read_sample_file(data_table)
+
 
 class IndexResultParser:
     """
     Class provides functions to parse table formats
-    returned by kmer indexing tools and map to sample names
+    returned by kmer indexing pipeline and map to sample names
     if required.
     """
-    def __init__(self, 
-                 indexing_table: str, 
-                 tool: str,
-                 raptor_sample_mapping:str = None,
-                 kmindex_cutoff: float = 0.7) -> None:
 
-        self.indexing_table = indexing_table
-        assert tool in SUPPORTED_TOOLS, f"Selected method '{tool}' not supported by neokant..."
-        self.tool = tool
-        # Parameters specific for prediction tools
-        self.raptor_sample_mapping = raptor_sample_mapping
-        if self.tool == "raptor":
-            assert self.raptor_sample_mapping is not None and self.raptor_sample_mapping != "",\
-                "Parsing Raptor results requires a sample/index mapping file"
-        self.kmindex_cutoff = kmindex_cutoff
+    def __init__(self, query_pipeline_results, cores: int = 8) -> None:
 
-    def parse_results(self) -> dict:
+        self.query_tables = query_pipeline_results.query_path
+        self.cores = cores
+
+    def parse_results(self, kmer_ratio=0.7) -> dict:
+        """Parse results of QueryPipeline
+
+        Args:
+            kmer_ratio (float, optional):
+                Required fraction of shared k-mers between query and sample. Only required for kmindex results.
+                Defaults to 0.7.
+
+        Returns:
+            dict: A dictionary containing parsed results of k-mer methods.
+            For example:
+                {'raptor': {cts: set(P1,P2,P3), cts_2: set(P1)},
+                 'kimindex': {cts: set(P2,P3), cts_2: set(P1,P2)}
+                }
+        """
         result = {}
-        match self.tool:
-            case "kmindex":
-                logger.info("Parsing KMINDEX index query results...")
-                result = self._parse_kmindex()
-            case "raptor":
-                logger.info("Parsing RAPTOR index query results...")
-                result = self._parse_raptor()
-            case _:
-                logger.error("Tool is unknown. Cannot parse results")
+        logger.info("-> Parsing parquet file of k-mer query pipeline")
+        for this_method, result_parquet in self.query_tables.items():
+            logger.info(f"-> Parsing query results of method: {this_method}")
+            parsed_result = self.parse_parquet(
+                result_parquet, self.cores, method=this_method, kmer_ratio=kmer_ratio
+            )
+            result[this_method] = parsed_result
         return result
 
     @staticmethod
     def write_result(results: dict, out_file: str):
+        """Write parsed results into tabular text format
+
+        Args:
+            results (dict): Parsed k-mer query results
+            out_file (str): Path to output file
         """
-        Write parsed results into tabular format to be processed by user
-        :param results: A dictionary qith cts as key and sample hits as value
-        :param out_file: Output file
-        :return:
-        """
+        logger.info(f"-> Writing results to file: {out_file}")
         with open(out_file, "w") as file_handle:
             for query, samples in results.items():
                 for sample in samples:
                     line = f"{query}\t{sample}\n"
                     file_handle.write(line)
-    
-    def _parse_kmindex(self) -> dict:
-        results = {}
-        logger.info(f"Using {self.kmindex_cutoff} as cutoff to determine presence/absence of target sequences...")
-        with open(self.indexing_table) as file_handle:
-            reader = csv.DictReader(file_handle, delimiter='\t')
-            for line in reader:
-                cts_id = line["samples"].split(":")[1]
-                results[cts_id] = []
-                sample_count = 0
-                for sample, prediction in line.items():
-                    if sample == "samples":
+
+    @staticmethod
+    def parse_parquet(
+        path: pathlib.Path,
+        batch_size: int = 1000,
+        cores: int = 8,
+        method: str = "raptor",
+        kmer_ratio: float = 0.7,
+    ) -> dict:
+        """Parse k-mer pipeline output
+
+        The k-mer pipeline saves index hits in Apache Parquet format.
+        Depending on the index size, it is not feasible to hold the dataframe
+        in memory. Therefore, this function iterates in chunks over the parquet
+        files and stores results in a dictionary mapping context sequences to samples.
+
+        Args:
+            path:
+                File path of parquet file.
+            batch_size:
+                Iterate over parquet file yielding this many records at once.
+
+        Returns:
+            A dict mapping each search sequence (cts) to detected samples.
+
+        """
+        query_results = []
+        with Pool(processes=cores) as pool:
+            for this_batch in IndexResultParser._iterate_parquet_in_batches(
+                path, batch_size
+            ):
+                detected_samples_list = pool.map(
+                    partial(
+                        IndexResultParser._parse_table_row,
+                        method=method,
+                        kmer_ratio=kmer_ratio,
+                    ),
+                    this_batch,
+                )
+                query_results.extend(detected_samples_list)
+        query_results = ChainMap(*query_results)
+        return query_results
+
+    @staticmethod
+    def _parse_table_row(table_row: dict, method: str, kmer_ratio: float) -> dict:
+        """Parse a dataframe row
+
+        Parse a row of a dataframe stored in Apache Parquet file. Extract
+        context sequence name and samples that matched the query in the k-mer index.
+
+        Args:
+            table_row (dict): A dict represenation of pyarrow RecordBatch.
+            method (str): The k-mer method used to generate the table.
+            kmer_ratio (float): Required fraction of shared k-mers between query and sample.
+
+        Returns:
+            dict: A dict containing all samples (column names) matching the query (based on k_mer ratio)
+        """
+        query_results = {}
+        cts_id = ""
+        detected_samples = set()
+        for this_key, this_value in table_row.items():
+            if this_key == "__index_level_0__":
+                cts_id = this_value
+            else:
+                # If method kmindex and less than ratio k-mers are shared -> skip
+                # If method raptor and value is None -> Skip
+                if method == "kmindex":
+                    if this_value < kmer_ratio:
                         continue
-                    prediction = float(prediction)
-                    if prediction >= self.kmindex_cutoff:
-                        results[cts_id].append(sample)
-                        sample_count += 1
-                if sample_count == 0:
-                    results[cts_id] = [None]
+                elif method == "raptor":
+                    if this_value is None:
+                        continue
+                detected_samples.add(this_key)
+        if not detected_samples:
+            query_results[cts_id] = set(
+                [
+                    None,
+                ]
+            )
+        else:
+            query_results[cts_id] = detected_samples
 
-        logger.info(f"Parsed {len(results)} target sequences")
-        return results
+        return query_results
 
-    def _parse_raptor(self) -> dict:
+    @staticmethod
+    def _iterate_parquet_in_batches(path: pathlib.Path, batch_size=1000) -> list:
+        """ "Iterate over a parquet file in batches.
+
+        Each row in the "dataframe" is represented by a dict.
+
+        Args:
+            path: File path of parquet file..
+            batch_size:
+                Iterate over parquet file yielding this many records at once.
+
+        Yields:
+            Rows of Table/RecordBatch as a list of dictionaries.
         """
-        Parse raptor search results into dictionary with cts_ids as keys and samples
-        as values.
 
-        :return: Result mapping
-        """
-        dataset_mapping = {}
-        sample_name_mapping = {}
-        results = {}
-
-        with open(self.raptor_sample_mapping, 'r') as file_handle:
-            logger.info("Reading sample/minimiser mapping file to match raptor bin ids to sample_names")
-            reader = csv.DictReader(file_handle, delimiter="\t")
-            for row in reader:
-                sample_name_mapping[row['minimiser_id']] = row['sample_name']
-
-        with open(self.indexing_table) as file_handle:
-            for line in file_handle:
-                elements = line.rstrip().split("\t")
-                # Skip config section returned in raptor output file
-                if line.startswith("##"):
-                    continue
-                # Get key/sample mapping from header
-                elif line.startswith("#"):
-                    # Stop collecting samples when header of results section start
-                    if elements[0] != "#QUERY_NAME":
-                        dataset_mapping[int(elements[0][1:])] = \
-                            os.path.basename(elements[1]).rstrip().rstrip('.minimiser')
-                else:
-                    elements = line.rstrip().split('\t')
-                    cts_id = elements[0]
-                    results[cts_id] = []
-                    if len(elements) > 1:
-                        for this_sample in elements[1].split(","):
-                            results[cts_id].append(sample_name_mapping[dataset_mapping[int(this_sample)]])
-                    else:
-                        results[cts_id] = [None]
-
-        logger.info(f"Parsed {len(results)} target sequences")
-        return results
+        parquet_file = pq.ParquetFile(path)
+        for batch in parquet_file.iter_batches(batch_size=batch_size):
+            yield batch.to_pylist()

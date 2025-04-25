@@ -1,0 +1,1 @@
+PRJNA1234	k4neo/tests/resources/index_data/studies/PRJNA1234/PRJNA1234_kmer_annotation.tsv	2

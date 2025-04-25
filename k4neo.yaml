@@ -3,16 +3,16 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - raptor=3.0.1
-  - snakemake-minimal=7.34.2
-  - python=3.12
+  - conda-forge::pytest-workflow
+  - conda-forge::pytest
+  - conda-forge::pytest-mock
+  - bioconda::raptor=3.0.1
+  - bioconda::snakemake-minimal=8.16.0
+  - python=3.12.4
+  - poetry
   - pip
   - pip:
-    - logzero~=1.7.0
-    - tinydb==4.8.0
-    - pandas==2.0.3
-    - numpy==1.25.1
-    - xxhash==3.4.1
-    - pytest==8.0.2
-    - pytest-workflow==2.0.1
-    - biopython
+    - snakemake-storage-plugin-http
+    - snakemake-executor-plugin-cluster-generic
+    - snakemake-executor-plugin-slurm
+    - logzero

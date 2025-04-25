@@ -1,0 +1,46 @@
+{
+    "PRJNA1234": {
+        "1": {
+            "developmental_stage": "adult",
+            "disease": "cancer",
+            "runs": "SRR7634511",
+            "sample_name": "SRR7634511",
+            "subtissue": "NA",
+            "tissue": "pancreas"
+        },
+        "2": {
+            "developmental_stage": "adult",
+            "disease": "cancer",
+            "runs": "SRR7634512",
+            "sample_name": "SRR7634512",
+            "subtissue": "NA",
+            "tissue": "pancreas"
+        }
+    },
+    "sample_study_table": {
+        "1": {
+            "sample_name": "SRR7634511",
+            "study_id": "PRJNA1234"
+        },
+        "2": {
+            "sample_name": "SRR7634512",
+            "study_id": "PRJNA1234"
+        }
+    },
+    "tissue_counts": {
+        "1": {
+            "count": 2,
+            "developmental_stage": "adult",
+            "disease": "cancer",
+            "study_id": "PRJNA1234",
+            "tissue": "pancreas"
+        }
+    },
+    "tissue_map": {
+        "1": {
+            "subtissue": "NA",
+            "tissue": "pancreas",
+            "tissue_public": "pancreas tissue"
+        }
+    }
+}
