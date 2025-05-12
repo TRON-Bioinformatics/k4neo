@@ -95,6 +95,7 @@ class Annotator:
         """
         logger.info("-> Generating breakpoint sequences.")
         self._generate_target_sequence()
+
         logger.info("-> Writing target sequences to disk.")
         self._write_to_fasta()
 
@@ -376,9 +377,7 @@ class Annotator:
         """
         logger.info("-> Annotating sample hits with corresponding study annotation.")
         # Select cts not found in index and append columns required to merge later with annotated results
-
         parsed_results = self._annotate_studies(parsed_results)
-
         # Group all indexing results by project_id. This allows us to query the database for each table once, regardless
         # of the query sequence. Annotation results are then merged back to the dataframe
         not_expressed = self._split_found(parsed_results)
@@ -386,8 +385,10 @@ class Annotator:
         if len(parsed_results.index) == 0:
             logger.info("-> None of the queried sequences was found in index.")
             return not_expressed
+
         logger.info("-> Annotating sample hits with sample level metadata.")
         parsed_results = self._annotate_sample_metadata(parsed_results)
+
         logger.info("-> Annotating with pre-computed counts.")
         parsed_results = self._annotate_counts(parsed_results)
         parsed_results = pd.concat([parsed_results, not_expressed])
@@ -440,7 +441,7 @@ class Annotator:
 
         return df
 
-    def annotate_sample_rate2(self, annotated_cts, min_total=15):
+    def annotate_sample_rate2(self, annotated_cts, min_total=1):
         """
         Add sample rate to sequences
         """

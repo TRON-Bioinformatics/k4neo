@@ -1,5 +1,6 @@
 import sys
 import pathlib
+import gzip
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import k4neo
 from k4neo.database.database import DataBase, CreateDataBase
@@ -232,10 +233,10 @@ def annotate():
         output_tumor_rate = pathlib.Path(
             args.output + f"_tumor_sample_rate_{this_method}.tsv.gz"
         )
-        with open(output_annotated, "w") as file_handle:
+        with gzip.open(output_annotated, "wb") as file_handle:
             sample_hits.to_csv(file_handle, sep="\t", index=False)
         # Write sample rate to output
-        with open(output_healthy_rate, "w") as file_handle:
+        with gzip.open(output_healthy_rate, "wb") as file_handle:
             healthy_sample_rate.to_csv(file_handle, sep="\t", index=False)
-        with open(output_tumor_rate, "w") as file_handle:
+        with gzip.open(output_tumor_rate, "w") as file_handle:
             tumor_sample_rate.to_csv(file_handle, sep="\t", index=False)

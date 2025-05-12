@@ -12,8 +12,14 @@ before_script:
 
 stages:
   - test
+  - test_full
 
 test:
   stage: test
   script:
     - pytest -v --git-aware k4neo/tests/
+
+test_full:
+  stage: test_full
+  script:
+    - pytest --git-aware --symlink --stderr-bytes 100000 tests/

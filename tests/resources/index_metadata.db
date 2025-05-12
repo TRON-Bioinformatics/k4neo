@@ -1,0 +1,701 @@
+{
+    "Innotop_Normal": {
+        "1": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_222_SL1",
+            "subtissue": "NA",
+            "tissue": "lung"
+        },
+        "10": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_110_sRL",
+            "subtissue": "NA",
+            "tissue": "bladder"
+        },
+        "11": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_169_sRL",
+            "subtissue": "NA",
+            "tissue": "bladder"
+        },
+        "12": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_170_sRL",
+            "subtissue": "NA",
+            "tissue": "bladder"
+        },
+        "13": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_132_sRL",
+            "subtissue": "NA",
+            "tissue": "heart"
+        },
+        "14": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_133_sRL",
+            "subtissue": "NA",
+            "tissue": "heart"
+        },
+        "15": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_134_sLR",
+            "subtissue": "NA",
+            "tissue": "heart"
+        },
+        "16": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_160_RNA",
+            "subtissue": "NA",
+            "tissue": "placenta"
+        },
+        "17": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_161_RNA",
+            "subtissue": "NA",
+            "tissue": "placenta"
+        },
+        "18": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_162_RNA",
+            "subtissue": "NA",
+            "tissue": "placenta"
+        },
+        "19": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_171_sLR",
+            "subtissue": "NA",
+            "tissue": "breast"
+        },
+        "2": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_223_SL1",
+            "subtissue": "NA",
+            "tissue": "lung"
+        },
+        "20": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_172_sLR",
+            "subtissue": "NA",
+            "tissue": "breast"
+        },
+        "21": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_173_sRL",
+            "subtissue": "NA",
+            "tissue": "breast"
+        },
+        "22": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_204_sRL",
+            "subtissue": "NA",
+            "tissue": "brain"
+        },
+        "23": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_206_sRL",
+            "subtissue": "NA",
+            "tissue": "brain"
+        },
+        "24": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_205_sRL",
+            "subtissue": "NA",
+            "tissue": "brain"
+        },
+        "25": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_129_sRL2",
+            "subtissue": "NA",
+            "tissue": "spleen"
+        },
+        "26": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_130_sRL",
+            "subtissue": "NA",
+            "tissue": "spleen"
+        },
+        "27": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_131_sRL",
+            "subtissue": "NA",
+            "tissue": "spleen"
+        },
+        "3": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_224_SL1",
+            "subtissue": "NA",
+            "tissue": "lung"
+        },
+        "4": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_101_sRL",
+            "subtissue": "NA",
+            "tissue": "testis"
+        },
+        "5": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_102_sRL",
+            "subtissue": "NA",
+            "tissue": "testis"
+        },
+        "6": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_103_sRL",
+            "subtissue": "NA",
+            "tissue": "testis"
+        },
+        "7": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_104_RNA",
+            "subtissue": "NA",
+            "tissue": "stomach"
+        },
+        "8": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_105_RNA",
+            "subtissue": "NA",
+            "tissue": "stomach"
+        },
+        "9": {
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "runs": "",
+            "sample_name": "IT_N_106_sRL",
+            "subtissue": "NA",
+            "tissue": "stomach"
+        }
+    },
+    "Innotop_TNBC": {
+        "1": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_116_sRL2_CGATGT_L001",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "10": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_165_RNA_lib_CAGATC_L007",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "11": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_168_RNA_lib_CTTGTA_L008",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "12": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_170_RNA_lib_CTTGTA_L006",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "13": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_171_RNA_lib_ACAGTG_L006",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "14": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_172_RNA_lib_GTGAAA_L006",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "15": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_173_RNA_lib_ACAGTG_L007",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "16": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_174_RNA_lib_GTGAAA_L007",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "17": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_175_sRL_ACAGTG_L001",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "18": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_182_sRL_CCGTCC_L003",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "19": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_185_sRL_GTCCGC_L003",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "2": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_117_sRL_TGACCA_L001",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "20": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_188_sRL_GTGAAA_L005",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "3": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_128_sRL_AGTCAA_L004",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "4": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_144_sRL2_ACAGTG_L008",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "5": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_147_sRL_3_GCCAAT_L004",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "6": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_151_sRL_CCGTCC_L004",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "7": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_159_RNA_lib_ACAGTG_L007",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "8": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_161_RNA_lib_CTTGTA_L007",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "9": {
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "runs": null,
+            "sample_name": "IT_T_164_RNA_lib_TGACCA_L007",
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer"
+        }
+    },
+    "sample_study_table": {
+        "1": {
+            "sample_name": "IT_N_222_SL1",
+            "study_id": "Innotop_Normal"
+        },
+        "10": {
+            "sample_name": "IT_N_110_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "11": {
+            "sample_name": "IT_N_169_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "12": {
+            "sample_name": "IT_N_170_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "13": {
+            "sample_name": "IT_N_132_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "14": {
+            "sample_name": "IT_N_133_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "15": {
+            "sample_name": "IT_N_134_sLR",
+            "study_id": "Innotop_Normal"
+        },
+        "16": {
+            "sample_name": "IT_N_160_RNA",
+            "study_id": "Innotop_Normal"
+        },
+        "17": {
+            "sample_name": "IT_N_161_RNA",
+            "study_id": "Innotop_Normal"
+        },
+        "18": {
+            "sample_name": "IT_N_162_RNA",
+            "study_id": "Innotop_Normal"
+        },
+        "19": {
+            "sample_name": "IT_N_171_sLR",
+            "study_id": "Innotop_Normal"
+        },
+        "2": {
+            "sample_name": "IT_N_223_SL1",
+            "study_id": "Innotop_Normal"
+        },
+        "20": {
+            "sample_name": "IT_N_172_sLR",
+            "study_id": "Innotop_Normal"
+        },
+        "21": {
+            "sample_name": "IT_N_173_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "22": {
+            "sample_name": "IT_N_204_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "23": {
+            "sample_name": "IT_N_206_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "24": {
+            "sample_name": "IT_N_205_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "25": {
+            "sample_name": "IT_N_129_sRL2",
+            "study_id": "Innotop_Normal"
+        },
+        "26": {
+            "sample_name": "IT_N_130_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "27": {
+            "sample_name": "IT_N_131_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "28": {
+            "sample_name": "IT_T_116_sRL2_CGATGT_L001",
+            "study_id": "Innotop_TNBC"
+        },
+        "29": {
+            "sample_name": "IT_T_117_sRL_TGACCA_L001",
+            "study_id": "Innotop_TNBC"
+        },
+        "3": {
+            "sample_name": "IT_N_224_SL1",
+            "study_id": "Innotop_Normal"
+        },
+        "30": {
+            "sample_name": "IT_T_128_sRL_AGTCAA_L004",
+            "study_id": "Innotop_TNBC"
+        },
+        "31": {
+            "sample_name": "IT_T_144_sRL2_ACAGTG_L008",
+            "study_id": "Innotop_TNBC"
+        },
+        "32": {
+            "sample_name": "IT_T_147_sRL_3_GCCAAT_L004",
+            "study_id": "Innotop_TNBC"
+        },
+        "33": {
+            "sample_name": "IT_T_151_sRL_CCGTCC_L004",
+            "study_id": "Innotop_TNBC"
+        },
+        "34": {
+            "sample_name": "IT_T_159_RNA_lib_ACAGTG_L007",
+            "study_id": "Innotop_TNBC"
+        },
+        "35": {
+            "sample_name": "IT_T_161_RNA_lib_CTTGTA_L007",
+            "study_id": "Innotop_TNBC"
+        },
+        "36": {
+            "sample_name": "IT_T_164_RNA_lib_TGACCA_L007",
+            "study_id": "Innotop_TNBC"
+        },
+        "37": {
+            "sample_name": "IT_T_165_RNA_lib_CAGATC_L007",
+            "study_id": "Innotop_TNBC"
+        },
+        "38": {
+            "sample_name": "IT_T_168_RNA_lib_CTTGTA_L008",
+            "study_id": "Innotop_TNBC"
+        },
+        "39": {
+            "sample_name": "IT_T_170_RNA_lib_CTTGTA_L006",
+            "study_id": "Innotop_TNBC"
+        },
+        "4": {
+            "sample_name": "IT_N_101_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "40": {
+            "sample_name": "IT_T_171_RNA_lib_ACAGTG_L006",
+            "study_id": "Innotop_TNBC"
+        },
+        "41": {
+            "sample_name": "IT_T_172_RNA_lib_GTGAAA_L006",
+            "study_id": "Innotop_TNBC"
+        },
+        "42": {
+            "sample_name": "IT_T_173_RNA_lib_ACAGTG_L007",
+            "study_id": "Innotop_TNBC"
+        },
+        "43": {
+            "sample_name": "IT_T_174_RNA_lib_GTGAAA_L007",
+            "study_id": "Innotop_TNBC"
+        },
+        "44": {
+            "sample_name": "IT_T_175_sRL_ACAGTG_L001",
+            "study_id": "Innotop_TNBC"
+        },
+        "45": {
+            "sample_name": "IT_T_182_sRL_CCGTCC_L003",
+            "study_id": "Innotop_TNBC"
+        },
+        "46": {
+            "sample_name": "IT_T_185_sRL_GTCCGC_L003",
+            "study_id": "Innotop_TNBC"
+        },
+        "47": {
+            "sample_name": "IT_T_188_sRL_GTGAAA_L005",
+            "study_id": "Innotop_TNBC"
+        },
+        "5": {
+            "sample_name": "IT_N_102_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "6": {
+            "sample_name": "IT_N_103_sRL",
+            "study_id": "Innotop_Normal"
+        },
+        "7": {
+            "sample_name": "IT_N_104_RNA",
+            "study_id": "Innotop_Normal"
+        },
+        "8": {
+            "sample_name": "IT_N_105_RNA",
+            "study_id": "Innotop_Normal"
+        },
+        "9": {
+            "sample_name": "IT_N_106_sRL",
+            "study_id": "Innotop_Normal"
+        }
+    },
+    "tissue_counts": {
+        "1": {
+            "count": 3,
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "study_id": "Innotop_Normal",
+            "tissue": "bladder"
+        },
+        "10": {
+            "count": 20,
+            "developmental_stage": "adult",
+            "disease": "primary solid tumor",
+            "study_id": "Innotop_TNBC",
+            "tissue": "Triple Negative Breast Cancer"
+        },
+        "2": {
+            "count": 3,
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "study_id": "Innotop_Normal",
+            "tissue": "brain"
+        },
+        "3": {
+            "count": 3,
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "study_id": "Innotop_Normal",
+            "tissue": "breast"
+        },
+        "4": {
+            "count": 3,
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "study_id": "Innotop_Normal",
+            "tissue": "heart"
+        },
+        "5": {
+            "count": 3,
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "study_id": "Innotop_Normal",
+            "tissue": "lung"
+        },
+        "6": {
+            "count": 3,
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "study_id": "Innotop_Normal",
+            "tissue": "placenta"
+        },
+        "7": {
+            "count": 3,
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "study_id": "Innotop_Normal",
+            "tissue": "spleen"
+        },
+        "8": {
+            "count": 3,
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "study_id": "Innotop_Normal",
+            "tissue": "stomach"
+        },
+        "9": {
+            "count": 3,
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "study_id": "Innotop_Normal",
+            "tissue": "testis"
+        }
+    },
+    "tissue_map": {
+        "1": {
+            "subtissue": "NA",
+            "tissue": "lung",
+            "tissue_public": "Lung"
+        },
+        "10": {
+            "subtissue": "NA",
+            "tissue": "stomach",
+            "tissue_public": "Stomach"
+        },
+        "11": {
+            "subtissue": "NA",
+            "tissue": "Triple Negative Breast Cancer",
+            "tissue_public": "TNBC"
+        },
+        "2": {
+            "subtissue": "NA",
+            "tissue": "testis",
+            "tissue_public": "Testis"
+        },
+        "3": {
+            "subtissue": "NA",
+            "tissue": "stomacH",
+            "tissue_public": "StomacH"
+        },
+        "4": {
+            "subtissue": "NA",
+            "tissue": "bladder",
+            "tissue_public": "Bladder"
+        },
+        "5": {
+            "subtissue": "NA",
+            "tissue": "heart",
+            "tissue_public": "Heart"
+        },
+        "6": {
+            "subtissue": "NA",
+            "tissue": "placenta",
+            "tissue_public": "Placenta"
+        },
+        "7": {
+            "subtissue": "NA",
+            "tissue": "breast",
+            "tissue_public": "Breast"
+        },
+        "8": {
+            "subtissue": "NA",
+            "tissue": "brain",
+            "tissue_public": "Brain"
+        },
+        "9": {
+            "subtissue": "NA",
+            "tissue": "spleen",
+            "tissue_public": "Spleen"
+        }
+    }
+}
