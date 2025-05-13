@@ -92,8 +92,33 @@
         - '769ede510916f9f2	15	20	primary solid tumor	adult	Triple Negative Breast Cancer	Innotop_TNBC'
 
     - path: 'test_tx_healthy_sample_rate_raptor.tsv.gz'
-    - path: 'test_tx_healthy_sample_rate_raptor.tsv.gz'
-
+      contains:    
+        # CLDN18
+        - '7ac0865381a67151	adult	bladder	3	0.0	0.0'
+        - '7ac0865381a67151	adult	brain	3	0.0	0.0'
+        - '7ac0865381a67151	adult	breast	3	0.0	0.0'
+        - '7ac0865381a67151	adult	heart	3	0.0	0.0'
+        - '7ac0865381a67151	adult	lung	3	3.0	1.0'
+        - '7ac0865381a67151	adult	placenta	3	0.0	0.0'
+        - '7ac0865381a67151	adult	spleen	3	0.0	0.0'
+        - '7ac0865381a67151	adult	stomach	3	2.0	0.6666666666666666'
+        - '7ac0865381a67151	adult	testis	3	3.0	1.0'
+        # VGLL1
+        - '769ede510916f9f2	adult	bladder	3	2.0	0.6666666666666666'
+        - '769ede510916f9f2	adult	brain	3	0.0	0.0'
+        - '769ede510916f9f2	adult	breast	3	3.0	1.0'
+        - '769ede510916f9f2	adult	heart	3	0.0	0.0'
+        - '769ede510916f9f2	adult	lung	3	3.0	1.0'
+        - '769ede510916f9f2	adult	placenta	3	3.0	1.0'
+        - '769ede510916f9f2	adult	spleen	3	0.0	0.0'
+        - '769ede510916f9f2	adult	stomach	3	0.0	0.0'
+        - '769ede510916f9f2	adult	testis	3	0.0	0.0'
+    - path: 'test_tx_tumor_sample_rate_raptor.tsv.gz'
+      contains:
+        # CLDN18
+        - '7ac0865381a67151	primary solid tumor	Triple Negative Breast Cancer	20	0.0	0.0'
+        # VGLL1
+        - '769ede510916f9f2	primary solid tumor	Triple Negative Breast Cancer	20	15.0	0.75'
   stderr:
     contains:
       - "query=True"
