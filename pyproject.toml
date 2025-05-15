@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "k4neo"
-version = "0.0.2"
+version = "0.0.3"
 description = ""
 authors = [
     "TRON - Translational Oncology at the University Medical Center", 
@@ -24,7 +24,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9 <=3.12.4"
+python = ">=3.10 <=3.12.4"
 pandas = "==2.2.2"
 biopython = "==1.84"
 pyarrow = "==17.0.0"
@@ -33,11 +33,13 @@ pyyaml = "==6.0.2"
 tinydb = "==4.8.0"
 xxhash = "==3.4.1"
 loguru = "==0.7.3"
+rich = "^14.0.0"
+plotnine = "^0.14.5"
 
 [tool.poetry.scripts]
 k4neo-annotator = "k4neo.command_line:annotate"
 k4neo-database = "k4neo.command_line:build_database"
-
+k4neo-plotter = "k4neo.command_line:plot"
 
 [build-system]
 requires = ["poetry-core"]

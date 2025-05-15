@@ -1,12 +1,17 @@
 import sys
 import pathlib
+import gzip
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import k4neo
 from k4neo.database.database import DataBase, CreateDataBase
 from k4neo.annotator.annotator import Annotator
 from k4neo.parser.parser import IndexResultParser
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
+from k4neo.plotter.plotter import Plotter
 from loguru import logger
+from rich.console import Console
+
+console = Console()
 
 epilog = "Copyright (c) 2025 TRON gGmbH (See LICENSE for licensing details)"
 
@@ -85,9 +90,7 @@ def build_index():
         help="Sample sheet describing fastqs to index",
     )
     parser.add_argument("--index", dest="index", help="Path to index directory")
-    parser.add_argument(
-        "--kmer_size", dest="kmer_size", help="Size of k-mers", default=21
-    )
+    parser.add_argument("--kmer_size", dest="kmer_size", help="Size of k-mers", default=21)
     parser.add_argument(
         "--cutoff",
         dest="cutoff",
@@ -124,9 +127,7 @@ def build_index():
         fpr=args.fpr,
     )
     logger.info("-> Starting indexing pipeline.")
-    index_pipeline = IndexPipeline(
-        pipeline, working_dir=working_dir, config=pipeline_config.config
-    )
+    index_pipeline = IndexPipeline(pipeline, working_dir=working_dir, config=pipeline_config.config)
     index_pipeline.run_pipeline(slurm=args.slurm)
     logger.info("-> Finished indexing pipeline.")
 
@@ -151,9 +152,7 @@ def annotate():
         help="Tabular format with context sequence and position of interest",
         required=True,
     )
-    parser.add_argument(
-        "--output", dest="output", help="Output prefix for annotated sequences"
-    )
+    parser.add_argument("--output", dest="output", help="Output prefix for annotated sequences")
     parser.add_argument(
         "--ratio",
         dest="kmer_ratio",
@@ -195,6 +194,8 @@ def annotate():
         "--slurm", dest="slurm", help="Submit query job to slurm", action="store_true"
     )
     args = parser.parse_args()
+    console.print(k4neo.logo, style="bold red")
+
     working_dir = pathlib.Path(args.working_dir).resolve()
     pipeline = pathlib.Path(args.workflow).resolve()
     index_manifest = pathlib.Path(args.index_manifest).resolve()
@@ -211,31 +212,44 @@ def annotate():
     output_non_queryable = pathlib.Path(args.output + "_non_querable.tsv.gz")
     if len(annotator.non_queryable.index > 0):
         logger.info("-> Writing non-queryable sequences to disk")
-        with open(output_non_queryable, "w") as file_handle:
+        with gzip.open(output_non_queryable, "wb") as file_handle:
             annotator.non_queryable.to_csv(file_handle, sep="\t", index=False)
 
     for this_method, this_df in result_dict.items():
         logger.info(f"-> Annotating query results of method: {this_method}")
         results = annotator.annotate_cts(this_df)
         sample_hits = annotator.annotate_sequences(results)
-        healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(
-            results
-        )
+        healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
 
         # Write index hits to output
-        output_annotated = pathlib.Path(
-            args.output + f"_annotated_{this_method}.tsv.gz"
-        )
+        output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
         output_healthy_rate = pathlib.Path(
             args.output + f"_healthy_sample_rate_{this_method}.tsv.gz"
         )
-        output_tumor_rate = pathlib.Path(
-            args.output + f"_tumor_sample_rate_{this_method}.tsv.gz"
-        )
-        with open(output_annotated, "w") as file_handle:
+        output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv.gz")
+        with gzip.open(output_annotated, "wb") as file_handle:
             sample_hits.to_csv(file_handle, sep="\t", index=False)
         # Write sample rate to output
-        with open(output_healthy_rate, "w") as file_handle:
+        with gzip.open(output_healthy_rate, "wb") as file_handle:
             healthy_sample_rate.to_csv(file_handle, sep="\t", index=False)
-        with open(output_tumor_rate, "w") as file_handle:
+        with gzip.open(output_tumor_rate, "w") as file_handle:
             tumor_sample_rate.to_csv(file_handle, sep="\t", index=False)
+
+
+def plot():
+    parser = ArgumentParser(
+        description=f"k4neo {k4neo.VERSION} plotter",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog=epilog,
+    )
+    parser.add_argument(
+        "--input", dest="input", help="Input prefix for annotated sequences", required=True
+    )
+    parser.add_argument("--output", dest="output", help="Output file", required=True)
+    args = parser.parse_args()
+    console.print(k4neo.logo, style="bold red")
+    pl = Plotter(
+        args.input + f"_healthy_sample_rate_raptor.tsv.gz",
+        args.input + f"_tumor_sample_rate_raptor.tsv.gz",
+    )
+    pl.plot(args.output)

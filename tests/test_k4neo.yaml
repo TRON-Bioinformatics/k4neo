@@ -1,0 +1,181 @@
+- name: test_k4neo_with_jx
+  tags:
+    - integrationtest
+  command: >
+    poetry run k4neo-annotator
+      --database tests/resources/index_metadata.db
+      --index tests/resources/index_manifest.yaml
+      --queries tests/resources/queries/test_junction_k4neo_input.tsv
+      --working-dir .
+      --output test_jx
+      --ratio 0.7
+  files:
+    - path: 'test_jx_annotated_raptor.tsv.gz'
+      contains:
+        - 'dde52f9b214f3e15	3	3	healthy	adult	lung	Innotop_Normal'
+        - 'dde52f9b214f3e15	2	3	healthy	adult	stomach	Innotop_Normal'
+        - 'dde52f9b214f3e15	2	3	healthy	adult	testis	Innotop_Normal'
+        - '5e0adbb9fe1aee63	0	0'
+        - '36a7233af1d21164	3	3	healthy	adult	testis	Innotop_Normal'
+        - '36a7233af1d21164	16	20	primary solid tumor	adult	Triple Negative Breast Cancer	Innotop_TNBC'
+        - '06ec3cff497888f2	3	3	healthy	adult	bladder	Innotop_Normal'
+        - '06ec3cff497888f2	18	20	primary solid tumor	adult	Triple Negative Breast Cancer	Innotop_TNBC'
+    - path: 'test_jx_healthy_sample_rate_raptor.tsv.gz'
+      contains:
+        - 'dde52f9b214f3e15	adult	bladder	3	0.0	0.0'
+        - 'dde52f9b214f3e15	adult	brain	3	0.0	0.0'
+        - 'dde52f9b214f3e15	adult	breast	3	0.0	0.0'
+        - 'dde52f9b214f3e15	adult	heart	3	0.0	0.0'
+        - 'dde52f9b214f3e15	adult	lung	3	3.0	1.0'
+        - 'dde52f9b214f3e15	adult	placenta	3	0.0	0.0'
+        - 'dde52f9b214f3e15	adult	spleen	3	0.0	0.0'
+        - 'dde52f9b214f3e15	adult	stomach	3	2.0	0.6666666666666666'
+        - 'dde52f9b214f3e15	adult	testis	3	2.0	0.6666666666666666'
+        - '06ec3cff497888f2	adult	bladder	3	3.0	1.0'
+        - '06ec3cff497888f2	adult	brain	3	3.0	1.0'
+        - '06ec3cff497888f2	adult	breast	3	3.0	1.0'
+        - '06ec3cff497888f2	adult	heart	3	2.0	0.6666666666666666'
+        - '06ec3cff497888f2	adult	lung	3	3.0	1.0'
+        - '06ec3cff497888f2	adult	placenta	3	3.0	1.0'
+        - '06ec3cff497888f2	adult	spleen	3	3.0	1.0'
+        - '06ec3cff497888f2	adult	stomach	3	3.0	1.0'
+        - '06ec3cff497888f2	adult	testis	3	3.0	1.0'
+        - '3a1603799541d56c	adult	bladder	3	2.0	0.6666666666666666'
+        - '3a1603799541d56c	adult	brain	3	0.0	0.0'
+        - '3a1603799541d56c	adult	breast	3	3.0	1.0'
+        - '3a1603799541d56c	adult	heart	3	0.0	0.0'
+        - '3a1603799541d56c	adult	lung	3	3.0	1.0'
+        - '3a1603799541d56c	adult	placenta	3	3.0	1.0'
+        - '3a1603799541d56c	adult	spleen	3	0.0	0.0'
+        - '3a1603799541d56c	adult	stomach	3	1.0	0.3333333333333333'
+        - '3a1603799541d56c	adult	testis	3	0.0	0.0'
+    - path: 'test_jx_tumor_sample_rate_raptor.tsv.gz'
+      contains:
+        - 'dde52f9b214f3e15	primary solid tumor	Triple Negative Breast Cancer	20	0.0	0.0'
+        - '06ec3cff497888f2	primary solid tumor	Triple Negative Breast Cancer	20	18.0	0.9'
+        - '3a1603799541d56c	primary solid tumor	Triple Negative Breast Cancer	20	15.0	0.75'
+  stderr:
+    contains:
+      - "query=True"
+      - "indexing=False"
+      - "kmer_ratio=0.7"
+      - "methods=['raptor']"
+      - "Executing CMD: snakemake --snakefile"
+      - "Finished query pipeline"
+      - "Parsing parquet file of k-mer query pipeline"
+      - "Parsing query results of method: raptor"
+      - "Annotating query results of method: raptor"
+
+- name: test_k4neo_with_tx
+  tags:
+    - integrationtest
+  command: >
+    poetry run k4neo-annotator
+       --database tests/resources/index_metadata.db
+       --index tests/resources/index_manifest.yaml
+       --queries tests/resources/queries/test_transcript_k4neo_input.tsv
+       --working-dir .
+       --output test_tx
+       --ratio 0.7
+  files:
+    - path: 'test_tx_annotated_raptor.tsv.gz'
+      contains:
+        # CLDN18.1
+        - '7ac0865381a67151	3	3	healthy	adult	lung	Innotop_Normal'
+        - '7ac0865381a67151	2	3	healthy	adult	stomach	Innotop_Normal'
+        - '7ac0865381a67151	3	3	healthy	adult	testis	Innotop_Normal'
+        # VGLL1
+        - '769ede510916f9f2	2	3	healthy	adult	bladder	Innotop_Normal'
+        - '769ede510916f9f2	3	3	healthy	adult	breast	Innotop_Normal'
+        - '769ede510916f9f2	3	3	healthy	adult	lung	Innotop_Normal'
+        - '769ede510916f9f2	3	3	healthy	adult	placenta	Innotop_Normal'
+        - '769ede510916f9f2	15	20	primary solid tumor	adult	Triple Negative Breast Cancer	Innotop_TNBC'
+
+    - path: 'test_tx_healthy_sample_rate_raptor.tsv.gz'
+      contains:    
+        # CLDN18
+        - '7ac0865381a67151	adult	bladder	3	0.0	0.0'
+        - '7ac0865381a67151	adult	brain	3	0.0	0.0'
+        - '7ac0865381a67151	adult	breast	3	0.0	0.0'
+        - '7ac0865381a67151	adult	heart	3	0.0	0.0'
+        - '7ac0865381a67151	adult	lung	3	3.0	1.0'
+        - '7ac0865381a67151	adult	placenta	3	0.0	0.0'
+        - '7ac0865381a67151	adult	spleen	3	0.0	0.0'
+        - '7ac0865381a67151	adult	stomach	3	2.0	0.6666666666666666'
+        - '7ac0865381a67151	adult	testis	3	3.0	1.0'
+        # VGLL1
+        - '769ede510916f9f2	adult	bladder	3	2.0	0.6666666666666666'
+        - '769ede510916f9f2	adult	brain	3	0.0	0.0'
+        - '769ede510916f9f2	adult	breast	3	3.0	1.0'
+        - '769ede510916f9f2	adult	heart	3	0.0	0.0'
+        - '769ede510916f9f2	adult	lung	3	3.0	1.0'
+        - '769ede510916f9f2	adult	placenta	3	3.0	1.0'
+        - '769ede510916f9f2	adult	spleen	3	0.0	0.0'
+        - '769ede510916f9f2	adult	stomach	3	0.0	0.0'
+        - '769ede510916f9f2	adult	testis	3	0.0	0.0'
+    - path: 'test_tx_tumor_sample_rate_raptor.tsv.gz'
+      contains:
+        # CLDN18
+        - '7ac0865381a67151	primary solid tumor	Triple Negative Breast Cancer	20	0.0	0.0'
+        # VGLL1
+        - '769ede510916f9f2	primary solid tumor	Triple Negative Breast Cancer	20	15.0	0.75'
+  stderr:
+    contains:
+      - "query=True"
+      - "indexing=False"
+      - "kmer_ratio=0.7"
+      - "methods=['raptor']"
+      - "Executing CMD: snakemake --snakefile"
+      - "Finished query pipeline"
+      - "Parsing parquet file of k-mer query pipeline"
+      - "Parsing query results of method: raptor"
+      - "Annotating query results of method: raptor"
+
+- name: test_k4neo_seq_to_short
+  tags:
+    - integrationtest
+  command: >
+    poetry run k4neo-annotator
+       --database tests/resources/index_metadata.db
+       --index tests/resources/index_manifest.yaml
+       --queries tests/resources/queries/test_seq_to_short.tsv
+       --working-dir .
+       --output test_sx
+       --ratio 0.7
+  files:
+    - path: 'test_sx_annotated_raptor.tsv.gz'
+      contains:
+        - "3:138010445-138023658:+"
+        - "dde52f9b214f3e15"
+        - "a534b03cc1757cac71b2265687a2b019"
+      must_not_contain:
+        - "12:4645192-4648745:-"
+        - "GACTCTCAGTTTCCTGTTCCCTGA"
+        - "07eb80a14ccf64e225d2db0a55ce9fe5"
+    - path: 'test_sx_non_querable.tsv.gz'
+      contains:
+        - "12:4645192-4648745:-"
+        - "GACTCTCAGTTTCCTGTTCCCTGA"
+        - "07eb80a14ccf64e225d2db0a55ce9fe5"
+  stderr:
+    contains:
+      - "query=True"
+      - "indexing=False"
+      - "kmer_ratio=0.7"
+      - "methods=['raptor']"
+      - "Executing CMD: snakemake --snakefile"
+      - "Finished query pipeline"
+      - "Parsing parquet file of k-mer query pipeline"
+      - "Parsing query results of method: raptor"
+      - "Annotating query results of method: raptor"
+
+- name: test_k4neo_plotting
+  tags:
+    - integrationtest
+  command: >
+    bash -c "
+    poetry run k4neo-annotator --database tests/resources/index_metadata.db --index tests/resources/index_manifest.yaml --queries tests/resources/queries/test_junction_k4neo_input.tsv --working-dir . --output ./test_jx ;
+    poetry run k4neo-plotter --input ./test_jx --output test_picture.png
+    "
+  files:
+    - path: 'test_picture.png'

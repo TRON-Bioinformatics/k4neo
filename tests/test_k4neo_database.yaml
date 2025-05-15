@@ -1,0 +1,29 @@
+- name: test_k4neo_database_creation
+  tags:
+    - integrationtest
+  command: >
+    k4neo-database
+      --sample-tables tests/resources/index_data/study_annotation.tsv
+      --database index_metadata.db
+      --tissue-map tests/resources/index_data/tissue_mapping/tissue_mapping.tsv
+  files:
+    - path: "index_metadata.db"
+      md5sum: "77f2d53bb1826f99b8745797a541ffb5"
+      contains:
+        - '"10": {'
+        - '"count": 20,'
+        - '"developmental_stage": "adult",'
+        - '"disease": "primary solid tumor",'
+        - '"study_id": "Innotop_TNBC",'
+        - '"tissue": "Triple Negative Breast Cancer"'
+        - '"subtissue": "NA",'
+        - '"tissue": "Triple Negative Breast Cancer",'
+        - '"tissue_public": "TNBC"'
+        - '"subtissue": "NA",'
+        - '"tissue": "placenta",'
+        - '"tissue_public": "Placenta"'
+        - '"count": 3,'
+        - '"developmental_stage": "adult",'
+        - '"disease": "healthy",'
+        - '"study_id": "Innotop_Normal",'
+        - '"tissue": "heart"'

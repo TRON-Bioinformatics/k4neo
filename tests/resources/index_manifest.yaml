@@ -1,0 +1,5 @@
+test_index:
+  samples: 47
+  path: 'tests/resources/index/raptor.index'
+  sample_mapping: 'tests/resources/index/index_mapping.txt'
+  method: raptor
