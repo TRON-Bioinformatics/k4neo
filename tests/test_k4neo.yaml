@@ -54,8 +54,8 @@
         - 'dde52f9b214f3e15	primary solid tumor	Triple Negative Breast Cancer	20	0.0	0.0'
         - '06ec3cff497888f2	primary solid tumor	Triple Negative Breast Cancer	20	18.0	0.9'
         - '3a1603799541d56c	primary solid tumor	Triple Negative Breast Cancer	20	15.0	0.75'
-  stderr:                            # Options for testing stdout
-    contains:                        # List of strings which should be in stdout
+  stderr:
+    contains:
       - "query=True"
       - "indexing=False"
       - "kmer_ratio=0.7"
@@ -130,3 +130,52 @@
       - "Parsing parquet file of k-mer query pipeline"
       - "Parsing query results of method: raptor"
       - "Annotating query results of method: raptor"
+
+- name: test_k4neo_seq_to_short
+  tags:
+    - integrationtest
+  command: >
+    poetry run k4neo-annotator
+       --database tests/resources/index_metadata.db
+       --index tests/resources/index_manifest.yaml
+       --queries tests/resources/queries/test_seq_to_short.tsv
+       --working-dir .
+       --output test_sx
+       --ratio 0.7
+  files:
+    - path: 'test_sx_annotated_raptor.tsv.gz'
+      contains:
+        - "3:138010445-138023658:+"
+        - "dde52f9b214f3e15"
+        - "a534b03cc1757cac71b2265687a2b019"
+      must_not_contain:
+        - "12:4645192-4648745:-"
+        - "GACTCTCAGTTTCCTGTTCCCTGA"
+        - "07eb80a14ccf64e225d2db0a55ce9fe5"
+    - path: 'test_sx_non_querable.tsv.gz'
+      contains:
+        - "12:4645192-4648745:-"
+        - "GACTCTCAGTTTCCTGTTCCCTGA"
+        - "07eb80a14ccf64e225d2db0a55ce9fe5"
+  stderr:
+    contains:
+      - "query=True"
+      - "indexing=False"
+      - "kmer_ratio=0.7"
+      - "methods=['raptor']"
+      - "Executing CMD: snakemake --snakefile"
+      - "Finished query pipeline"
+      - "Parsing parquet file of k-mer query pipeline"
+      - "Parsing query results of method: raptor"
+      - "Annotating query results of method: raptor"
+
+- name: test_k4neo_plotting
+  tags:
+    - integrationtest
+  command: >
+    bash -c "
+    poetry run k4neo-annotator --database tests/resources/index_metadata.db --index tests/resources/index_manifest.yaml --queries tests/resources/queries/test_junction_k4neo_input.tsv --working-dir . --output ./test_jx ;
+    poetry run k4neo-plotter --input ./test_jx --output test_picture.png
+    "
+  files:
+    - path: 'test_picture.png'
