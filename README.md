@@ -1,9 +1,5 @@
 ## k4neo: k-mer indexing for neoantigen annotation
 
-**Predicting tumor-specificity in a blast. A modern k-mer based approach to screen for (neo)antigens in healthy and tumor tissue RNA-seq**
-
----
-
 <!-- badges: start -->
 
 ![Python](https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54)
@@ -13,6 +9,11 @@
 [![Release](https://img.shields.io/badge/release-v0.0.3-blue?style=flat)](https://gitlab.rlp.net/tron/k4neo/-/tags)
 
 <!-- badges: end -->
+
+
+
+**Predicting tumor-specificity in a blast. A modern k-mer based approach to screen for (neo)antigens in healthy and tumor tissue RNA-seq**
+
 
 --- 
 
@@ -44,7 +45,7 @@ conda env create -f k4neo.yaml -p k4neo
 conda activate k4neo/
 ```
 
-### Install package with poetry
+### Install package
 
 k4neo can be installed with poetry. 
 
@@ -110,7 +111,7 @@ In this example the following operations and annotations would be performed:
 
 ## Example 
 
-We provide a small k-mer index of 47 TNBC and normal RNA-seq samples composed of 15 genes.
+We provide a small k-mer index of 20 TNBC and 27 normal RNA-seq samples composed of 17 genes.
 This [list](tests/resources/queries/test_genes.tsv) contains clinical antigen candidates but also broadly expressed genes and tissue-specific genes, such as
 
 * MAGEA3
@@ -164,3 +165,19 @@ This will generate three output file in your current working directory.
 * `test_tx_annotated_raptor.tsv.gz`: This file lists for all input sequences the hits per tissue and developmental state per tissue.
 * `test_tx_healthy_sample_rate_raptor.tsv.gz`: This file contains the healthy tissue sample rate for each isoform.
 * `test_tx_tumor_sample_rate_raptor.tsv.gz`: This file contains the tumor entity sample rate for each isoform.
+
+
+## Authors & Acknowledgements 
+
+The k4neo package was originally developed by Johannes Hausmann at [TRON - Translational Oncology at the Medical Center of the Johannes Gutenberg University Mainz gGmbH (non-profit)](https://tron-mainz.de/).
+
+Maintenance is now lead by Johannes Hausmann. 
+
+Main developers: 
+
+- [Johannes Hausmann](mailto:johannes.hausmann@tron-mainz.de)   
+
+Contributers:
+
+- Luis Kress, TRON gGmbH
+- Jonas Ibn-Salem, TRON gGmbH
