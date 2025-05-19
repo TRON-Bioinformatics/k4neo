@@ -128,7 +128,7 @@ k4neo-annotator \
 
 This will generate three output file in your current working directory.
 
-* `test_jx_annotated_raptor.tsv.gz`: This file lists for all input sequences the hits per tissue and developmental state per tissue.
+* `test_jx_annotated_raptor.tsv.gz`: This file lists for all input sequences the hits per tissue and developmental state per indexed study.
 * `test_jx_healthy_sample_rate_raptor.tsv.gz`: This file contains the healthy tissue sample rate for each sequence.
 * `test_jx_tumor_sample_rate_raptor.tsv.gz`: This file contains the tumor entity sample rate for each sequence.
 
@@ -151,7 +151,7 @@ k4neo-annotator \
 
 This will generate three output file in your current working directory.
 
-* `test_tx_annotated_raptor.tsv.gz`: This file lists for all input sequences the hits per tissue and developmental state per tissue.
+* `test_tx_annotated_raptor.tsv.gz`: This file lists for all input sequences the hits per tissue and developmental state indexed study.
 * `test_tx_healthy_sample_rate_raptor.tsv.gz`: This file contains the healthy tissue sample rate for each isoform.
 * `test_tx_tumor_sample_rate_raptor.tsv.gz`: This file contains the tumor entity sample rate for each isoform.
 
