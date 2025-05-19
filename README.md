@@ -29,7 +29,7 @@
 ## 📦 Requirements
 
 - Python 3.10+
-- snakemake 9.x +
+- snakemake 9.x.x+
 - raptor 3.0.1
 - kmindex 0.5.2
 - pandas
@@ -61,17 +61,6 @@ This will execute the comprehensive integration tests. You can use this to verif
 ```
 pytest --git-aware --symlink --stderr-bytes 100000 tests/
 ```
-
-
-k4neo is a package to leverage the information provided by large transcriptomic databases by using 
-powerful k-mer indexing methods to annotate the expression of novel (neo)antigen candidate sequences in healthy tissues.
-
-k4neo requires a sequence of interest and optionally a custom position and length
-of the query sequence. The input data is annotated with expression in different
-tissues, developmental- and disease-states. We support multiple state of the art
-k-mer indexing methods and provide for Kmindex and Raptor pre-built indices of a collection
-of 1,663 non-cancerous (healthy) tissue samples from SRA, GEO and ENCODE.
-
 
 ## ▶️ Usage
 
