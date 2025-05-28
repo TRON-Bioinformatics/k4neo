@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: false
+          activate-environment: k4neo
+          environment-file: k4neo.yaml
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+
+      - name: Show Python version
+        run: python -V
+
+      - name: Install Poetry
+        run: |
+          pip install poetry
+          poetry install
+
+      - name: Run Pytest (fast tests)
+        run: |
+          pytest -v --git-aware k4neo/tests/
+
+  test_full:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout repository with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: false
+          activate-environment: k4neo
+          environment-file: k4neo.yaml
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+
+      - name: Install Poetry
+        run: |
+          pip install poetry
+          poetry install
+
+      - name: Run Full Pytest
+        run: |
+          pytest --git-aware --symlink --stderr-bytes 100000 tests/
