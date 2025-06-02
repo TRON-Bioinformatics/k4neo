@@ -8,6 +8,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Setup SSH for private submodules
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SUBMODULE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
       - name: Checkout repository with submodules
         uses: actions/checkout@v4
         with:
@@ -39,6 +45,12 @@ jobs:
     needs: test
     if: github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'develop')
     steps:
+      - name: Setup SSH for private submodules
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SUBMODULE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
       - name: Checkout repository with submodules
         uses: actions/checkout@v4
         with:
