@@ -45,9 +45,11 @@ jobs:
           use-only-tar-bz2: true
 
       - name: Show Python version
+        shell: bash -l {0}
         run: python -V
 
       - name: Run Pytest (fast tests)
+        shell: bash -l {0}
         run: |
           poetry install
           pytest -v --git-aware k4neo/tests/
@@ -94,6 +96,7 @@ jobs:
           use-only-tar-bz2: true
 
       - name: Run Full Pytest
+        shell: bash -l {0}
         run: |
           poetry install
           pytest --git-aware --symlink --stderr-bytes 100000 tests/
