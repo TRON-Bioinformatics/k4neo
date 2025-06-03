@@ -45,16 +45,11 @@ jobs:
           use-only-tar-bz2: true
 
       - name: Show Python version
-        run: python -V
-
-      - name: Install Poetry
-        run: |
-          pip install poetry
-          poetry install
+        run: mamba run -n k4neo python -V
 
       - name: Run Pytest (fast tests)
         run: |
-          pytest -v --git-aware k4neo/tests/
+          mamba run -n k4neo pytest -v --git-aware k4neo/tests/
 
   test_full:
     runs-on: ubuntu-latest
@@ -97,11 +92,6 @@ jobs:
           miniforge-version: latest
           use-only-tar-bz2: true
 
-      - name: Install Poetry
-        run: |
-          pip install poetry
-          poetry install
-
       - name: Run Full Pytest
         run: |
-          pytest --git-aware --symlink --stderr-bytes 100000 tests/
+          mamba run -n k4neo pytest --git-aware --symlink --stderr-bytes 100000 tests/
