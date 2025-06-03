@@ -14,11 +14,25 @@ jobs:
           echo "${{ secrets.SUBMODULE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - name: Fix relative submodule URLs
+        run: |
+          sed -i 's|url = \.\./|url = git@github.com:TRON-Private/|' .gitmodules
+          git submodule sync
+          git submodule update --init --recursive
       - name: Checkout repository with submodules
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
           ssh-key: ${{ secrets.SUBMODULE_KEY }}
+      - name: Cache conda
+        uses: actions/cache@v3
+        env:
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('k4neo.yaml') }}
 
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v3
@@ -28,6 +42,7 @@ jobs:
           environment-file: k4neo.yaml
           miniforge-variant: Mambaforge
           miniforge-version: latest
+          use-only-tar-bz2: true
 
       - name: Show Python version
         run: python -V
@@ -52,12 +67,25 @@ jobs:
           echo "${{ secrets.SUBMODULE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - name: Fix relative submodule URLs
+        run: |
+          sed -i 's|url = \.\./|url = git@github.com:TRON-Private/|' .gitmodules
+          git submodule sync
+          git submodule update --init --recursive
       - name: Checkout repository with submodules
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
           ssh-key: ${{ secrets.SUBMODULE_KEY }}
-
+      - name: Cache conda
+        uses: actions/cache@v3
+        env:
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('k4neo.yaml') }}
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -66,6 +94,7 @@ jobs:
           environment-file: k4neo.yaml
           miniforge-variant: Mambaforge
           miniforge-version: latest
+          use-only-tar-bz2: true
 
       - name: Install Poetry
         run: |
