@@ -7,12 +7,10 @@ dependencies:
   - conda-forge::pytest
   - conda-forge::pytest-mock
   - bioconda::raptor=3.0.1
-  - bioconda::snakemake-minimal=8.16.0
+  - bioconda::snakemake-minimal=9.1.6
   - python=3.12.4
   - poetry
-  - pip
-  - pip:
-    - snakemake-storage-plugin-http
-    - snakemake-executor-plugin-cluster-generic
-    - snakemake-executor-plugin-slurm
-    - logzero
+  - snakemake-storage-plugin-http
+  - snakemake-executor-plugin-cluster-generic
+  - snakemake-executor-plugin-slurm
+  - loguru
