@@ -45,11 +45,12 @@ jobs:
           use-only-tar-bz2: true
 
       - name: Show Python version
-        run: mamba run -n k4neo python -V
+        run: python -V
 
       - name: Run Pytest (fast tests)
         run: |
-          mamba run -n k4neo pytest -v --git-aware k4neo/tests/
+          poetry install
+          pytest -v --git-aware k4neo/tests/
 
   test_full:
     runs-on: ubuntu-latest
@@ -94,4 +95,5 @@ jobs:
 
       - name: Run Full Pytest
         run: |
-          mamba run -n k4neo pytest --git-aware --symlink --stderr-bytes 100000 tests/
+          poetry install
+          pytest --git-aware --symlink --stderr-bytes 100000 tests/
