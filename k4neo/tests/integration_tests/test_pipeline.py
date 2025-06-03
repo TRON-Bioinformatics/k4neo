@@ -6,12 +6,13 @@ class TestPipeline():
     index_manifest = pathlib.Path(__file__).parent.parent /'resources' / 'index_manifest.yaml'
     kmer_ratio = 0.7
     pipeline = pathlib.Path(__file__).parent.parent.parent /'pipeline' / 'tronmake-kmer-pipeline' / 'workflow' / 'Snakefile'
+    profile = pathlib.Path(__file__).parent.parent.parent /'pipeline' / 'config.yaml'
     fasta = pathlib.Path(__file__).parent.parent /'resources' / 'example.fasta'
 
     def test_raptor_query_pipeline(self):
         qconfig = QueryPipelineConfig(index=self.index_manifest, kmer_ratio=self.kmer_ratio, methods=['raptor'])
         qconfig.config["query"].update({'query_fasta': str(self.fasta)})
-        pipeline = QueryPipeline(self.pipeline, qconfig.config, pathlib.Path("./"))
+        pipeline = QueryPipeline(self.pipeline, self.profile, qconfig.config, pathlib.Path("./"))
         result = pipeline.run_pipeline(slurm=False, cores=1)
         assert isinstance(result, QueryPipelineResult)
         assert isinstance(result.query_path, dict)
@@ -22,8 +23,9 @@ class TestKmerIndexInterface():
     index_manifest = pathlib.Path(__file__).parent.parent /'resources' / 'index_manifest.yaml'
     kmer_ratio = 0.7
     pipeline = pathlib.Path(__file__).parent.parent.parent /'pipeline' / 'tronmake-kmer-pipeline' / 'workflow' / 'Snakefile'
+    profile = pathlib.Path(__file__).parent.parent.parent /'pipeline' / 'config.yaml' 
     fasta = pathlib.Path(__file__).parent.parent /'resources' / 'example.fasta'
-    kmer_index = KmerIndex(pipeline=pipeline, index_manifest=index_manifest, kmer_ratio=kmer_ratio)
+    kmer_index = KmerIndex(pipeline=pipeline, workflow_profile=profile, index_manifest=index_manifest, kmer_ratio=kmer_ratio)
 
     def test_kmer_interface(self):
         assert isinstance(self.kmer_index.index_struct, dict)
