@@ -37,6 +37,7 @@ class Pipeline:
     def __init__(
         self,
         worklow: pathlib.Path,
+        workflow_profile: pathlib.Path,
         config: dict,
         working_dir: pathlib.Path,
         target_rule: str = "all",
@@ -50,6 +51,7 @@ class Pipeline:
             target_rule (str, optional): Target rule to request from workflow. Defaults to "all".
         """
         self.workflow = worklow.resolve()
+        self.workflow_profile = workflow_profile.resolve()
         self.working_dir = working_dir.resolve()
         self.config = config
         self.target_rule = target_rule
@@ -90,6 +92,8 @@ class Pipeline:
             "mtime",
             "--workflow-profile",
             "none",
+            "--profile",
+            str(self.workflow_profile.parent),
         ]
         if slurm:
             cmd.extend(["--executor", "slurm"])
@@ -104,10 +108,10 @@ class QueryPipeline(Pipeline):
     The QueryPipeline class implements the search mode of the TronMake k-mer pipeline.
     """
 
-    def __init__(self, workflow: str, config: dict, working_dir: pathlib.Path):
+    def __init__(self, workflow: pathlib.Path, workflow_profile: pathlib.Path, config: dict, working_dir: pathlib.Path):
         """Parameter initialization"""
         logger.info("-> Initialising k4neo query pipeline.")
-        super().__init__(workflow, config, working_dir, target_rule="query")
+        super().__init__(workflow, workflow_profile, config, working_dir, target_rule="query")
 
     def determine_final_query(self):
         """Based on selected methods in index manifest, find query output that could be created by pipeline"""
@@ -152,9 +156,9 @@ class IndexPipeline(Pipeline):
     The IndexPipeline class implements the indexing of the TronMake k-mer pipeline.
     """
 
-    def __init__(self, worklow: str, config: dict, working_dir: pathlib.Path):
+    def __init__(self, worklow: pathlib.Path, workflow_profile: pathlib.Path, config: dict, working_dir: pathlib.Path):
         """Parameter initialization"""
-        super().__init__(worklow, config, working_dir, target_rule="index")
+        super().__init__(worklow, workflow_profile, config, working_dir, target_rule="index")
 
     def determine_final_index(self):
         """Find index output of user-specified k-mer indexing method"""

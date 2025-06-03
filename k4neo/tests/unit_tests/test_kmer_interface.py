@@ -6,8 +6,9 @@ class TestKmerIndexInterface():
     index_manifest = pathlib.Path(__file__).parent.parent /'resources' / 'index_manifest.yaml'
     kmer_ratio = 0.7
     pipeline = pathlib.Path(__file__).parent.parent.parent /'pipeline' / 'tronmake-kmer-pipeline' / 'workflow' / 'Snakefile'
+    profile = pathlib.Path(__file__).parent.parent.parent /'pipeline' / 'config.yaml'
     fasta = pathlib.Path(__file__).parent.parent /'resources' / 'example.fasta'
-    kmer_index = KmerIndex(pipeline=pipeline, index_manifest=index_manifest, kmer_ratio=kmer_ratio)
+    kmer_index = KmerIndex(pipeline=pipeline, workflow_profile=profile, index_manifest=index_manifest, kmer_ratio=kmer_ratio)
 
     def test_kmer_interface(self):
         # Test that index manifest is read correctly    

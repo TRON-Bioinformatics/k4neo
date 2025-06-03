@@ -177,6 +177,14 @@ def annotate():
         / "Snakefile",
     )
     parser.add_argument(
+        "--profile",
+        dest="workflow_profile",
+        help="A yaml file containing snakemake options for execution",
+        default=pathlib.Path(__file__).parent
+        / "pipeline"
+        / "default_profile.yaml",
+    )
+    parser.add_argument(
         "--kmer",
         dest="kmer_size",
         help="K-mer size of search index",
@@ -198,11 +206,13 @@ def annotate():
 
     working_dir = pathlib.Path(args.working_dir).resolve()
     pipeline = pathlib.Path(args.workflow).resolve()
+    workflow_profile = pathlib.Path(args.workflow_profile).resolve()
     index_manifest = pathlib.Path(args.index_manifest).resolve()
     annotator = Annotator(working_dir, args.queries, args.database)
     annotator.prepare_cts()
     result_dict = annotator.search_cts(
         pipeline=pipeline,
+        workflow_profile=workflow_profile,
         index_manifest=index_manifest,
         kmer_ratio=args.kmer_ratio,
         cores=args.cpu,
