@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH for private submodules
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SUBMODULE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - name: Checkout repository with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          
+      - name: Resolve relative URL and pull submodules
+        run: |
+          sed -i 's|url = \.\./|url = git@github.com:TRON-Private/|' .gitmodules
+          git submodule sync
+          git submodule update --init --recursive
+      - name: Cache conda
+        uses: actions/cache@v3
+        env:
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('k4neo.yaml') }}
+
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: false
+          activate-environment: k4neo
+          environment-file: k4neo.yaml
+          miniforge-variant: Miniforge3
+          miniforge-version: latest
+          use-only-tar-bz2: true
+
+      - name: Show Python version
+        shell: bash -l {0}
+        run: python -V
+
+      - name: Run Pytest (fast tests)
+        shell: bash -l {0}
+        run: |
+          poetry install
+          pytest -v --git-aware k4neo/tests/
+
+  test_full:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'develop')
+    steps:
+      - name: Setup SSH for private submodules
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SUBMODULE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Checkout repository with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Resolve relative URL and pull submodules
+        run: |
+          sed -i 's|url = \.\./|url = git@github.com:TRON-Private/|' .gitmodules
+          git submodule sync
+          git submodule update --init --recursive
+      - name: Cache conda
+        uses: actions/cache@v3
+        env:
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('k4neo.yaml') }}
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: false
+          activate-environment: k4neo
+          environment-file: k4neo.yaml
+          miniforge-variant: Miniforge3
+          miniforge-version: latest
+          use-only-tar-bz2: true
+
+      - name: Run Full Pytest
+        shell: bash -l {0}
+        run: |
+          poetry install
+          pytest --git-aware --symlink --stderr-bytes 100000 tests/

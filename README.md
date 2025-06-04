@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54)
 ![Pandas](https://img.shields.io/badge/pandas-150458?style=flat-square&logo=pandas&logoColor=white)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Snakemake](https://img.shields.io/badge/snakemake-7.32.4-brightgreen.svg?style=flat-square)](https://snakemake.readthedocs.io)
+[![Snakemake](https://img.shields.io/badge/snakemake-9.1.6-brightgreen.svg?style=flat-square)](https://snakemake.readthedocs.io)
 [![Release](https://img.shields.io/badge/release-v0.0.3-blue?style=flat)](https://gitlab.rlp.net/tron/k4neo/-/tags)
 
 <!-- badges: end -->
@@ -41,13 +41,11 @@
 Create a conda environment with all non-python dependencies.
 
 ```
-conda env create -f k4neo.yaml -p k4neo
-conda activate k4neo/
+conda env create -f k4neo.yaml -p k4neo_env
+conda activate k4neo_env/
 ```
 
 ### Install package
-
-k4neo can be installed with poetry. 
 
 ```
 poetry build
@@ -66,7 +64,7 @@ pytest --git-aware --symlink --stderr-bytes 100000 tests/
 
 ### Metadata database
 
-The metadata database for pre-built k-mer indices can be downloaded from the following repository.
+The metadata database for pre-built k-mer indices of GTEx, SRA and TCGA RNA-seq samples can be downloaded from the following repository.
 
 ```
 # Download data repository including metadata database

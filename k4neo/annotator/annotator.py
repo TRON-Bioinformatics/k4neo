@@ -119,6 +119,7 @@ class Annotator:
     def search_cts(
         self,
         pipeline: pathlib.Path,
+        workflow_profile: pathlib.Path,
         index_manifest: pathlib.Path,
         kmer_ratio: float = 0.7,
         slurm: bool = False,
@@ -138,7 +139,7 @@ class Annotator:
         Returns:
             pd.DataFrame: A pandas DataFrame with parsed results for each method from manifest file.
         """
-        index = KmerIndex(pipeline=pipeline, index_manifest=index_manifest, kmer_ratio=kmer_ratio)
+        index = KmerIndex(pipeline=pipeline, workflow_profile=workflow_profile, index_manifest=index_manifest, kmer_ratio=kmer_ratio)
         query_pipeline_results = index.search_index(
             self.query_fasta, self.working_dir, slurm=slurm, cores=cores
         )
