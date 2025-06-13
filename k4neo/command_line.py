@@ -240,7 +240,7 @@ def annotate():
 
         grouped_df = this_df.groupby("cts_id")
         group_keys = list(grouped_df.groups.keys())
-        num_chunks = (len(group_keys) + args.chunk_size - 1) // chunk_size
+        num_chunks = (len(group_keys) + args.chunk_size - 1) // args.chunk_size
 
         output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
         output_healthy_rate = pathlib.Path(
@@ -255,9 +255,9 @@ def annotate():
         ):
 
             for i in tqdm(
-                range(0, len(group_keys), chunk_size), total=num_chunks, desc="Processing chunks"
+                range(0, len(group_keys), args.chunk_size), total=num_chunks, desc="Processing chunks"
             ):
-                chunk_keys = group_keys[i : i + chunk_size]
+                chunk_keys = group_keys[i : i + args.chunk_size]
                 chunk = pd.concat([grouped_df.get_group(k) for k in chunk_keys])
 
                 results = annotator.annotate_cts(chunk)
