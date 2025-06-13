@@ -10,10 +10,16 @@ from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 from k4neo.plotter.plotter import Plotter
 from loguru import logger
 from rich.console import Console
+from tqdm import tqdm
+import gc
+import pandas as pd
 
 console = Console()
+logger.remove()
+logger.add(lambda msg: tqdm.write(msg, end=""), level="INFO")
 
 epilog = "Copyright (c) 2025 TRON gGmbH (See LICENSE for licensing details)"
+
 
 
 def build_database():
@@ -203,6 +209,7 @@ def annotate():
     )
     args = parser.parse_args()
     console.print(k4neo.logo, style="bold red")
+    chunk_size = 2
 
     working_dir = pathlib.Path(args.working_dir).resolve()
     pipeline = pathlib.Path(args.workflow).resolve()
@@ -227,24 +234,37 @@ def annotate():
 
     for this_method, this_df in result_dict.items():
         logger.info(f"-> Annotating query results of method: {this_method}")
-        results = annotator.annotate_cts(this_df)
-        sample_hits = annotator.annotate_sequences(results)
-        healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
 
-        # Write index hits to output
+        grouped_df = this_df.groupby("cts_id")
+        group_keys = list(grouped_df.groups.keys())
+        num_chunks = (len(group_keys) + chunk_size - 1) // chunk_size
+
         output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
-        output_healthy_rate = pathlib.Path(
-            args.output + f"_healthy_sample_rate_{this_method}.tsv.gz"
-        )
+        output_healthy_rate = pathlib.Path(args.output + f"_healthy_sample_rate_{this_method}.tsv.gz")
         output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv.gz")
-        with gzip.open(output_annotated, "wb") as file_handle:
-            sample_hits.to_csv(file_handle, sep="\t", index=False)
-        # Write sample rate to output
-        with gzip.open(output_healthy_rate, "wb") as file_handle:
-            healthy_sample_rate.to_csv(file_handle, sep="\t", index=False)
-        with gzip.open(output_tumor_rate, "w") as file_handle:
-            tumor_sample_rate.to_csv(file_handle, sep="\t", index=False)
+        first_chunk = True
+        with gzip.open(output_annotated, "wb") as f_annotated, \
+            gzip.open(output_healthy_rate, "wb") as f_healthy, \
+            gzip.open(output_tumor_rate, "wb") as f_tumor:
 
+            for i in tqdm(range(0, len(group_keys), chunk_size), total=num_chunks, desc="Processing chunks"):
+                chunk_keys = group_keys[i:i + chunk_size]
+                chunk = pd.concat([grouped_df.get_group(k) for k in chunk_keys])
+
+                results = annotator.annotate_cts(chunk)
+                sample_hits = annotator.annotate_sequences(results)
+                healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
+
+                sample_hits.to_csv(f_annotated, sep="\t", index=False, header=first_chunk)
+                healthy_sample_rate.to_csv(f_healthy, sep="\t", index=False, header=first_chunk)
+                tumor_sample_rate.to_csv(f_tumor, sep="\t", index=False, header=first_chunk)
+                
+                first_chunk = False  # turn off headers after first write
+                del results
+                del sample_hits
+                del healthy_sample_rate
+                del tumor_sample_rate
+                gc.collect()
 
 def plot():
     parser = ArgumentParser(

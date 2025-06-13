@@ -446,6 +446,8 @@ class Annotator:
         healthy_sample_rate.drop("cts_id_y", inplace=True, axis=1)
         healthy_sample_rate.rename(columns={"cts_id_x": "cts_id"}, inplace=True)
         healthy_sample_rate["sample_rate"] = pd.to_numeric(healthy_sample_rate["sample_rate"])
+        healthy_sample_rate["count"] = healthy_sample_rate["count"].astype(int)
+        healthy_sample_rate["samples_per_tissue"] = healthy_sample_rate["samples_per_tissue"].astype(int)
         healthy_sample_rate = healthy_sample_rate.loc[
             healthy_sample_rate["samples_per_tissue"] >= min_total
         ]
@@ -460,6 +462,9 @@ class Annotator:
         tumor_sample_rate.drop("cts_id_y", inplace=True, axis=1)
         tumor_sample_rate.rename(columns={"cts_id_x": "cts_id"}, inplace=True)
         tumor_sample_rate["sample_rate"] = pd.to_numeric(tumor_sample_rate["sample_rate"])
+        tumor_sample_rate["count"] = tumor_sample_rate["count"].astype(int)
+        tumor_sample_rate["index_count"] = tumor_sample_rate["index_count"].astype(int)
+
         tumor_sample_rate = tumor_sample_rate.loc[tumor_sample_rate["index_count"] >= min_total]
 
         return healthy_sample_rate, tumor_sample_rate

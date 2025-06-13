@@ -2,7 +2,7 @@ import csv
 import pandas as pd
 import pathlib
 from multiprocessing import Pool
-from collections import ChainMap
+from collections import ChainMap, defaultdict
 from functools import partial
 from loguru import logger
 import pyarrow.parquet as pq
@@ -159,7 +159,7 @@ class IndexResultParser:
             A dict mapping each search sequence (cts) to detected samples.
 
         """
-        query_results = []
+        query_results = defaultdict(set)
         with Pool(processes=cores) as pool:
             for this_batch in IndexResultParser._iterate_parquet_in_batches(
                 path, batch_size
@@ -172,8 +172,12 @@ class IndexResultParser:
                     ),
                     this_batch,
                 )
-                query_results.extend(detected_samples_list)
-        query_results = ChainMap(*query_results)
+                for parse_dict in detected_samples_list:
+                    for this_cts, this_sample_set in parse_dict.items():
+                        query_results[this_cts].update(this_sample_set)
+                #query_results.extend(detected_samples_list)
+        
+        #query_results = ChainMap(*query_results)
         return query_results
 
     @staticmethod
