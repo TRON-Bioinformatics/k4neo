@@ -21,7 +21,6 @@ logger.add(lambda msg: tqdm.write(msg, end=""), level="INFO")
 epilog = "Copyright (c) 2025 TRON gGmbH (See LICENSE for licensing details)"
 
 
-
 def build_database():
     parser = ArgumentParser(
         description=f"k4neo {k4neo.VERSION} database builder",
@@ -186,9 +185,7 @@ def annotate():
         "--profile",
         dest="workflow_profile",
         help="A yaml file containing snakemake options for execution",
-        default=pathlib.Path(__file__).parent
-        / "pipeline"
-        / "default_profile.yaml",
+        default=pathlib.Path(__file__).parent / "pipeline" / "default_profile.yaml",
     )
     parser.add_argument(
         "--kmer",
@@ -207,9 +204,15 @@ def annotate():
     parser.add_argument(
         "--slurm", dest="slurm", help="Submit query job to slurm", action="store_true"
     )
+    parser.add_argument(
+        "--chunk-size",
+        dest="chunk_size",
+        help="Chunk size for processing input sequences",
+        type=int,
+        default=10000,
+    )
     args = parser.parse_args()
     console.print(k4neo.logo, style="bold red")
-    chunk_size = 2
 
     working_dir = pathlib.Path(args.working_dir).resolve()
     pipeline = pathlib.Path(args.workflow).resolve()
@@ -237,18 +240,24 @@ def annotate():
 
         grouped_df = this_df.groupby("cts_id")
         group_keys = list(grouped_df.groups.keys())
-        num_chunks = (len(group_keys) + chunk_size - 1) // chunk_size
+        num_chunks = (len(group_keys) + args.chunk_size - 1) // chunk_size
 
         output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
-        output_healthy_rate = pathlib.Path(args.output + f"_healthy_sample_rate_{this_method}.tsv.gz")
+        output_healthy_rate = pathlib.Path(
+            args.output + f"_healthy_sample_rate_{this_method}.tsv.gz"
+        )
         output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv.gz")
         first_chunk = True
-        with gzip.open(output_annotated, "wb") as f_annotated, \
-            gzip.open(output_healthy_rate, "wb") as f_healthy, \
-            gzip.open(output_tumor_rate, "wb") as f_tumor:
+        with (
+            gzip.open(output_annotated, "wb") as f_annotated,
+            gzip.open(output_healthy_rate, "wb") as f_healthy,
+            gzip.open(output_tumor_rate, "wb") as f_tumor,
+        ):
 
-            for i in tqdm(range(0, len(group_keys), chunk_size), total=num_chunks, desc="Processing chunks"):
-                chunk_keys = group_keys[i:i + chunk_size]
+            for i in tqdm(
+                range(0, len(group_keys), chunk_size), total=num_chunks, desc="Processing chunks"
+            ):
+                chunk_keys = group_keys[i : i + chunk_size]
                 chunk = pd.concat([grouped_df.get_group(k) for k in chunk_keys])
 
                 results = annotator.annotate_cts(chunk)
@@ -258,13 +267,14 @@ def annotate():
                 sample_hits.to_csv(f_annotated, sep="\t", index=False, header=first_chunk)
                 healthy_sample_rate.to_csv(f_healthy, sep="\t", index=False, header=first_chunk)
                 tumor_sample_rate.to_csv(f_tumor, sep="\t", index=False, header=first_chunk)
-                
+
                 first_chunk = False  # turn off headers after first write
                 del results
                 del sample_hits
                 del healthy_sample_rate
                 del tumor_sample_rate
                 gc.collect()
+
 
 def plot():
     parser = ArgumentParser(
