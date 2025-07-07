@@ -124,7 +124,7 @@ class ShellExec:
         Returns:
             int: The return code of the command
         """
-        logger.info("-> Executing CMD: {}".format(" ".join(cmd)))
+        logger.debug("Executing CMD: {}".format(" ".join(cmd)))
         p = subprocess.run(
             cmd,
             stdout=subprocess.PIPE,

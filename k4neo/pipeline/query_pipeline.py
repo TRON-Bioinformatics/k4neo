@@ -110,7 +110,7 @@ class QueryPipeline(Pipeline):
 
     def __init__(self, workflow: pathlib.Path, workflow_profile: pathlib.Path, config: dict, working_dir: pathlib.Path):
         """Parameter initialization"""
-        logger.info("-> Initialising k4neo query pipeline.")
+        logger.debug("Initialising of k4neo query pipeline.")
         super().__init__(workflow, workflow_profile, config, working_dir, target_rule="query")
 
     def determine_final_query(self):
@@ -136,16 +136,17 @@ class QueryPipeline(Pipeline):
     def run_pipeline(self, slurm: bool = True, cores: int = 8) -> QueryPipelineResult:
         """Execute query pipeline"""
         final_query = self.determine_final_query()
-        logger.info("-> Submitting query pipeline.")
+        logger.info("Submitting query pipeline.")
         return_code = self.run(dryrun=False, slurm=slurm, cores=cores)
         if return_code != 0:
-            raise K4neoPipelineException("-> Pipeline failed to execute")
-        logger.info("-> Finished query pipeline")
+            logger.error("Pipeline command returned non zero exit code.")
+            raise K4neoPipelineException("Pipeline failed to execute")
+        logger.info("Finished query pipeline.")
         return QueryPipelineResult(query_path=final_query)
 
     def _test_pipeline(self):
         """Execute dryrun of  pipeline with specified config file for testing purposes"""
-        logger.info("-> Starting dry run")
+        logger.info("Starting dry run")
         return_code = self.run(dryrun=True, slurm=False)
         if return_code != 0:
             raise K4neoPipelineException("Pipeline failed to execute")
@@ -212,10 +213,10 @@ class PipelineConfig:
 
     def log_configuration(self):
         """Log configuration dictionary on command line"""
-        logger.info("-> Pipeline configuration:")
+        logger.info("Pipeline configuration:")
         for item in self.config:
             for k, v in self.config[item].items():
-                logger.info("{}={}".format(k, v))
+                logger.info("  {}={}".format(k, v))
 
 
 class KmerPipelineConfig(PipelineConfig):
