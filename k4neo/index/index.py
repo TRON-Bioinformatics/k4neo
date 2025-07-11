@@ -23,6 +23,7 @@ class KmerIndex(object):
 
         self.index_struct = self.read_index_struct()
         self.index_methods = self._get_index_methods()
+        self.index_names = self.index_struct.keys()
         logger.info(
             f"-> Executing queries against {' & '.join(self.index_methods)} k-mer indices"
         )
@@ -30,6 +31,7 @@ class KmerIndex(object):
             index=self.index_manifest,
             kmer_ratio=self.kmer_ratio,
             methods=self.index_methods,
+            index_names=self.index_names,
         )
 
     def read_index_struct(self):

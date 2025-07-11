@@ -13,7 +13,7 @@ class QueryPipelineResult:
     Data class to hold results from query pipeline
     """
 
-    query_path: dict
+    query_path: list[tuple[str, pathlib.Path]]  # List of tuples with method and path to query result
 
 
 @dataclass
@@ -117,16 +117,19 @@ class QueryPipeline(Pipeline):
         """Based on selected methods in index manifest, find query output that could be created by pipeline"""
         results = {}
         methods = self.config.get("query", dict()).get("methods", [])
+        index_names = self.config.get("index_names", set())
         for this_method in methods:
             match this_method:
                 case "raptor":
-                    results["raptor"] = (
-                        self.working_dir / "query" / "raptor" / "search.parquet"
-                    )
+                    results = [
+                        (this_method, self.working_dir / "query" / "raptor" / this_index_name / "parsed_search.tsv")
+                            for this_index_name in index_names
+                    ]
                 case "kmindex":
-                    results["kmindex"] = (
-                        self.working_dir / "query" / "kmindex" / "search.parquet"
-                    )
+                    results = [
+                        (this_method, self.working_dir / "query" / "raptor" / this_index_name / "parsed_search.tsv")
+                            for this_index_name in index_names
+                    ]
                 case _:
                     raise ValueError(
                         f"-> Tool {this_method} not supported by k4neo query pipeline"
@@ -241,7 +244,7 @@ class QueryPipelineConfig(KmerPipelineConfig):
     """Generate config for query modus"""
 
     def __init__(
-        self, index: pathlib.Path, kmer_ratio: float, methods: set, verbose=True
+        self, index: pathlib.Path, kmer_ratio: float, methods: set, index_names: set, verbose=True
     ):
         """Parameter initialization
 
@@ -257,6 +260,7 @@ class QueryPipelineConfig(KmerPipelineConfig):
             "index": str(index),
             "kmer_ratio": kmer_ratio,
             "methods": list(methods),
+            "index_names": list(index_names),
         }
         if verbose:
             self.log_configuration()
