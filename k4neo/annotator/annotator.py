@@ -143,7 +143,7 @@ class Annotator:
         query_pipeline_results = index.search_index(
             self.query_fasta, self.working_dir, slurm=slurm, cores=cores
         )
-        parsed_results = index.result_parser(
+        parsed_results = index.result_parser2(
             query_pipeline_results=query_pipeline_results, cores=cores
         )
         method_results = {}

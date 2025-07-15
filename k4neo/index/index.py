@@ -2,6 +2,7 @@ import pathlib
 import yaml
 from k4neo.pipeline.query_pipeline import QueryPipeline, QueryPipelineConfig
 from k4neo.parser.parser import IndexResultParser
+from k4neo.parser.index_parser import IndexResultParser2
 from loguru import logger
 
 
@@ -24,6 +25,7 @@ class KmerIndex(object):
         self.index_struct = self.read_index_struct()
         self.index_methods = self._get_index_methods()
         self.index_names = self.index_struct.keys()
+
         logger.info(
             f"-> Executing queries against {' & '.join(self.index_methods)} k-mer indices"
         )
@@ -59,6 +61,16 @@ class KmerIndex(object):
                 continue
             index_methods.add(method)
         return index_methods
+    
+    def get_raptor_bin_mapping(self, index_name):
+        index_properties = self.index_struct.get(index_name, None)
+        if index_properties.get("method", None) != "raptor":
+            logger.debug(f"No bin2sample mapping for {index_name}. Not an raptor index")
+            return
+        sample_map = index_properties.get(
+            "sample_mapping", None
+        )
+        return sample_map
 
     def search_index(
         self,
@@ -97,6 +109,23 @@ class KmerIndex(object):
         """
         parser = IndexResultParser(
             query_pipeline_results=query_pipeline_results, cores=cores
+        )
+        query_hits = parser.parse_results(kmer_ratio=self.kmer_ratio)
+        return query_hits
+    
+    def result_parser2(self, query_pipeline_results, cores=8):
+        """
+        Parse results returned by k-mer index
+        """
+        #query_pipeline_results [("method", "subindex_name", "result_path")]
+        parser_compatible_structure = []
+        for this_result in query_pipeline_results.query_path:
+            parser_compatible_structure.append(
+                (this_result[0], this_result[1], self.get_raptor_bin_mapping(this_result[1]), this_result[2])
+            )
+        print(parser_compatible_structure)
+        parser = IndexResultParser2(
+            query_pipeline_results=parser_compatible_structure, cores=cores
         )
         query_hits = parser.parse_results(kmer_ratio=self.kmer_ratio)
         return query_hits

@@ -13,7 +13,7 @@ class QueryPipelineResult:
     Data class to hold results from query pipeline
     """
 
-    query_path: list[tuple[str, pathlib.Path]]  # List of tuples with method and path to query result
+    query_path: list[tuple[str, str, pathlib.Path]]  # List of tuples with method and path to query result
 
 
 @dataclass
@@ -94,6 +94,8 @@ class Pipeline:
             "none",
             "--profile",
             str(self.workflow_profile.parent),
+            "--until",
+            "query_raptor"
         ]
         if slurm:
             cmd.extend(["--executor", "slurm"])
@@ -117,17 +119,19 @@ class QueryPipeline(Pipeline):
         """Based on selected methods in index manifest, find query output that could be created by pipeline"""
         results = {}
         methods = self.config.get("query", dict()).get("methods", [])
-        index_names = self.config.get("index_names", set())
+        index_names = self.config.get("query", dict()).get("index_names", set())
         for this_method in methods:
             match this_method:
                 case "raptor":
+                    # query/raptor/{subindex}/search.tsv"
                     results = [
-                        (this_method, self.working_dir / "query" / "raptor" / this_index_name / "parsed_search.tsv")
+                        (this_method, this_index_name, self.working_dir / "query" / "raptor" / this_index_name / "search.tsv")
                             for this_index_name in index_names
                     ]
                 case "kmindex":
+                    # "query/kmindex/{subindex}/search.tsv",
                     results = [
-                        (this_method, self.working_dir / "query" / "raptor" / this_index_name / "parsed_search.tsv")
+                        (this_method, this_index_name, self.working_dir / "query" / "kmindex" / this_index_name / "search.tsv")
                             for this_index_name in index_names
                     ]
                 case _:
