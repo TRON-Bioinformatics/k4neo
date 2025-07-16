@@ -13,7 +13,9 @@ class QueryPipelineResult:
     Data class to hold results from query pipeline
     """
 
-    query_path: list[tuple[str, str, pathlib.Path]]  # List of tuples with method and path to query result
+    query_path: list[
+        tuple[str, str, pathlib.Path]
+    ]  # List of tuples with method and path to query result
 
 
 @dataclass
@@ -30,7 +32,7 @@ class Pipeline:
     Generic representation of a snakemake pipeline. The pipeline class
     holds the path to workflow (snakefile), a configuration object, the working directory
     and the requested target rule. Upon exeuction the config object is written into a
-    yaml file and the pipeline executed. The class `pipeline` is intended to be a reusable 
+    yaml file and the pipeline executed. The class `pipeline` is intended to be a reusable
     interface for specific pipelines.
     """
 
@@ -61,7 +63,7 @@ class Pipeline:
 
         The run method implements the execution of the pipeline. It takes care
         of writing the class config object into yaml file and constructing
-        the snakemake shell command for execution in a subprocess. 
+        the snakemake shell command for execution in a subprocess.
 
         Args:
             dryrun (bool, optional): Execute pipeline without performing any operation. Defaults to False.
@@ -95,7 +97,7 @@ class Pipeline:
             "--profile",
             str(self.workflow_profile.parent),
             "--until",
-            "query_raptor"
+            "query_raptor",
         ]
         if slurm:
             cmd.extend(["--executor", "slurm"])
@@ -110,7 +112,13 @@ class QueryPipeline(Pipeline):
     The QueryPipeline class implements the search mode of the TronMake k-mer pipeline.
     """
 
-    def __init__(self, workflow: pathlib.Path, workflow_profile: pathlib.Path, config: dict, working_dir: pathlib.Path):
+    def __init__(
+        self,
+        workflow: pathlib.Path,
+        workflow_profile: pathlib.Path,
+        config: dict,
+        working_dir: pathlib.Path,
+    ):
         """Parameter initialization"""
         logger.debug("Initialising of k4neo query pipeline.")
         super().__init__(workflow, workflow_profile, config, working_dir, target_rule="query")
@@ -118,22 +126,30 @@ class QueryPipeline(Pipeline):
     def determine_final_query(self):
         """Based on selected methods in index manifest, find query output that could be created by pipeline"""
         results = []
-        for this_index_name, this_method in self.config.get("index_to_method_mapping", dict).items():
+        for this_index_name, this_method in self.config.get(
+            "index_to_method_mapping", dict
+        ).items():
             match this_method:
                 case "raptor":
                     # query/raptor/{subindex}/search.tsv"
                     results.append(
-                        (this_method, this_index_name, self.working_dir / "query" / "raptor" / this_index_name / "search.tsv")
+                        (
+                            this_method,
+                            this_index_name,
+                            self.working_dir / "query" / "raptor" / this_index_name / "search.tsv",
+                        )
                     )
                 case "kmindex":
                     # "query/kmindex/{subindex}/search.tsv",
                     results.append(
-                        (this_method, this_index_name, self.working_dir / "query" / "kmindex" / this_index_name / "search.tsv")
+                        (
+                            this_method,
+                            this_index_name,
+                            self.working_dir / "query" / "kmindex" / this_index_name / "search.tsv",
+                        )
                     )
                 case _:
-                    raise ValueError(
-                        f"-> Tool {this_method} not supported by k4neo query pipeline"
-                    )
+                    raise ValueError(f"-> Tool {this_method} not supported by k4neo query pipeline")
         return results
 
     def run_pipeline(self, slurm: bool = True, cores: int = 8) -> QueryPipelineResult:
@@ -160,7 +176,13 @@ class IndexPipeline(Pipeline):
     The IndexPipeline class implements the indexing of the TronMake k-mer pipeline.
     """
 
-    def __init__(self, worklow: pathlib.Path, workflow_profile: pathlib.Path, config: dict, working_dir: pathlib.Path):
+    def __init__(
+        self,
+        worklow: pathlib.Path,
+        workflow_profile: pathlib.Path,
+        config: dict,
+        working_dir: pathlib.Path,
+    ):
         """Parameter initialization"""
         super().__init__(worklow, workflow_profile, config, working_dir, target_rule="index")
 
@@ -227,7 +249,6 @@ class KmerPipelineConfig(PipelineConfig):
     Class to represent a base TronMake k-mer pipeline configuration.
     """
 
-    
     def __init__(self, query: bool, indexing: bool, verbose=True):
         """Parameter initialization
 
@@ -236,7 +257,7 @@ class KmerPipelineConfig(PipelineConfig):
             indexing (bool): Pipeline should run in indexing mode.
             verbose (bool, optional): Print configuation details. Defaults to True.
         """
-        super().__init__(verbose = verbose)
+        super().__init__(verbose=verbose)
         self.config = {"modus": {"query": query, "indexing": indexing}}
 
 
@@ -244,7 +265,7 @@ class QueryPipelineConfig(KmerPipelineConfig):
     """Generate config for query modus"""
 
     def __init__(
-        self, index: pathlib.Path, kmer_ratio: float, index_to_method_mapping : dict, verbose=True
+        self, index: pathlib.Path, kmer_ratio: float, index_to_method_mapping: dict, verbose=True
     ):
         """Parameter initialization
 
