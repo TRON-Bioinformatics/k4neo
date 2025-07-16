@@ -8,32 +8,36 @@ from loguru import logger
 
 class KmerIndex(object):
     """
-    K-mer (pipeline) index interface
+    K-mer index interface. This class is an instance
+    of the k-mer index manifest file. It enables the user
+    to query arbitrary nucleotide sequences against the indices
+    specified in the manifest.
     """
 
     def __init__(
             self, pipeline: pathlib.Path, workflow_profile: pathlib.Path, index_manifest: pathlib.Path, kmer_ratio: float = 0.7
     ):
 
-        # Generate config representation that can be passed directly to the
-        # snakemake call
+        # Generate config representation that can be passed directly to the snakemake call
         self.pipeline = pipeline
         self.workflow_profile = workflow_profile
         self.index_manifest = index_manifest
         self.kmer_ratio = kmer_ratio
 
         self.index_struct = self.read_index_struct()
-        self.index_methods = self._get_index_methods()
-        self.index_names = self.index_struct.keys()
 
-        logger.info(
-            f"-> Executing queries against {' & '.join(self.index_methods)} k-mer indices"
-        )
+        self.index_to_sample_mapping = {
+            key: value["sample_mapping"] for key, value in self.index_struct.items()
+        }
+
+        self.index_to_method_mapping = {
+            key: value["method"] for key, value in self.index_struct.items()
+        }
+
         self.pipeline_config = QueryPipelineConfig(
             index=self.index_manifest,
             kmer_ratio=self.kmer_ratio,
-            methods=self.index_methods,
-            index_names=self.index_names,
+            index_to_method_mapping = self.index_to_method_mapping
         )
 
     def read_index_struct(self):
@@ -121,7 +125,7 @@ class KmerIndex(object):
         parser_compatible_structure = []
         for this_result in query_pipeline_results.query_path:
             parser_compatible_structure.append(
-                (this_result[0], this_result[1], self.get_raptor_bin_mapping(this_result[1]), this_result[2])
+                (this_result[0], this_result[1], self.index_to_sample_mapping[this_result[1]], this_result[2])
             )
         print(parser_compatible_structure)
         parser = IndexResultParser2(

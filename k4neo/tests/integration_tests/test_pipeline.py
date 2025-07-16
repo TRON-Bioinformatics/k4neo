@@ -10,14 +10,14 @@ class TestPipeline():
     fasta = pathlib.Path(__file__).parent.parent /'resources' / 'example.fasta'
 
     def test_raptor_query_pipeline(self):
-        qconfig = QueryPipelineConfig(index=self.index_manifest, kmer_ratio=self.kmer_ratio, methods=['raptor'])
+        qconfig = QueryPipelineConfig(index=self.index_manifest, kmer_ratio=self.kmer_ratio, index_to_method_mapping={"test_index": "raptor"})
         qconfig.config["query"].update({'query_fasta': str(self.fasta)})
         pipeline = QueryPipeline(self.pipeline, self.profile, qconfig.config, pathlib.Path("./"))
         result = pipeline.run_pipeline(slurm=False, cores=1)
         assert isinstance(result, QueryPipelineResult)
-        assert isinstance(result.query_path, dict)
-        assert "raptor" in result.query_path.keys()
-        assert isinstance(result.query_path['raptor'], pathlib.PosixPath)
+        assert isinstance(result.query_path, list)
+        assert result.query_path == [('raptor', 'test_index', pathlib.Path("./").resolve() / "query/raptor/test_index/search.tsv")]
+
 
 class TestKmerIndexInterface():
     index_manifest = pathlib.Path(__file__).parent.parent /'resources' / 'index_manifest.yaml'
@@ -29,11 +29,16 @@ class TestKmerIndexInterface():
 
     def test_kmer_interface(self):
         assert isinstance(self.kmer_index.index_struct, dict)
-        assert self.kmer_index.index_methods == set(['raptor',])
+        assert self.kmer_index.index_to_sample_mapping == {"test_index": "k4neo/tests/resources/index/index_mapping.txt"}
+        assert self.kmer_index.index_to_method_mapping == {"test_index": "raptor"}
     
         result = self.kmer_index.search_index(query_sequences=self.fasta, working_dir=pathlib.Path("./"), slurm=False, cores=1)
         assert isinstance(result, QueryPipelineResult)
-        assert isinstance(result.query_path, dict)
+        assert isinstance(result.query_path, list)
 
-        parsed_results = self.kmer_index.result_parser(result, cores=1)
+        parsed_results = self.kmer_index.result_parser2(result, cores=1)
         assert isinstance(parsed_results, dict)
+
+        assert set(parsed_results.keys())== {"raptor"}
+        assert set(parsed_results["raptor"].keys()) == {"dde52f9b214f3e15", "b855999df5ed524d", "845644f2045d1b52", "09f4de7a7f434f4d", "8b0ee74a7458e72c", "3eb0221fe5e90c3c"}
+

@@ -3,6 +3,7 @@ import re
 from six import PY2
 from collections import ChainMap
 from k4neo.parser.parser import Parser, IndexResultParser
+from k4neo.parser.index_parser import IndexResultParser2, BinaryKmerIndexResultParser
 
 # Tests for Parser class
 
@@ -88,3 +89,4 @@ def test_parse_table_rows_kmindex(example_table_rows):
     # Test detected in None of the samples
     assert query_results['cts_3'] == set([None,])
 
+# test for IndexResultParser2 and BinaryKmerIndexResultParser

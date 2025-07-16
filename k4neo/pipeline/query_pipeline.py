@@ -117,23 +117,19 @@ class QueryPipeline(Pipeline):
 
     def determine_final_query(self):
         """Based on selected methods in index manifest, find query output that could be created by pipeline"""
-        results = {}
-        methods = self.config.get("query", dict()).get("methods", [])
-        index_names = self.config.get("query", dict()).get("index_names", set())
-        for this_method in methods:
+        results = []
+        for this_index_name, this_method in self.config.get("index_to_method_mapping", dict).items():
             match this_method:
                 case "raptor":
                     # query/raptor/{subindex}/search.tsv"
-                    results = [
+                    results.append(
                         (this_method, this_index_name, self.working_dir / "query" / "raptor" / this_index_name / "search.tsv")
-                            for this_index_name in index_names
-                    ]
+                    )
                 case "kmindex":
                     # "query/kmindex/{subindex}/search.tsv",
-                    results = [
+                    results.append(
                         (this_method, this_index_name, self.working_dir / "query" / "kmindex" / this_index_name / "search.tsv")
-                            for this_index_name in index_names
-                    ]
+                    )
                 case _:
                     raise ValueError(
                         f"-> Tool {this_method} not supported by k4neo query pipeline"
@@ -248,7 +244,7 @@ class QueryPipelineConfig(KmerPipelineConfig):
     """Generate config for query modus"""
 
     def __init__(
-        self, index: pathlib.Path, kmer_ratio: float, methods: set, index_names: set, verbose=True
+        self, index: pathlib.Path, kmer_ratio: float, index_to_method_mapping : dict, verbose=True
     ):
         """Parameter initialization
 
@@ -263,9 +259,8 @@ class QueryPipelineConfig(KmerPipelineConfig):
         self.config["query"] = {
             "index": str(index),
             "kmer_ratio": kmer_ratio,
-            "methods": list(methods),
-            "index_names": list(index_names),
         }
+        self.config["index_to_method_mapping"] = index_to_method_mapping
         if verbose:
             self.log_configuration()
 

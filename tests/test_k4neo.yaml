@@ -59,10 +59,9 @@
       - "query=True"
       - "indexing=False"
       - "kmer_ratio=0.7"
-      - "methods=['raptor']"
+      - "Executing CMD: snakemake --snakefile"
       - "Finished query pipeline"
-      - "Parsing parquet file of k-mer query pipeline"
-      - "Parsing query results of method: raptor"
+      - "Annotating query results of method: raptor"
 
 - name: test_k4neo_with_tx
   tags:
@@ -122,10 +121,9 @@
       - "query=True"
       - "indexing=False"
       - "kmer_ratio=0.7"
-      - "methods=['raptor']"
+      - "Executing CMD: snakemake --snakefile"
       - "Finished query pipeline"
-      - "Parsing parquet file of k-mer query pipeline"
-      - "Parsing query results of method: raptor"
+      - "Annotating query results of method: raptor"
 
 - name: test_k4neo_seq_to_short
   tags:
@@ -158,10 +156,9 @@
       - "query=True"
       - "indexing=False"
       - "kmer_ratio=0.7"
-      - "methods=['raptor']"
+      - "Executing CMD: snakemake --snakefile"
       - "Finished query pipeline"
-      - "Parsing parquet file of k-mer query pipeline"
-      - "Parsing query results of method: raptor"
+      - "Annotating query results of method: raptor"
 
 - name: test_k4neo_plotting
   tags:
