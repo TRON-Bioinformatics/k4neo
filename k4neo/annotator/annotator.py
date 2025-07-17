@@ -95,11 +95,11 @@ class Annotator:
         Wrapper to call FastaHandler class
         """
         if not self.query_fasta.exists():
-            logger.info(f"-> Writing context sequences to fasta file: {self.query_fasta}")
+            logger.info(f"Writing context sequences to fasta file: {self.query_fasta}")
             FastaHandler.write_fasta(self.sequence_table, self.query_fasta)
             return
-        logger.info(
-            f"-> Fasta file: {self.query_fasta} already exists in working directory. Re-using for annotation"
+        logger.warning(
+            f"Fasta file: {self.query_fasta} already exists in working directory. Re-using for annotation"
         )
 
     def prepare_cts(self):
@@ -107,13 +107,13 @@ class Annotator:
         Prepare context sequences provided by user for targeted search and
         dump into fasta format for query
         """
-        logger.info("-> Generating breakpoint sequences.")
+        logger.debug("Generating breakpoint sequences.")
         self._generate_target_sequence()
 
-        logger.info("-> Filtering sequences to short for query in k-mer index.")
+        logger.debug("Filtering sequences to short for query in k-mer index.")
         self._filter_seq_to_short()
 
-        logger.info("-> Writing target sequences to disk.")
+        logger.debug("Writing query sequences to fasta file.")
         self._write_to_fasta()
 
     def search_cts(
@@ -373,13 +373,13 @@ class Annotator:
         not_expressed = self._split_found(parsed_results)
         parsed_results = parsed_results.dropna()
         if len(parsed_results.index) == 0:
-            logger.info("-> None of the queried sequences was found in index.")
+            logger.warning("None of the queried sequences was found in index.")
             return not_expressed
 
-        logger.info("-> Annotating sample hits with sample level metadata.")
+        logger.debug("Annotating sample hits with sample level metadata.")
         parsed_results = self._annotate_sample_metadata(parsed_results)
 
-        logger.info("-> Annotating with pre-computed counts.")
+        logger.debug("Annotating with pre-computed counts from database.")
         parsed_results = self._annotate_counts(parsed_results)
         parsed_results = pd.concat([parsed_results, not_expressed])
         parsed_results = parsed_results[
