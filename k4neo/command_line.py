@@ -45,6 +45,11 @@ def build_database():
         required=True,
     )
     args = parser.parse_args()
+
+    log_file_name = pathlib.Path(args.database).parent / "k4neo_db_build.log"
+
+    logger = setup_logging(log_file_name, verbose=True)
+
     logger.info("-> Starting metadata database creation.")
     db = CreateDataBase(args.database, args.sample_table, args.tissue_map)
     db.setup_db()
