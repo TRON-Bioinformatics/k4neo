@@ -23,44 +23,43 @@
         - '782c19c1fd5fc15a4497bcb63bfc015c	18	20	primary solid tumor	adult	Triple Negative Breast Cancer	Innotop_TNBC'
     - path: 'test_jx_healthy_sample_rate_raptor.tsv.gz'
       contains:
-        - 'a534b03cc1757cac71b2265687a2b019	adult	bladder	3	0	0.0'
-        - 'a534b03cc1757cac71b2265687a2b019	adult	brain	3	0	0.0'
-        - 'a534b03cc1757cac71b2265687a2b019	adult	breast	3	0	0.0'
-        - 'a534b03cc1757cac71b2265687a2b019	adult	heart	3	0	0.0'
-        - 'a534b03cc1757cac71b2265687a2b019	adult	lung	3	3	1.0'
-        - 'a534b03cc1757cac71b2265687a2b019	adult	placenta	3	0	0.0'
-        - 'a534b03cc1757cac71b2265687a2b019	adult	spleen	3	0	0.0'
-        - 'a534b03cc1757cac71b2265687a2b019	adult	stomach	3	2	0.6666666666666666'
-        - 'a534b03cc1757cac71b2265687a2b019	adult	testis	3	2	0.6666666666666666'
-        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	bladder	3	3	1.0'
-        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	brain	3	3	1.0'
-        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	breast	3	3	1.0'
-        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	heart	3	2	0.6666666666666666'
-        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	lung	3	3	1.0'
-        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	placenta	3	3	1.0'
-        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	spleen	3	3	1.0'
-        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	stomach	3	3	1.0'
-        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	testis	3	3	1.0'
-        - 'a9e360f5e159155dd528cecd1ed363ea	adult	bladder	3	2	0.6666666666666666'
-        - 'a9e360f5e159155dd528cecd1ed363ea	adult	brain	3	0	0.0'
-        - 'a9e360f5e159155dd528cecd1ed363ea	adult	breast	3	3	1.0'
-        - 'a9e360f5e159155dd528cecd1ed363ea	adult	heart	3	0	0.0'
-        - 'a9e360f5e159155dd528cecd1ed363ea	adult	lung	3	3	1.0'
-        - 'a9e360f5e159155dd528cecd1ed363ea	adult	placenta	3	3	1.0'
-        - 'a9e360f5e159155dd528cecd1ed363ea	adult	spleen	3	0	0.0'
-        - 'a9e360f5e159155dd528cecd1ed363ea	adult	stomach	3	1	0.3333333333333333'
-        - 'a9e360f5e159155dd528cecd1ed363ea	adult	testis	3	0	0.0'
+        - 'a534b03cc1757cac71b2265687a2b019	adult	bladder	0.0'
+        - 'a534b03cc1757cac71b2265687a2b019	adult	brain	0.0'
+        - 'a534b03cc1757cac71b2265687a2b019	adult	breast	0.0'
+        - 'a534b03cc1757cac71b2265687a2b019	adult	heart	0.0'
+        - 'a534b03cc1757cac71b2265687a2b019	adult	lung	1.0'
+        - 'a534b03cc1757cac71b2265687a2b019	adult	placenta	0.0'
+        - 'a534b03cc1757cac71b2265687a2b019	adult	spleen	0.0'
+        - 'a534b03cc1757cac71b2265687a2b019	adult	stomach	0.6666666666666666'
+        - 'a534b03cc1757cac71b2265687a2b019	adult	testis	0.6666666666666666'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	bladder	1.0'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	brain	1.0'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	breast	1.0'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	heart	0.6666666666666666'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	lung	1.0'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	placenta	1.0'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	spleen	1.0'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	stomach	1.0'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	adult	testis	1.0'
+        - 'a9e360f5e159155dd528cecd1ed363ea	adult	bladder	0.6666666666666666'
+        - 'a9e360f5e159155dd528cecd1ed363ea	adult	brain	0.0'
+        - 'a9e360f5e159155dd528cecd1ed363ea	adult	breast	1.0'
+        - 'a9e360f5e159155dd528cecd1ed363ea	adult	heart	0.0'
+        - 'a9e360f5e159155dd528cecd1ed363ea	adult	lung	1.0'
+        - 'a9e360f5e159155dd528cecd1ed363ea	adult	placenta	1.0'
+        - 'a9e360f5e159155dd528cecd1ed363ea	adult	spleen	0.0'
+        - 'a9e360f5e159155dd528cecd1ed363ea	adult	stomach	0.3333333333333333'
+        - 'a9e360f5e159155dd528cecd1ed363ea	adult	testis	0.0'
     - path: 'test_jx_tumor_sample_rate_raptor.tsv.gz'
       contains:
-        - 'a534b03cc1757cac71b2265687a2b019	primary solid tumor	Triple Negative Breast Cancer	20	0	0.0'
-        - '782c19c1fd5fc15a4497bcb63bfc015c	primary solid tumor	Triple Negative Breast Cancer	20	18	0.9'
-        - 'a9e360f5e159155dd528cecd1ed363ea	primary solid tumor	Triple Negative Breast Cancer	20	15	0.75'
+        - 'a534b03cc1757cac71b2265687a2b019	primary solid tumor	Triple Negative Breast Cancer	0.0'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	primary solid tumor	Triple Negative Breast Cancer	0.9'
+        - 'a9e360f5e159155dd528cecd1ed363ea	primary solid tumor	Triple Negative Breast Cancer	0.75'
   stdout:
     contains:
       - "query=True"
       - "indexing=False"
       - "kmer_ratio=0.7"
-      - "Executing CMD: snakemake --snakefile"
       - "Finished query pipeline"
       - "Annotating query results of method: raptor"
 
@@ -93,37 +92,36 @@
     - path: 'test_tx_healthy_sample_rate_raptor.tsv.gz'
       contains:    
         # CLDN18
-        - '7f0ad3f025864231672ae60d18956078	adult	bladder	3	0	0.0'
-        - '7f0ad3f025864231672ae60d18956078	adult	brain	3	0	0.0'
-        - '7f0ad3f025864231672ae60d18956078	adult	breast	3	0	0.0'
-        - '7f0ad3f025864231672ae60d18956078	adult	heart	3	0	0.0'
-        - '7f0ad3f025864231672ae60d18956078	adult	lung	3	3	1.0'
-        - '7f0ad3f025864231672ae60d18956078	adult	placenta	3	0	0.0'
-        - '7f0ad3f025864231672ae60d18956078	adult	spleen	3	0	0.0'
-        - '7f0ad3f025864231672ae60d18956078	adult	stomach	3	2	0.6666666666666666'
-        - '7f0ad3f025864231672ae60d18956078	adult	testis	3	3	1.0'
+        - '7f0ad3f025864231672ae60d18956078	adult	bladder	0.0'
+        - '7f0ad3f025864231672ae60d18956078	adult	brain	0.0'
+        - '7f0ad3f025864231672ae60d18956078	adult	breast	0.0'
+        - '7f0ad3f025864231672ae60d18956078	adult	heart	0.0'
+        - '7f0ad3f025864231672ae60d18956078	adult	lung	1.0'
+        - '7f0ad3f025864231672ae60d18956078	adult	placenta	0.0'
+        - '7f0ad3f025864231672ae60d18956078	adult	spleen	0.0'
+        - '7f0ad3f025864231672ae60d18956078	adult	stomach	0.6666666666666666'
+        - '7f0ad3f025864231672ae60d18956078	adult	testis	1.0'
         # VGLL1
-        - '8f72c1d095e1114f5416e05def073c38	adult	bladder	3	2	0.6666666666666666'
-        - '8f72c1d095e1114f5416e05def073c38	adult	brain	3	0	0.0'
-        - '8f72c1d095e1114f5416e05def073c38	adult	breast	3	3	1.0'
-        - '8f72c1d095e1114f5416e05def073c38	adult	heart	3	0	0.0'
-        - '8f72c1d095e1114f5416e05def073c38	adult	lung	3	3	1.0'
-        - '8f72c1d095e1114f5416e05def073c38	adult	placenta	3	3	1.0'
-        - '8f72c1d095e1114f5416e05def073c38	adult	spleen	3	0	0.0'
-        - '8f72c1d095e1114f5416e05def073c38	adult	stomach	3	0	0.0'
-        - '8f72c1d095e1114f5416e05def073c38	adult	testis	3	0	0.0'
+        - '8f72c1d095e1114f5416e05def073c38	adult	bladder	0.6666666666666666'
+        - '8f72c1d095e1114f5416e05def073c38	adult	brain	0.0'
+        - '8f72c1d095e1114f5416e05def073c38	adult	breast	1.0'
+        - '8f72c1d095e1114f5416e05def073c38	adult	heart	0.0'
+        - '8f72c1d095e1114f5416e05def073c38	adult	lung	1.0'
+        - '8f72c1d095e1114f5416e05def073c38	adult	placenta	1.0'
+        - '8f72c1d095e1114f5416e05def073c38	adult	spleen	0.0'
+        - '8f72c1d095e1114f5416e05def073c38	adult	stomach	0.0'
+        - '8f72c1d095e1114f5416e05def073c38	adult	testis	0.0'
     - path: 'test_tx_tumor_sample_rate_raptor.tsv.gz'
       contains:
         # CLDN18
-        - '7f0ad3f025864231672ae60d18956078	primary solid tumor	Triple Negative Breast Cancer	20	0	0.0'
+        - '7f0ad3f025864231672ae60d18956078	primary solid tumor	Triple Negative Breast Cancer	0.0'
         # VGLL1
-        - '8f72c1d095e1114f5416e05def073c38	primary solid tumor	Triple Negative Breast Cancer	20	15	0.75'
+        - '8f72c1d095e1114f5416e05def073c38	primary solid tumor	Triple Negative Breast Cancer	0.75'
   stdout:
     contains:
       - "query=True"
       - "indexing=False"
       - "kmer_ratio=0.7"
-      - "Executing CMD: snakemake --snakefile"
       - "Finished query pipeline"
       - "Annotating query results of method: raptor"
 
@@ -159,7 +157,6 @@
       - "query=True"
       - "indexing=False"
       - "kmer_ratio=0.7"
-      - "Executing CMD: snakemake --snakefile"
       - "Finished query pipeline"
       - "Annotating query results of method: raptor"
 
