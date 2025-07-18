@@ -62,7 +62,7 @@ class Pipeline:
         """Build and execute pipeline
 
         The run method implements the execution of the pipeline. It takes care
-        of writing the class config object into yaml file and constructing
+        of writing the config object into yaml file and constructing
         the snakemake shell command for execution in a subprocess.
 
         Args:
@@ -276,11 +276,13 @@ class QueryPipelineConfig(KmerPipelineConfig):
             verbose (bool, optional): Print configuation details. Defaults to True.
         """
         super().__init__(query=True, indexing=False, verbose=False)
-        # Generate config object to be used with
+        # SnakeMake pipeline options - specific for TronMake k-mer pipeline
         self.config["query"] = {
             "index": str(index),
             "kmer_ratio": kmer_ratio,
         }
+        # Not for pipeline. This is used by the QueryPipeline class to determine the files
+        # and associated methods.
         self.config["index_to_method_mapping"] = index_to_method_mapping
         if verbose:
             self.log_configuration()

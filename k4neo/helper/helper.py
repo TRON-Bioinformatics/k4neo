@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import pathlib
 import subprocess
 import xxhash
@@ -40,8 +40,10 @@ class FastaHandler:
 
 
 class InputValidation:
+   
+   
     @staticmethod
-    def columns_missing(df: pd.DataFrame, columns: list) -> Tuple[bool, List[str]]:
+    def columns_missing(df: pd.DataFrame, columns: List[str]) -> Tuple[bool, List[str]]:
         """Check if DataFrame is missing columns
 
         Allows to explicitly check if the given DataFrame is
@@ -50,17 +52,13 @@ class InputValidation:
 
         Args:
             df (pd.DataFrame): A pandas DataFrame
-            columns (list): A list of column names for presence check.
+            columns (List[str]): A list of column names for presence check.
 
         Returns:
             Tuple[bool, List[str]]: A tuple with boolean if any of the column is missing and a list of missing columns
         """
-        absent_columns = {}
-        for this_column in columns:
-            if not this_column in df.columns:
-                absent_columns[this_column] = True
-        return any(absent_columns.values()), list(absent_columns.keys())
-
+        missing = [col for col in columns if col not in df.columns]
+        return bool(missing), missing
 
 class SequenceOperation:
     """
@@ -68,7 +66,7 @@ class SequenceOperation:
     """
 
     @staticmethod
-    def subset_cts(cts_seq: str, pos: int = None, length: int = None) -> str:
+    def subset_cts(cts_seq: str, pos: Optional[int] = None, length: Optional[int] = None) -> str:
         """Generate query sequence
 
         Generate sequence of interest to query in kmer index e.g. the fusion breakpoint, splice junction. If length
@@ -86,7 +84,7 @@ class SequenceOperation:
             return cts_seq
 
         start = max(0, pos - round(length / 2))
-        stop = min(start + length, len(cts_seq) - 1)
+        stop = min(start + length, len(cts_seq))
         sequence_of_interest = cts_seq[start:stop]
 
         return sequence_of_interest
@@ -114,7 +112,7 @@ class ShellExec:
     """
     
     @staticmethod
-    def execute_cmd(cmd: List[str], working_dir: pathlib.Path = "."):
+    def execute_cmd(cmd: List[str], working_dir: pathlib.Path = ".") -> int:
         """Run shell command in a subprocess and return the exit-code.
 
         Args:
@@ -122,7 +120,7 @@ class ShellExec:
             working_dir (pathlib.Path, optional): Current workingdir of executed process. Defaults to ".".
 
         Returns:
-            int: The return code of the command
+            int: The return code of the command.
         """
         logger.debug("Executing CMD: {}".format(" ".join(cmd)))
         p = subprocess.run(
@@ -137,9 +135,25 @@ class ShellExec:
         return p.returncode
 
 class DiskIO:
+    """
+    Generic methods for DiskIO operations, such as writing tables.
+    """
     
     @staticmethod
-    def write_df(df, path, compression=True, append=False, sep="\t", header=True):
+    def write_df(df: pd.DataFrame, path: pathlib.Path, compression :bool =True, append: bool=False, sep: str="\t", header: bool=True):
+        """Write pandas dataframe to tsv file.
+
+        Small wrapper method to either write or append a dataframe to a
+        tsv/csv file. 
+
+        Args:
+            df (pd.DataFrame): A dataframe to write to disk.
+            path (pathlib.Path): Path to file.
+            compression (bool, optional): Compress output when writing to disk. Defaults to True.
+            append (bool, optional): Open file in write or append mode. Defaults to False.
+            sep (str, optional): Delimiter of output file. Defaults to "\t" -> tsv.
+            header (bool, optional): Write header to file. Disable when append is selected. Defaults to True.
+        """
         mode = 'a' if append else 'w'
         if not compression:
             df.to_csv(path, index=False, mode=mode, sep=sep, header=header)

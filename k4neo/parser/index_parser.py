@@ -94,24 +94,6 @@ class BinaryKmerIndexResultParser:
                 logger.error(f"Tool {self.method} is unknown. Cannot parse results")
         return result
 
-    @staticmethod
-    def write_result(results: pd.DataFrame, out_file: str, out_type: str = "tsv") -> None:
-        """
-        Write parsed results into tabular format to be processed by user
-        :param results: A dictionary qith cts as key and sample hits as value
-        :param out_file: Output file
-        :return:
-        """
-        assert out_type in [
-            "tsv",
-            "parquet",
-        ], "Supported output types are parquet and tsv"
-        with open(out_file, "wb") as file_handle:
-            if out_type == "tsv":
-                results.to_csv(file_handle, sep="\t")
-            else:
-                results.to_parquet(file_handle, compression="snappy", index=True)
-
     def _parse_kmindex(self) -> pd.DataFrame:
         """
         Parse tabular output format of kmindex
@@ -139,7 +121,7 @@ class BinaryKmerIndexResultParser:
                 else:
                     results[cts_id] = detected_samples
 
-        logger.info(f"-> Parsed {len(results.keys())} query sequences")
+        logger.debug(f"Parsed {len(results.keys())} query sequences from kmindex output.")
         return results
 
     def _parse_raptor(self) -> pd.DataFrame:
@@ -153,8 +135,8 @@ class BinaryKmerIndexResultParser:
         results = {}
 
         with open(self.raptor_sample_mapping, "r") as file_handle:
-            logger.info(
-                "-> Reading minimiser2sample mapping file to match raptor bin ids to sample names"
+            logger.debug(
+                "Reading minimiser2sample mapping file to match raptor bin ids to sample names"
             )
             reader = DictReader(file_handle, delimiter="\t")
             for row in reader:
@@ -193,5 +175,5 @@ class BinaryKmerIndexResultParser:
                     else:
                         results[cts_id] = detected_samples
 
-        logger.info(f"-> Parsed {len(results.keys())} query sequences")
+        logger.info(f"Parsed {len(results.keys())} query sequences from raptor output")
         return results
