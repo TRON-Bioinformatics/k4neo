@@ -23,7 +23,7 @@ class Plotter:
         self,
         healthy_sample_rate: str,
         tumor_sample_rate: str,
-        row: str = "junc_id",
+        row: str = "cts_id",
         column: str = "tissue",
         value: str = "sample_rate",
     ):
