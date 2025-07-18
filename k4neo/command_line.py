@@ -17,8 +17,8 @@ import pandas as pd
 import time
 
 console = Console()
-#logger.remove()
-#logger.add(lambda msg: tqdm.write(msg, end=""), level="INFO", colorize=True)
+# logger.remove()
+# logger.add(lambda msg: tqdm.write(msg, end=""), level="INFO", colorize=True)
 
 epilog = "Copyright (c) 2025 TRON gGmbH (See LICENSE for licensing details)"
 
@@ -88,6 +88,7 @@ def parse_output():
     results = parser.parse_results()
     parser.write_result(results, args.output_table)
     logger.info("Parsed query results into table")
+
 
 def annotate():
     parser = ArgumentParser(
@@ -172,17 +173,16 @@ def annotate():
         "--compress",
         dest="compression",
         help="Compress final output files with gzip",
-        action="store_true"
+        action="store_true",
     )
-    
+
     args = parser.parse_args()
     console.print(k4neo.logo, style="bold red")
-
 
     # Create pipeline workdir if not existent
     working_dir = pathlib.Path(args.working_dir).resolve()
     working_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Setup logger
     output_directory = pathlib.Path(args.output).parent
     log_file_name = pathlib.Path(output_directory) / "k4neo.log"
@@ -192,7 +192,7 @@ def annotate():
     pipeline = pathlib.Path(args.workflow).resolve()
     workflow_profile = pathlib.Path(args.workflow_profile).resolve()
     index_manifest = pathlib.Path(args.index_manifest).resolve()
-    
+
     annotator = Annotator(working_dir, args.queries, args.database)
     annotator.prepare_cts()
     result_dict = annotator.search_cts(
@@ -206,28 +206,32 @@ def annotate():
     # Write non-queryable sequences to disk
     if len(annotator.non_queryable.index > 0):
         logger.info("-> Writing non-queryable sequences to disk")
+        output_non_queryable = (
+            pathlib.Path(args.output + "_non_querable.tsv.gz")
+            if args.compression
+            else pathlib.Path(args.output + "_non_querable.tsv")
+        )
         DiskIO.write_df(annotator.non_queryable, output_non_queryable, args.compression)
-    
 
     # Result could come from different indexing methods such as binary and quantitative indices.
     for this_method, this_df in result_dict.items():
         logger.info(f"-> Annotating query results of method: {this_method}")
-        
+
         if args.compression:
-            output_non_queryable = pathlib.Path(args.output + "_non_querable.tsv.gz")
             output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
             output_healthy_rate = pathlib.Path(
                 args.output + f"_healthy_sample_rate_{this_method}.tsv.gz"
             )
-            output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv.gz")
+            output_tumor_rate = pathlib.Path(
+                args.output + f"_tumor_sample_rate_{this_method}.tsv.gz"
+            )
         else:
-            output_non_queryable = pathlib.Path(args.output + "_non_querable.tsv")
             output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv")
             output_healthy_rate = pathlib.Path(
                 args.output + f"_healthy_sample_rate_{this_method}.tsv"
             )
-            output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv") 
-        
+            output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv")
+
         grouped_df = this_df.groupby("cts_id")
         group_keys = list(grouped_df.groups.keys())
         num_chunks = (len(group_keys) + args.chunk_size - 1) // args.chunk_size
@@ -241,18 +245,47 @@ def annotate():
             results = annotator.annotate_cts(chunk)
             sample_hits = annotator.annotate_sequences(results)
             healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
-            
+
             # Append to output file
-            DiskIO.write_df(sample_hits[['cts_id', 'count', 'total', 'disease', 'developmental_stage', 'tissue', 'study_id']], output_annotated, args.compression, append=(not first_chunk), header=first_chunk)
-            DiskIO.write_df(healthy_sample_rate[['cts_id', 'developmental_stage', 'tissue', 'sample_rate']], output_healthy_rate, args.compression, append=(not first_chunk), header=first_chunk)
-            DiskIO.write_df(tumor_sample_rate[['cts_id', 'disease', 'tissue', 'sample_rate']], output_tumor_rate, args.compression, append=(not first_chunk), header=first_chunk)
-            
+            DiskIO.write_df(
+                sample_hits[
+                    [
+                        "cts_id",
+                        "count",
+                        "total",
+                        "disease",
+                        "developmental_stage",
+                        "tissue",
+                        "study_id",
+                    ]
+                ],
+                output_annotated,
+                args.compression,
+                append=(not first_chunk),
+                header=first_chunk,
+            )
+            DiskIO.write_df(
+                healthy_sample_rate[["cts_id", "developmental_stage", "tissue", "sample_rate"]],
+                output_healthy_rate,
+                args.compression,
+                append=(not first_chunk),
+                header=first_chunk,
+            )
+            DiskIO.write_df(
+                tumor_sample_rate[["cts_id", "disease", "tissue", "sample_rate"]],
+                output_tumor_rate,
+                args.compression,
+                append=(not first_chunk),
+                header=first_chunk,
+            )
+
             first_chunk = False  # turn off headers after first write
             del results
             del sample_hits
             del healthy_sample_rate
             del tumor_sample_rate
             gc.collect()
+
 
 def plot():
     parser = ArgumentParser(
@@ -264,7 +297,7 @@ def plot():
         "--input", dest="input", help="Input prefix for annotated sequences", required=True
     )
     parser.add_argument("--output", dest="output", help="Output file", required=True)
-    
+
     args = parser.parse_args()
     console.print(k4neo.logo, style="bold red")
 
