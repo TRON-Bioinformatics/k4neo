@@ -9,6 +9,7 @@
       --working-dir .
       --output test_jx
       --ratio 0.7
+      --compress
   files:
     - path: 'test_jx_annotated_raptor.tsv.gz'
       contains:
@@ -74,6 +75,7 @@
        --working-dir .
        --output test_tx
        --ratio 0.7
+       --compress
   files:
     - path: 'test_tx_annotated_raptor.tsv.gz'
       contains:
@@ -136,6 +138,7 @@
        --working-dir .
        --output test_sx
        --ratio 0.7
+       --compress
   files:
     - path: 'test_sx_annotated_raptor.tsv.gz'
       contains:
@@ -165,7 +168,7 @@
     - integrationtest
   command: >
     bash -c "
-    poetry run k4neo-annotator --database tests/resources/index_metadata.db --index tests/resources/index_manifest.yaml --queries tests/resources/queries/test_junction_k4neo_input.tsv --working-dir . --output ./test_jx ;
+    poetry run k4neo-annotator --database tests/resources/index_metadata.db --index tests/resources/index_manifest.yaml --queries tests/resources/queries/test_junction_k4neo_input.tsv --compress --working-dir . --output ./test_jx ;
     poetry run k4neo-plotter --input ./test_jx --output test_picture.png
     "
   files:
