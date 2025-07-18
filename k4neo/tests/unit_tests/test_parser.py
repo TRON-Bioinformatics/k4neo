@@ -152,6 +152,13 @@ def test_parse_table_rows_kmindex(example_table_rows):
             },
         ),
         (
+            0.25,
+            {
+                "d2e9c05e86abc70c804fc48a7f25aad8": {"MCF7", "SKBR3"},
+                "b410c5db97c66dc7a4d200ec44ce4a1d": {"MCF7"},
+            },
+        ),
+        (
             0.5,
             {
                 "d2e9c05e86abc70c804fc48a7f25aad8": {"MCF7"},

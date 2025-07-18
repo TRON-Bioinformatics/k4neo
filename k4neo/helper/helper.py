@@ -135,3 +135,14 @@ class ShellExec:
         if p.returncode != 0:
             logger.error(p.stderr)
         return p.returncode
+
+class DiskIO:
+    
+    @staticmethod
+    def write_df(df, path, compression=True, append=False, sep="\t", header=True):
+        mode = 'a' if append else 'w'
+        if not compression:
+            df.to_csv(path, index=False, mode=mode, sep=sep, header=header)
+        else:
+            df.to_csv(path, index=False, mode=mode, compression="gzip", sep=sep, header=header)
+        

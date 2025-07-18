@@ -8,8 +8,8 @@ from k4neo.annotator.annotator import Annotator
 from k4neo.parser.parser import IndexResultParser
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 from k4neo.plotter.plotter import Plotter
-#from loguru import logger
 from k4neo.setup_logging import setup_logging
+from k4neo.helper.helper import DiskIO
 from rich.console import Console
 from tqdm import tqdm
 import gc
@@ -168,6 +168,13 @@ def annotate():
         action="store_true",
         help="Verbose logs (default: False)",
     )
+    parser.add_argument(
+        "--compress",
+        dest="compression",
+        help="Compress final output files with gzip",
+        action="store_true"
+    )
+    
     args = parser.parse_args()
     console.print(k4neo.logo, style="bold red")
 
@@ -196,68 +203,56 @@ def annotate():
         cores=args.cpu,
         slurm=args.slurm,
     )
-
-    # Write non-queryable sequences to disk. These are the sequences that shorter than the k-mer size
-    output_non_queryable = pathlib.Path(args.output + "_non_querable.tsv.gz")
+    # Write non-queryable sequences to disk
     if len(annotator.non_queryable.index > 0):
-        logger.debug("-> Writing non-queryable sequences to disk")
-        with gzip.open(output_non_queryable, "wb") as file_handle:
-            annotator.non_queryable.to_csv(file_handle, sep="\t", index=False)
+        logger.info("-> Writing non-queryable sequences to disk")
+        DiskIO.write_df(annotator.non_queryable, output_non_queryable, args.compression)
+    
 
     # Result could come from different indexing methods such as binary and quantitative indices.
     for this_method, this_df in result_dict.items():
-        logger.info(f"Annotating {this_method} query results")
-
-        # Group df by cts_id and determine number of chunks
+        logger.info(f"-> Annotating query results of method: {this_method}")
+        
+        if args.compression:
+            output_non_queryable = pathlib.Path(args.output + "_non_querable.tsv.gz")
+            output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
+            output_healthy_rate = pathlib.Path(
+                args.output + f"_healthy_sample_rate_{this_method}.tsv.gz"
+            )
+            output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv.gz")
+        else:
+            output_non_queryable = pathlib.Path(args.output + "_non_querable.tsv")
+            output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv")
+            output_healthy_rate = pathlib.Path(
+                args.output + f"_healthy_sample_rate_{this_method}.tsv"
+            )
+            output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv") 
+        
         grouped_df = this_df.groupby("cts_id")
         group_keys = list(grouped_df.groups.keys())
         num_chunks = (len(group_keys) + args.chunk_size - 1) // args.chunk_size
 
-        # Define final output files
-        output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
-        output_healthy_rate = pathlib.Path(
-            args.output + f"_healthy_sample_rate_{this_method}.tsv.gz"
-        )
-        output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv.gz")
-        
         first_chunk = True
-        with (
-            gzip.open(output_annotated, "wb") as f_annotated,
-            gzip.open(output_healthy_rate, "wb") as f_healthy,
-            gzip.open(output_tumor_rate, "wb") as f_tumor,
+        for i in tqdm(
+            range(0, len(group_keys), args.chunk_size), total=num_chunks, desc="Processing chunks"
         ):
-
-            for i in tqdm(
-                range(0, len(group_keys), args.chunk_size), total=num_chunks, desc="Processing chunks"
-            ):
-                chunk_t0 = time.perf_counter()
-                # Collect cts_ids belonging to currently processed chunk and get rows
-                chunk_keys = group_keys[i : i + args.chunk_size]
-                chunk = pd.concat([grouped_df.get_group(k) for k in chunk_keys])
-
-                # Run k4neo annotator functions on chunk
-                results = annotator.annotate_cts(chunk)
-                sample_hits = annotator.annotate_sequences(results)
-                healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
-                
-                chunk_t1 = time.perf_counter()
-                logger.debug(f"[chunk {i}] required: {(chunk_t1 - chunk_t0):.2f} s")
-
-                # Write to disk
-                sample_hits.to_csv(f_annotated, sep="\t", index=False, header=first_chunk)
-                healthy_sample_rate.to_csv(f_healthy, sep="\t", index=False, header=first_chunk)
-                tumor_sample_rate.to_csv(f_tumor, sep="\t", index=False, header=first_chunk)
-                
-                first_chunk = False  # Stop writing header after first chunk
-
-                del results
-                del sample_hits
-                del healthy_sample_rate
-                del tumor_sample_rate
-                gc.collect()
-    
-        logger.info("Finished k4neo analysis.")
-
+            chunk_keys = group_keys[i : i + args.chunk_size]
+            chunk = pd.concat([grouped_df.get_group(k) for k in chunk_keys])
+            results = annotator.annotate_cts(chunk)
+            sample_hits = annotator.annotate_sequences(results)
+            healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
+            
+            # Append to output file
+            DiskIO.write_df(sample_hits[['cts_id', 'count', 'total', 'disease', 'developmental_stage', 'tissue', 'study_id']], output_annotated, args.compression, append=(not first_chunk), header=first_chunk)
+            DiskIO.write_df(healthy_sample_rate[['cts_id', 'developmental_stage', 'tissue', 'sample_rate']], output_healthy_rate, args.compression, append=(not first_chunk), header=first_chunk)
+            DiskIO.write_df(tumor_sample_rate[['cts_id', 'disease', 'tissue', 'sample_rate']], output_tumor_rate, args.compression, append=(not first_chunk), header=first_chunk)
+            
+            first_chunk = False  # turn off headers after first write
+            del results
+            del sample_hits
+            del healthy_sample_rate
+            del tumor_sample_rate
+            gc.collect()
 
 def plot():
     parser = ArgumentParser(

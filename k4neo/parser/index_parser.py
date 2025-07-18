@@ -4,9 +4,7 @@ from csv import DictReader
 from collections import defaultdict
 import pandas as pd
 from loguru import logger
-
-# Query tables
-# {raptor: [TCGA_LIHC : (query_path, sample_mapping) ], kmindex: [TCGA_LIHC : (query_path)] }
+from multiprocessing import Pool
 
 
 class IndexResultParser2:
@@ -161,7 +159,6 @@ class BinaryKmerIndexResultParser:
             reader = DictReader(file_handle, delimiter="\t")
             for row in reader:
                 sample_name_mapping[row["minimiser_id"]] = row["sample_name"]
-        print(sample_name_mapping)
         with open(self.search_results) as file_handle:
             for line in file_handle:
                 elements = line.rstrip().split("\t")

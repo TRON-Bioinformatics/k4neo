@@ -148,13 +148,10 @@ class Annotator:
         )
         method_results = {}
         for this_method, this_parsed_results in parsed_results.items():
-            dict_to_pandas = []
-            # This could be done more efficiently by zipping samples to cts
-            for cts, samples in this_parsed_results.items():
-                dict_to_pandas.extend([(cts, this_sample) for this_sample in samples])
-            method_results[this_method] = pd.DataFrame(
-                dict_to_pandas, columns=["cts_id", "sample_name"]
-            )
+            # Build a generator of the parsed results and generate datafram object from this
+            rows = ((cts, sample) for cts, samples in this_parsed_results.items() for sample in samples)
+            method_results[this_method] = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
+        
         return method_results
 
     def _annotate_studies(self, parsed_results: pd.DataFrame) -> pd.DataFrame:

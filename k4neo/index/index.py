@@ -101,7 +101,6 @@ class KmerIndex(object):
 
     def result_parser(self, query_pipeline_results, cores=8):
         """
-        Parse results returned by k-mer index
         """
         parser = IndexResultParser(query_pipeline_results=query_pipeline_results, cores=cores)
         query_hits = parser.parse_results(kmer_ratio=self.kmer_ratio)
