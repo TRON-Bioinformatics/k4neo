@@ -1,6 +1,7 @@
 from k4neo.helper.helper import InputValidation, SequenceOperation
 import pandas as pd
 
+
 class TestInputValidation:
     def test_columns_missing_all_present(self):
         df = pd.DataFrame(columns=["name", "age", "email"])
@@ -31,6 +32,7 @@ class TestInputValidation:
         expected = (True, ["name", "email"])
         result = InputValidation.columns_missing(df, ["name", "email"])
         assert result == expected
+
 
 class TestSequenceOperation:
 

@@ -1,21 +1,22 @@
 import pathlib
 from k4neo.parser.index_parser import IndexResultParser2, BinaryKmerIndexResultParser
 
-#class TestIndexResultParser():
-#    pass
-
-
-
 class TestBinaryKmerIndexResultPaser:
-    
+
     def test_parsing_raptor(self):
         parser = BinaryKmerIndexResultParser(
-            pathlib.Path(__file__).parent.parent / "resources" / "example_index_output" / "search_index_raptor.tsv",
+            pathlib.Path(__file__).parent.parent
+            / "resources"
+            / "example_index_output"
+            / "search_index_raptor.tsv",
             "raptor",
-            pathlib.Path(__file__).parent.parent / "resources" / "example_index_output" / "sample2minimiser.tsv",
-            kmer_ratio = 0.7
+            pathlib.Path(__file__).parent.parent
+            / "resources"
+            / "example_index_output"
+            / "sample2minimiser.tsv",
+            kmer_ratio=0.7,
         )
-        
+
         results = parser.parse_results()
 
         assert results == {
@@ -32,16 +33,19 @@ class TestBinaryKmerIndexResultPaser:
             "7bcda9de85306099b5e5dd15c5824249": {"MCF7", "SKBR3"},
             "eeb983a06674aaa92b850e0c94076030": {"MCF7", "SKBR3"},
             "a9588b5674a5d5d1c679e34a88a17d7a": {"MCF7", "SKBR3"},
-            "96dbc2491a9573ec1ae08d6a271b913d": {"MCF7"}
+            "96dbc2491a9573ec1ae08d6a271b913d": {"MCF7"},
         }
-    
+
     def test_parsing_kmindex(self):
-        
+
         parser = BinaryKmerIndexResultParser(
-            pathlib.Path(__file__).parent.parent / "resources" / "example_index_output" / "search_index_kmindex.tsv",
+            pathlib.Path(__file__).parent.parent
+            / "resources"
+            / "example_index_output"
+            / "search_index_kmindex.tsv",
             "kmindex",
             "",
-            kmer_ratio = 0.7
+            kmer_ratio=0.7,
         )
         results = parser.parse_results()
 
@@ -59,5 +63,5 @@ class TestBinaryKmerIndexResultPaser:
             "7bcda9de85306099b5e5dd15c5824249": {"MCF7", "SKBR3"},
             "eeb983a06674aaa92b850e0c94076030": {"MCF7", "SKBR3"},
             "a9588b5674a5d5d1c679e34a88a17d7a": {"MCF7", "SKBR3"},
-            "96dbc2491a9573ec1ae08d6a271b913d": {"MCF7"}
+            "96dbc2491a9573ec1ae08d6a271b913d": {"MCF7"},
         }

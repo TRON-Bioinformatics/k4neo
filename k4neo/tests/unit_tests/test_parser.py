@@ -204,7 +204,7 @@ def example_raptor_output():
     """
     1 = sample to minimiser mapping
     2 = Raptor example output
-    3 = Expected output 
+    3 = Expected output
     """
     return (
         "\n".join(
