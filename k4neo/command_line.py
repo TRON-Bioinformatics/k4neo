@@ -8,15 +8,17 @@ from k4neo.annotator.annotator import Annotator
 from k4neo.parser.parser import IndexResultParser
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 from k4neo.plotter.plotter import Plotter
-from loguru import logger
+#from loguru import logger
+from k4neo.setup_logging import setup_logging
 from rich.console import Console
 from tqdm import tqdm
 import gc
 import pandas as pd
+import time
 
 console = Console()
-logger.remove()
-logger.add(lambda msg: tqdm.write(msg, end=""), level="INFO")
+#logger.remove()
+#logger.add(lambda msg: tqdm.write(msg, end=""), level="INFO", colorize=True)
 
 epilog = "Copyright (c) 2025 TRON gGmbH (See LICENSE for licensing details)"
 
@@ -43,6 +45,11 @@ def build_database():
         required=True,
     )
     args = parser.parse_args()
+
+    log_file_name = pathlib.Path(args.database).parent / "k4neo_db_build.log"
+
+    logger = setup_logging(log_file_name, verbose=True)
+
     logger.info("-> Starting metadata database creation.")
     db = CreateDataBase(args.database, args.sample_table, args.tissue_map)
     db.setup_db()
@@ -52,7 +59,7 @@ def build_database():
 
 def parse_output():
     parser = ArgumentParser(
-        description=f"k4neo {k4neo.VERSION} result parser",
+        description=f"k4neo {k4neo.VERSION} parser",
         formatter_class=ArgumentDefaultsHelpFormatter,
         epilog=epilog,
     )
@@ -81,63 +88,6 @@ def parse_output():
     results = parser.parse_results()
     parser.write_result(results, args.output_table)
     logger.info("Parsed query results into table")
-
-
-def build_index():
-    parser = ArgumentParser(
-        description=f"k4neo {k4neo.VERSION} indexing pipeline",
-        formatter_class=ArgumentDefaultsHelpFormatter,
-        epilog=epilog,
-    )
-    parser.add_argument(
-        "--samples",
-        dest="samples",
-        help="Sample sheet describing fastqs to index",
-    )
-    parser.add_argument("--index", dest="index", help="Path to index directory")
-    parser.add_argument("--kmer_size", dest="kmer_size", help="Size of k-mers", default=21)
-    parser.add_argument(
-        "--cutoff",
-        dest="cutoff",
-        help="Cutoff to define solid and weak k-mers",
-        default=2,
-    )
-    parser.add_argument(
-        "--fpr",
-        dest="fpr",
-        help="Theoretic False Positive Rate of individual bloom filters",
-        default=0.05,
-    )
-    parser.add_argument(
-        "--workflow",
-        dest="workflow",
-        help="path to k4neo pipeline",
-        default=pathlib.Path(__file__).parent / "pipeline" / "workflow" / "Snakefile",
-    )
-    parser.add_argument(
-        "--slurm",
-        dest="slurm",
-        help="Submit pipeline jobs to slurm",
-        action="store_true",
-    )
-    args = parser.parse_args()
-    samples = args.samples
-    working_dir = pathlib.Path(args.index).resolve()
-    pipeline = pathlib.Path(args.workflow).resolve()
-    pipeline_config = IndexPipelineConfig(
-        samples=samples,
-        method="raptor",
-        kmer_size=args.kmer_size,
-        cutoff=args.cutoff,
-        fpr=args.fpr,
-    )
-    logger.info("-> Starting indexing pipeline.")
-    index_pipeline = IndexPipeline(pipeline, working_dir=working_dir, config=pipeline_config.config)
-    index_pipeline.run_pipeline(slurm=args.slurm)
-    logger.info("-> Finished indexing pipeline.")
-
-    return
-
 
 def annotate():
     parser = ArgumentParser(
@@ -211,13 +161,31 @@ def annotate():
         type=int,
         default=10000,
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Verbose logs (default: False)",
+    )
     args = parser.parse_args()
     console.print(k4neo.logo, style="bold red")
 
+
+    # Create pipeline workdir if not existent
     working_dir = pathlib.Path(args.working_dir).resolve()
+    working_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Setup logger
+    output_directory = pathlib.Path(args.output).parent
+    log_file_name = pathlib.Path(output_directory) / "k4neo.log"
+
+    logger = setup_logging(log_file_name, args.verbose)
+
     pipeline = pathlib.Path(args.workflow).resolve()
     workflow_profile = pathlib.Path(args.workflow_profile).resolve()
     index_manifest = pathlib.Path(args.index_manifest).resolve()
+    
     annotator = Annotator(working_dir, args.queries, args.database)
     annotator.prepare_cts()
     result_dict = annotator.search_cts(
@@ -228,25 +196,30 @@ def annotate():
         cores=args.cpu,
         slurm=args.slurm,
     )
-    # Write non-queryable sequences to disk
+
+    # Write non-queryable sequences to disk. These are the sequences that shorter than the k-mer size
     output_non_queryable = pathlib.Path(args.output + "_non_querable.tsv.gz")
     if len(annotator.non_queryable.index > 0):
-        logger.info("-> Writing non-queryable sequences to disk")
+        logger.debug("-> Writing non-queryable sequences to disk")
         with gzip.open(output_non_queryable, "wb") as file_handle:
             annotator.non_queryable.to_csv(file_handle, sep="\t", index=False)
 
+    # Result could come from different indexing methods such as binary and quantitative indices.
     for this_method, this_df in result_dict.items():
-        logger.info(f"-> Annotating query results of method: {this_method}")
+        logger.info(f"Annotating {this_method} query results")
 
+        # Group df by cts_id and determine number of chunks
         grouped_df = this_df.groupby("cts_id")
         group_keys = list(grouped_df.groups.keys())
         num_chunks = (len(group_keys) + args.chunk_size - 1) // args.chunk_size
 
+        # Define final output files
         output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
         output_healthy_rate = pathlib.Path(
             args.output + f"_healthy_sample_rate_{this_method}.tsv.gz"
         )
         output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv.gz")
+        
         first_chunk = True
         with (
             gzip.open(output_annotated, "wb") as f_annotated,
@@ -257,23 +230,33 @@ def annotate():
             for i in tqdm(
                 range(0, len(group_keys), args.chunk_size), total=num_chunks, desc="Processing chunks"
             ):
+                chunk_t0 = time.perf_counter()
+                # Collect cts_ids belonging to currently processed chunk and get rows
                 chunk_keys = group_keys[i : i + args.chunk_size]
                 chunk = pd.concat([grouped_df.get_group(k) for k in chunk_keys])
 
+                # Run k4neo annotator functions on chunk
                 results = annotator.annotate_cts(chunk)
                 sample_hits = annotator.annotate_sequences(results)
                 healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
+                
+                chunk_t1 = time.perf_counter()
+                logger.debug(f"[chunk {i}] required: {(chunk_t1 - chunk_t0):.2f} s")
 
+                # Write to disk
                 sample_hits.to_csv(f_annotated, sep="\t", index=False, header=first_chunk)
                 healthy_sample_rate.to_csv(f_healthy, sep="\t", index=False, header=first_chunk)
                 tumor_sample_rate.to_csv(f_tumor, sep="\t", index=False, header=first_chunk)
+                
+                first_chunk = False  # Stop writing header after first chunk
 
-                first_chunk = False  # turn off headers after first write
                 del results
                 del sample_hits
                 del healthy_sample_rate
                 del tumor_sample_rate
                 gc.collect()
+    
+        logger.info("Finished k4neo analysis.")
 
 
 def plot():
@@ -286,10 +269,12 @@ def plot():
         "--input", dest="input", help="Input prefix for annotated sequences", required=True
     )
     parser.add_argument("--output", dest="output", help="Output file", required=True)
+    
     args = parser.parse_args()
     console.print(k4neo.logo, style="bold red")
+
     pl = Plotter(
-        args.input + f"_healthy_sample_rate_raptor.tsv.gz",
-        args.input + f"_tumor_sample_rate_raptor.tsv.gz",
+        args.input + "_healthy_sample_rate_raptor.tsv.gz",
+        args.input + "_tumor_sample_rate_raptor.tsv.gz",
     )
     pl.plot(args.output)
