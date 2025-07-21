@@ -96,7 +96,7 @@ class IndexResultParser2:
         return query_results
     
     @staticmethod
-    def generate_dataframe_in_batches(parsed_results: Dict[str, Dict[str, Set[str]]], batch_size: int=10000) -> Generator[Tuple[str, pd.DataFrame], None, None]:
+    def generate_dataframe_in_batches(parsed_results: Dict[str, Dict[str, Set[str]]], batch_size: int=10000) -> Generator[Tuple[str, int, pd.DataFrame], None, None]:
         for method_name, cts_dict in parsed_results.items():
             it = iter(cts_dict.items())
             while True:
@@ -116,7 +116,7 @@ class IndexResultParser2:
                     for sample in samples
                 )
                 df = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
-                yield method_name, df
+                yield method_name, len(batch), df
 
     @staticmethod
     def remove_placeholder_None(samples: set) -> set:

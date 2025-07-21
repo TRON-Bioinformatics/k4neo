@@ -226,13 +226,14 @@ class Annotator:
         parsed_results = index.result_parser2(
             query_pipeline_results=query_pipeline_results, cores=cores
         )
-        method_results = {}
-        for this_method, this_parsed_results in parsed_results.items():
+        return parsed_results
+        #method_results = {}
+        #for this_method, this_parsed_results in parsed_results.items():
             # Build a generator of the parsed results and generate datafram object from this
-            rows = ((cts, sample) for cts, samples in this_parsed_results.items() for sample in samples)
-            method_results[this_method] = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
+        #    rows = ((cts, sample) for cts, samples in this_parsed_results.items() for sample in samples)
+        #    method_results[this_method] = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
         
-        return method_results
+        #return method_results
 
     def _annotate_studies(self, parsed_results: pd.DataFrame) -> pd.DataFrame:
         """Annotate sample hits with study id
