@@ -227,13 +227,6 @@ class Annotator:
             query_pipeline_results=query_pipeline_results, cores=cores
         )
         return parsed_results
-        #method_results = {}
-        #for this_method, this_parsed_results in parsed_results.items():
-            # Build a generator of the parsed results and generate datafram object from this
-        #    rows = ((cts, sample) for cts, samples in this_parsed_results.items() for sample in samples)
-        #    method_results[this_method] = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
-        
-        #return method_results
 
     def _annotate_studies(self, parsed_results: pd.DataFrame) -> pd.DataFrame:
         """Annotate sample hits with study id
@@ -443,7 +436,7 @@ class Annotator:
         :param annot_style:
         :return:
         """
-        logger.info("-> Annotating sample hits with corresponding study annotation.")
+        logger.debug("Annotating sample hits with corresponding study annotation.")
         # Select cts not found in index and append columns required to merge later with annotated results
         parsed_results = self._annotate_studies(parsed_results)
         # Group all indexing results by project_id. This allows us to query the database for each table once, regardless

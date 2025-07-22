@@ -11,6 +11,7 @@ from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 from k4neo.plotter.plotter import Plotter
 from k4neo.setup_logging import setup_logging
 from k4neo.helper.helper import DiskIO
+from k4neo.helper.async_writer import AsyncDFWriter
 from rich.console import Console
 from tqdm import tqdm
 import gc
@@ -236,40 +237,47 @@ def annotate():
 
         first_chunk = True
 
+        healthy_writer = AsyncDFWriter(output_healthy_rate, compression=args.compression)
+        healthy_writer.start()
+
+        tumor_writer = AsyncDFWriter(output_tumor_rate, compression=args.compression)
+        tumor_writer.start()
+
+        annot_writer = AsyncDFWriter(output_annotated, compression=args.compression)
+        annot_writer.start()
+
         for _, batch_len, chunk in IndexResultParser2.generate_dataframe_in_batches({method_name: result_dict[method_name]}, batch_size=args.chunk_size):
             results = annotator.annotate_cts(chunk)
             sample_hits = annotator.annotate_sequences(results)
             healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)    
-            DiskIO.write_df(
-                sample_hits[
-                    [
-                        "cts_id",
-                        "count",
-                        "total",
-                        "disease",
-                        "developmental_stage",
-                        "tissue",
-                        "study_id",
-                    ]
+
+            annot_writer.write(
+                sample_hits,
+                [
+                    "cts_id",
+                    "count",
+                    "total",
+                    "disease",
+                    "developmental_stage",
+                    "tissue",
+                    "study_id",
                 ],
-                output_annotated,
-                args.compression,
-                append=(not first_chunk),
-                header=first_chunk,
+                append=not first_chunk,
+                header=first_chunk
             )
-            DiskIO.write_df(
-                healthy_sample_rate[["cts_id", "developmental_stage", "tissue", "sample_rate"]],
-                output_healthy_rate,
-                args.compression,
-                append=(not first_chunk),
-                header=first_chunk,
+
+            healthy_writer.write(
+                healthy_sample_rate,
+                ["cts_id", "developmental_stage", "tissue", "sample_rate"],
+                append=not first_chunk,
+                header=first_chunk
             )
-            DiskIO.write_df(
-                tumor_sample_rate[["cts_id", "disease", "tissue", "sample_rate"]],
-                output_tumor_rate,
-                args.compression,
-                append=(not first_chunk),
-                header=first_chunk,
+
+            tumor_writer.write(
+                tumor_sample_rate,
+                ["cts_id", "disease", "tissue", "sample_rate"],
+                append=not first_chunk,
+                header=first_chunk
             )
 
             first_chunk = False  # turn off headers after first write
@@ -280,14 +288,14 @@ def annotate():
             gc.collect()
             
             pbar.update(batch_len)
+        logger.info("Waiting for writer threads to finish")
+        healthy_writer.wait_until_done()
+        tumor_writer.wait_until_done()
+
+        healthy_writer.stop()
+        tumor_writer.stop()
         pbar.close()
-    #for this_method, this_df in generate_dataframe_in_batches(result_dict, batch_size = args.chunk_size):
-        
-    
-    
-    
-    
-    
+
     # Result could come from different indexing methods such as binary and quantitative indices.
     #for this_method, this_df in result_dict.items():
     #    logger.info(f"-> Annotating query results of method: {this_method}")
