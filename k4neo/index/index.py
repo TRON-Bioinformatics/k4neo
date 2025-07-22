@@ -2,34 +2,46 @@ import pathlib
 import yaml
 from k4neo.pipeline.query_pipeline import QueryPipeline, QueryPipelineConfig
 from k4neo.parser.parser import IndexResultParser
+from k4neo.parser.index_parser import IndexResultParser2
 from loguru import logger
 
 
 class KmerIndex(object):
     """
-    K-mer (pipeline) index interface
+    K-mer index interface. This class is an instance
+    of the k-mer index manifest file. It enables the user
+    to query arbitrary nucleotide sequences against the indices
+    specified in the manifest.
     """
 
     def __init__(
-            self, pipeline: pathlib.Path, workflow_profile: pathlib.Path, index_manifest: pathlib.Path, kmer_ratio: float = 0.7
+        self,
+        pipeline: pathlib.Path,
+        workflow_profile: pathlib.Path,
+        index_manifest: pathlib.Path,
+        kmer_ratio: float = 0.7,
     ):
 
-        # Generate config representation that can be passed directly to the
-        # snakemake call
+        # Generate config representation that can be passed directly to the snakemake call
         self.pipeline = pipeline
         self.workflow_profile = workflow_profile
         self.index_manifest = index_manifest
         self.kmer_ratio = kmer_ratio
 
         self.index_struct = self.read_index_struct()
-        self.index_methods = self._get_index_methods()
-        logger.info(
-            f"-> Executing queries against {' & '.join(self.index_methods)} k-mer indices"
-        )
+
+        self.index_to_sample_mapping = {
+            key: value["sample_mapping"] for key, value in self.index_struct.items()
+        }
+
+        self.index_to_method_mapping = {
+            key: value["method"] for key, value in self.index_struct.items()
+        }
+
         self.pipeline_config = QueryPipelineConfig(
             index=self.index_manifest,
             kmer_ratio=self.kmer_ratio,
-            methods=self.index_methods,
+            index_to_method_mapping=self.index_to_method_mapping,
         )
 
     def read_index_struct(self):
@@ -51,9 +63,7 @@ class KmerIndex(object):
         for index_id, index_properties in self.index_struct.items():
             method = index_properties.get("method", None)
             if method is None:
-                logger.warning(
-                    f"-> k-mer method is missing for index: {index_id}. Ignoring"
-                )
+                logger.warning(f"-> k-mer method is missing for index: {index_id}. Ignoring")
                 continue
             index_methods.add(method)
         return index_methods
@@ -91,10 +101,26 @@ class KmerIndex(object):
 
     def result_parser(self, query_pipeline_results, cores=8):
         """
+        """
+        parser = IndexResultParser(query_pipeline_results=query_pipeline_results, cores=cores)
+        query_hits = parser.parse_results(kmer_ratio=self.kmer_ratio)
+        return query_hits
+
+    def result_parser2(self, query_pipeline_results, cores=8):
+        """
         Parse results returned by k-mer index
         """
-        parser = IndexResultParser(
-            query_pipeline_results=query_pipeline_results, cores=cores
-        )
+        # query_pipeline_results [("method", "subindex_name", "result_path")]
+        parser_compatible_structure = []
+        for this_result in query_pipeline_results.query_path:
+            parser_compatible_structure.append(
+                (
+                    this_result[0],
+                    this_result[1],
+                    self.index_to_sample_mapping[this_result[1]],
+                    this_result[2],
+                )
+            )
+        parser = IndexResultParser2(query_pipeline_results=parser_compatible_structure, cores=cores)
         query_hits = parser.parse_results(kmer_ratio=self.kmer_ratio)
         return query_hits

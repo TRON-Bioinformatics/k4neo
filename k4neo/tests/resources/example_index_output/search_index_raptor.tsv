@@ -1,0 +1,39 @@
+### Minimiser parameters
+## Window size = 35
+## Shape = 1111111111111111111111111111111
+## Shape size (length) = 31
+## Shape count (number of 1s) = 31
+### Search parameters
+## Query file = "query/query_31.fasta"
+## Pattern size = 60
+## Output file = "raptor/hibf_wk/raptor_search_31_0.45.output"
+## Threads = 1
+## tau = 0.9999
+## p_max = 0.15
+## Percentage threshold = 0.45
+## Errors = 0
+## Cache thresholds = false
+### Index parameters
+## Index = "raptor/raptor_31/hibf_wk/raptor.index"
+## Index hashes = 2
+## Index parts = 1
+## False positive rate = 0.05
+## Index is compressed = true
+## Index is HIBF = true
+#0	/minimiser/0115_128_CE_TMA_1TR1_SL1_S8_L005_R1_001.minimiser
+#1	/minimiser/0115_043_CE_TMA_1TR4_SL2_S5_L004_R1_001.minimiser
+#QUERY_NAME	USER_BINS
+d2e9c05e86abc70c804fc48a7f25aad8	0
+b410c5db97c66dc7a4d200ec44ce4a1d
+61c9762eae1072735d7ff13834da8942
+9221002eafd64f81d677be49d5b52885	0,1
+4d2420d9a64523b789dee5a2ff0e1a3a	0
+ae618273613b012a6008ade29038e65c	0
+dc7611c0669d2afb1961b4e6c21f453d	0
+fe4058182debdb142dc93b3c0223640a	0
+8aebbe56abfaba55fcc2821dbfc2e9c9	0
+3b853efc1d5fdea096ac98f6c783cdf5	0,1
+7bcda9de85306099b5e5dd15c5824249	0,1
+eeb983a06674aaa92b850e0c94076030	0,1
+a9588b5674a5d5d1c679e34a88a17d7a	0,1
+96dbc2491a9573ec1ae08d6a271b913d	0
