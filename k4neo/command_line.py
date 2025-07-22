@@ -24,6 +24,11 @@ console = Console()
 
 epilog = "Copyright (c) 2025 TRON gGmbH (See LICENSE for licensing details)"
 
+def process_chunk(chunk, annotator):
+    results = annotator.annotate_cts(chunk)
+    sample_hits = annotator.annotate_sequences(results)
+    healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
+    return sample_hits, healthy_sample_rate, tumor_sample_rate
 
 def build_database():
     parser = ArgumentParser(
@@ -245,7 +250,53 @@ def annotate():
 
         annot_writer = AsyncDFWriter(output_annotated, compression=args.compression)
         annot_writer.start()
-
+        
+        #from concurrent.futures import ProcessPoolExecutor, as_completed
+#
+        #with ProcessPoolExecutor(max_workers = 8) as executor:
+        #    futures = []
+        #    batch_sizes = {}
+        #    
+        #    for _, batch_len, chunk in IndexResultParser2.generate_dataframe_in_batches({method_name: result_dict[method_name]}, batch_size=args.chunk_size):
+        #        this_future = executor.submit(process_chunk, chunk, annotator)
+        #        futures.append(this_future)
+        #        batch_sizes[this_future] = batch_len
+#
+        #    for this_future in as_completed(futures):
+        #        sample_hits, healthy_sample_rate, tumor_sample_rate = this_future.result()
+        #        header = first_chunk
+        #        annot_writer.write(
+        #            sample_hits,
+        #            [
+        #                "cts_id",
+        #                "count",
+        #                "total",
+        #                "disease",
+        #                "developmental_stage",
+        #                "tissue",
+        #                "study_id",
+        #            ],
+        #            append=not first_chunk,
+        #            header=first_chunk
+        #        )
+    #
+        #        healthy_writer.write(
+        #            healthy_sample_rate,
+        #            ["cts_id", "developmental_stage", "tissue", "sample_rate"],
+        #            append=not first_chunk,
+        #            header=first_chunk
+        #        )
+    #
+        #        tumor_writer.write(
+        #            tumor_sample_rate,
+        #            ["cts_id", "disease", "tissue", "sample_rate"],
+        #            append=not first_chunk,
+        #            header=first_chunk
+        #        )
+#
+        #        pbar.update(batch_sizes[this_future])
+        #        first_chunk = False
+        
         for _, batch_len, chunk in IndexResultParser2.generate_dataframe_in_batches({method_name: result_dict[method_name]}, batch_size=args.chunk_size):
             results = annotator.annotate_cts(chunk)
             sample_hits = annotator.annotate_sequences(results)
@@ -281,13 +332,8 @@ def annotate():
             )
 
             first_chunk = False  # turn off headers after first write
-            del results
-            del sample_hits
-            del healthy_sample_rate
-            del tumor_sample_rate
-            gc.collect()
-            
             pbar.update(batch_len)
+        
         logger.info("Waiting for writer threads to finish")
         healthy_writer.wait_until_done()
         tumor_writer.wait_until_done()
@@ -296,79 +342,7 @@ def annotate():
         tumor_writer.stop()
         pbar.close()
 
-    # Result could come from different indexing methods such as binary and quantitative indices.
-    #for this_method, this_df in result_dict.items():
-    #    logger.info(f"-> Annotating query results of method: {this_method}")
-#
-    #    if args.compression:
-    #        output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv.gz")
-    #        output_healthy_rate = pathlib.Path(
-    #            args.output + f"_healthy_sample_rate_{this_method}.tsv.gz"
-    #        )
-    #        output_tumor_rate = pathlib.Path(
-    #            args.output + f"_tumor_sample_rate_{this_method}.tsv.gz"
-    #        )
-    #    else:
-    #        output_annotated = pathlib.Path(args.output + f"_annotated_{this_method}.tsv")
-    #        output_healthy_rate = pathlib.Path(
-    #            args.output + f"_healthy_sample_rate_{this_method}.tsv"
-    #        )
-    #        output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{this_method}.tsv")
-#
-    #    grouped_df = this_df.groupby("cts_id")
-    #    group_keys = list(grouped_df.groups.keys())
-    #    num_chunks = (len(group_keys) + args.chunk_size - 1) // args.chunk_size
-#
-    #    first_chunk = True
-    #    for i in tqdm(
-    #        range(0, len(group_keys), args.chunk_size), total=num_chunks, desc="Processing chunks"
-    #    ):
-    #        chunk_keys = group_keys[i : i + args.chunk_size]
-    #        chunk = pd.concat([grouped_df.get_group(k) for k in chunk_keys])
-    #        results = annotator.annotate_cts(chunk)
-    #        sample_hits = annotator.annotate_sequences(results)
-    #        healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
-#
-    #        # Append to output file
-    #        DiskIO.write_df(
-    #            sample_hits[
-    #                [
-    #                    "cts_id",
-    #                    "count",
-    #                    "total",
-    #                    "disease",
-    #                    "developmental_stage",
-    #                    "tissue",
-    #                    "study_id",
-    #                ]
-    #            ],
-    #            output_annotated,
-    #            args.compression,
-    #            append=(not first_chunk),
-    #            header=first_chunk,
-    #        )
-    #        DiskIO.write_df(
-    #            healthy_sample_rate[["cts_id", "developmental_stage", "tissue", "sample_rate"]],
-    #            output_healthy_rate,
-    #            args.compression,
-    #            append=(not first_chunk),
-    #            header=first_chunk,
-    #        )
-    #        DiskIO.write_df(
-    #            tumor_sample_rate[["cts_id", "disease", "tissue", "sample_rate"]],
-    #            output_tumor_rate,
-    #            args.compression,
-    #            append=(not first_chunk),
-    #            header=first_chunk,
-    #        )
-#
-    #        first_chunk = False  # turn off headers after first write
-    #        del results
-    #        del sample_hits
-    #        del healthy_sample_rate
-    #        del tumor_sample_rate
-    #        gc.collect()
-
+ 
 
 def plot():
     parser = ArgumentParser(

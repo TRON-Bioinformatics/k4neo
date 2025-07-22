@@ -58,7 +58,7 @@ class IndexResultParser2:
 
         for this_method, detected_samples in results:
             for this_cts, this_sample_set in detected_samples.items():
-                query_results[this_method][this_cts].update(this_sample_set)
+                IndexResultParser2.update_sample_set(query_results[this_method][this_cts], this_sample_set)
 
         return query_results
 
@@ -103,16 +103,10 @@ class IndexResultParser2:
                 batch = list(itertools.islice(it, batch_size))
                 if not batch:
                     break
-                
-                # Remove placeholders from Sample sets
-                cleaned_batch = [
-                    (cts, IndexResultParser2.remove_placeholder_None(samples))
-                    for cts, samples in batch
-                ]
                 # Generate cts/sample generators for dataframe creation
                 rows = (
                     (cts, sample)
-                    for cts, samples in cleaned_batch
+                    for cts, samples in batch
                     for sample in samples
                 )
                 df = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
@@ -141,7 +135,16 @@ class IndexResultParser2:
             return samples - {None}
         else:
             return samples
+    
+    @staticmethod
+    def update_sample_set(target_set: set, new_set: set):
+        pre_existing = len(target_set - {None})
+        new_entries = new_set - {None}
 
+        target_set.update(new_set)
+
+        if pre_existing == 0 and new_entries:
+            target_set.discard(None)
 
 
 class BinaryKmerIndexResultParser:
