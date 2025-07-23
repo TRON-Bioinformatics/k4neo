@@ -122,5 +122,5 @@ class KmerIndex(object):
                 )
             )
         parser = IndexResultParser2(query_pipeline_results=parser_compatible_structure, cores=cores)
-        query_hits = parser.parse_results(kmer_ratio=self.kmer_ratio)
+        query_hits = parser.parse_result2(kmer_ratio=self.kmer_ratio)
         return query_hits

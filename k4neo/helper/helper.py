@@ -8,7 +8,7 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from loguru import logger
-
+from k4neo.annotator import EXPECTED_CTS_COLUMNS
 
 class FastaHandler:
     """
@@ -159,4 +159,22 @@ class DiskIO:
             df.to_csv(path, index=False, mode=mode, sep=sep, header=header)
         else:
             df.to_csv(path, index=False, mode=mode, compression="gzip", sep=sep, header=header)
-        
+
+    @staticmethod
+    def read_context_seq(sequence_table: pathlib.Path) -> tuple:
+        """Read context sequenc table.
+
+        Read context sequence table
+
+        Args:
+            sequence_table (pathlib.Path): Path to context sequence table
+
+        Returns:
+            tuple: Returns a dataframe for query in index
+        """
+        with open(sequence_table, "r") as file_handle:
+            seq = pd.read_csv(file_handle, sep="\t")
+        ret, missing_cols = InputValidation.columns_missing(seq, EXPECTED_CTS_COLUMNS)
+        assert not ret, f"-> Missing columns: {missing_cols} in input table"
+
+        return seq

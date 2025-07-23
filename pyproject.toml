@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "k4neo"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = [
     "TRON - Translational Oncology at the University Medical Center", 
@@ -20,7 +20,7 @@ packages = [
 ]
 
 include = [
-    { path = "k4neo/pipeline/tronmake-kmer-pipeline", format = ["sdist", "wheel"] }
+    { path = "k4neo/pipeline/tronmake-kmer-pipeline", format = ["wheel"] }
 ]
 
 [tool.poetry.dependencies]
@@ -36,6 +36,7 @@ loguru = "==0.7.3"
 rich = "^14.0.0"
 plotnine = "^0.14.5"
 tqdm = "^4.67.1"
+joblib = "^1.5.1"
 
 [tool.poetry.scripts]
 k4neo-annotator = "k4neo.command_line:annotate"

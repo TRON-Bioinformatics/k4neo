@@ -5,6 +5,9 @@ from collections import defaultdict
 import pandas as pd
 from loguru import logger
 from multiprocessing import Pool
+from typing import Dict, Set, Generator, Tuple
+import itertools
+from joblib import Parallel, delayed
 
 
 class IndexResultParser2:
@@ -18,6 +21,46 @@ class IndexResultParser2:
 
         self.query_tables = query_pipeline_results
         self.cores = cores
+    
+    @staticmethod
+    def parse_results_of_kmer_search(this_method, this_index, this_sample_mapping, this_result_path, kmer_ratio):
+        
+        kmer_parser = BinaryKmerIndexResultParser(
+            search_results=this_result_path,
+            method=this_method,
+            raptor_sample_mapping=this_sample_mapping,
+            kmer_ratio=kmer_ratio,
+        )
+        return this_method, kmer_parser.parse_results()
+
+    def parse_result2(self, kmer_ratio=0.7) -> dict:
+        """Parse results of QueryPipeline
+
+        Args:
+            kmer_ratio (float, optional):
+                Required fraction of shared k-mers between query and sample.
+                Only required for kmindex results. Defaults to 0.7.
+
+        Returns:
+            dict: A dictionary containing parsed results of k-mer methods.
+            For example:
+                {'raptor': {cts: set(P1,P2,P3), cts_2: set(P1)},
+                 'kimindex': {cts: set(P2,P3), cts_2: set(P1,P2)}
+                }
+        """
+        query_results = defaultdict(lambda: defaultdict(set))
+        logger.debug("Parsing k-mer result files in parallel")
+        
+        results = Parallel(n_jobs=self.cores, backend='multiprocessing')(
+            delayed(IndexResultParser2.parse_results_of_kmer_search)(m, i, s, r, kmer_ratio)
+                for m, i, s, r in self.query_tables
+            )
+
+        for this_method, detected_samples in results:
+            for this_cts, this_sample_set in detected_samples.items():
+                IndexResultParser2.update_sample_set(query_results[this_method][this_cts], this_sample_set)
+
+        return query_results
 
     def parse_results(self, kmer_ratio=0.7) -> dict:
         """Parse results of QueryPipeline
@@ -51,6 +94,57 @@ class IndexResultParser2:
                 query_results[this_method][this_cts].update(this_sample_set)
 
         return query_results
+    
+    @staticmethod
+    def generate_dataframe_in_batches(parsed_results: Dict[str, Dict[str, Set[str]]], batch_size: int=10000) -> Generator[Tuple[str, int, pd.DataFrame], None, None]:
+        for method_name, cts_dict in parsed_results.items():
+            it = iter(cts_dict.items())
+            while True:
+                batch = list(itertools.islice(it, batch_size))
+                if not batch:
+                    break
+                # Generate cts/sample generators for dataframe creation
+                rows = (
+                    (cts, sample)
+                    for cts, samples in batch
+                    for sample in samples
+                )
+                df = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
+                yield method_name, len(batch), df
+
+    @staticmethod
+    def remove_placeholder_None(samples: set) -> set:
+        """Remove placeholder None
+
+        This method can be used to remove the classic “None” as a placeholder problem.
+        Each k-mer index result is parsed idenpendently using None as placeholder if not
+        detected in any sample of the subindex. If the sequence is missing in just one of the indices, the
+        placeholder will also be present in the set of detected samples. 
+
+        Clean up the set of samples for each cts so that None is removed if there is at least one “real” sample name
+        in the parsed results.
+
+        Args:
+            samples (set): A collection of sample names.
+        Returns:
+            set: A set without placeholder if detected in at least one sample or a placeholder set.
+
+        """
+        if None in samples and len(samples) > 1:
+            
+            return samples - {None}
+        else:
+            return samples
+    
+    @staticmethod
+    def update_sample_set(target_set: set, new_set: set):
+        pre_existing = len(target_set - {None})
+        new_entries = new_set - {None}
+
+        target_set.update(new_set)
+
+        if pre_existing == 0 and new_entries:
+            target_set.discard(None)
 
 
 class BinaryKmerIndexResultParser:

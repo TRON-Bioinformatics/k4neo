@@ -11,10 +11,90 @@ from k4neo.annotator import (
     TUMOR_TISSUE,
     IMMUNO_PRIVILIGED_TISSUE,
 )
-from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation
+from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation, DiskIO
 import numpy as np
 from loguru import logger
 
+
+class Prepare:
+    def __init__(
+        self,
+        working_dir: str,
+        sequence_table: str,
+        index_kmer_size: int = 21,
+    ) -> None:
+        self.working_dir = pathlib.Path(working_dir)
+        self.sequence_table = DiskIO.read_context_seq(sequence_table)
+        self.non_queryable = pd.DataFrame(
+            columns=["cts_id", "cts_seq", "query_length", "pos", "query_sequence", "query_cts_id"]
+        )
+        self.index_kmer_size = index_kmer_size
+    
+    def _generate_target_sequence(self) -> None:
+        """
+        Generate target sequence of interest by extracting
+        subsequence according to position and query_length column
+        """
+        self.sequence_table["query_sequence"] = self.sequence_table.apply(
+            lambda x: SequenceOperation.subset_cts(x.cts_seq, x.pos, x.query_length),
+            axis=1,
+        )
+
+        self.sequence_table["query_cts_id"] = self.sequence_table.apply(
+            lambda x: SequenceOperation.cts_id(x.query_sequence), axis=1
+        )
+
+    def _filter_seq_to_short(self) -> None:
+        """
+        Filter sequences that are shorter than minimiser_size are excluded from search
+        """
+        self.non_queryable = pd.concat(
+            [
+                self.non_queryable,
+                self.sequence_table[
+                    self.sequence_table["query_sequence"].str.len() < self.index_kmer_size + 4
+                ],
+            ]
+        )
+        self.sequence_table = self.sequence_table[
+            ~self.sequence_table["cts_id"].isin(self.non_queryable["cts_id"])
+        ]
+
+    def write_annotator_input(self) -> None:
+        """
+        Wrapper to call FastaHandler class
+        """
+        self._generate_target_sequence()
+        self._filter_seq_to_short()
+
+        fasta_output =  self.working_dir / "query.fa"
+        seq_to_short_output = self.working_dir / "seq_to_short.tsv"
+        sequence_table = self.working_dir / "sequence_table.tsv"
+
+        if not fasta_output.exists():
+            logger.info(f"Writing context sequences to fasta file: {fasta_output}")
+            FastaHandler.write_fasta(self.sequence_table, fasta_output)
+        else:
+            logger.warning(
+                f"File: {self.query_fasta} already exists in working directory. Not overwriting"
+            )
+        
+        if len(annotator.non_queryable.index > 0):
+            if not seq_to_short_output.exists():
+                logger.info(f"Writing non-queryable sequences to disk: {seq_to_short_output}")
+                DiskIO.write_df(self.non_queryable, seq_to_short_output, False)
+            else:
+                logger.warning(
+                    f"File: {seq_to_short_output} already exists in working directory. Not overwriting"
+                )
+        
+        if not sequence_table.exists():
+            logger.info(f"Writing sequence table to disk: {sequence_table}")
+            DiskIO.write_df(annotator.sequence_table, sequence_table, False)
+        else:
+            logger.warning(
+                f"File: {sequence_table} already exists in working directory. Not overwriting"
+            )
 
 class Annotator:
     """
@@ -146,13 +226,7 @@ class Annotator:
         parsed_results = index.result_parser2(
             query_pipeline_results=query_pipeline_results, cores=cores
         )
-        method_results = {}
-        for this_method, this_parsed_results in parsed_results.items():
-            # Build a generator of the parsed results and generate datafram object from this
-            rows = ((cts, sample) for cts, samples in this_parsed_results.items() for sample in samples)
-            method_results[this_method] = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
-        
-        return method_results
+        return parsed_results
 
     def _annotate_studies(self, parsed_results: pd.DataFrame) -> pd.DataFrame:
         """Annotate sample hits with study id
@@ -362,7 +436,7 @@ class Annotator:
         :param annot_style:
         :return:
         """
-        logger.info("-> Annotating sample hits with corresponding study annotation.")
+        logger.debug("Annotating sample hits with corresponding study annotation.")
         # Select cts not found in index and append columns required to merge later with annotated results
         parsed_results = self._annotate_studies(parsed_results)
         # Group all indexing results by project_id. This allows us to query the database for each table once, regardless
