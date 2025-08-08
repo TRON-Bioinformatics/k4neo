@@ -21,10 +21,10 @@ class IndexResultParser2:
 
         self.query_tables = query_pipeline_results
         self.cores = cores
-    
+
     @staticmethod
     def parse_results_of_kmer_search(this_method, this_index, this_sample_mapping, this_result_path, kmer_ratio):
-        
+
         kmer_parser = BinaryKmerIndexResultParser(
             search_results=this_result_path,
             method=this_method,
@@ -48,9 +48,9 @@ class IndexResultParser2:
                  'kimindex': {cts: set(P2,P3), cts_2: set(P1,P2)}
                 }
         """
-        query_results = defaultdict(lambda: defaultdict(set))
+        query_results = defaultdict(lambda: defaultdict(lambda: {None}))
         logger.debug("Parsing k-mer result files in parallel")
-        
+
         results = Parallel(n_jobs=self.cores, backend='multiprocessing')(
             delayed(IndexResultParser2.parse_results_of_kmer_search)(m, i, s, r, kmer_ratio)
                 for m, i, s, r in self.query_tables
@@ -77,7 +77,7 @@ class IndexResultParser2:
                  'kimindex': {cts: set(P2,P3), cts_2: set(P1,P2)}
                 }
         """
-        query_results = defaultdict(lambda: defaultdict(set))
+        query_results = defaultdict(lambda: defaultdict(lambda: {None}))
         logger.debug("Parsing k-mer result files")
         # [("method", "subindex_name", "subindex_mapping", "result_path")]
         for this_method, this_index, this_sample_mapping, this_result_path in self.query_tables:
@@ -94,7 +94,7 @@ class IndexResultParser2:
                 query_results[this_method][this_cts].update(this_sample_set)
 
         return query_results
-    
+
     @staticmethod
     def generate_dataframe_in_batches(parsed_results: Dict[str, Dict[str, Set[str]]], batch_size: int=10000) -> Generator[Tuple[str, int, pd.DataFrame], None, None]:
         for method_name, cts_dict in parsed_results.items():
@@ -131,17 +131,17 @@ class IndexResultParser2:
 
         """
         if None in samples and len(samples) > 1:
-            
+
             return samples - {None}
         else:
             return samples
-    
+
     @staticmethod
     def update_sample_set(target_set: set, new_set: set):
         pre_existing = len(target_set - {None})
         new_entries = new_set - {None}
 
-        target_set.update(new_set)
+        target_set.update(new_entries)
 
         if pre_existing == 0 and new_entries:
             target_set.discard(None)

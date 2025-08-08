@@ -29,7 +29,7 @@ class Prepare:
             columns=["cts_id", "cts_seq", "query_length", "pos", "query_sequence", "query_cts_id"]
         )
         self.index_kmer_size = index_kmer_size
-    
+
     def _generate_target_sequence(self) -> None:
         """
         Generate target sequence of interest by extracting
@@ -78,7 +78,6 @@ class Prepare:
             logger.warning(
                 f"File: {self.query_fasta} already exists in working directory. Not overwriting"
             )
-        
         if len(annotator.non_queryable.index > 0):
             if not seq_to_short_output.exists():
                 logger.info(f"Writing non-queryable sequences to disk: {seq_to_short_output}")
@@ -87,7 +86,7 @@ class Prepare:
                 logger.warning(
                     f"File: {seq_to_short_output} already exists in working directory. Not overwriting"
                 )
-        
+
         if not sequence_table.exists():
             logger.info(f"Writing sequence table to disk: {sequence_table}")
             DiskIO.write_df(annotator.sequence_table, sequence_table, False)
@@ -438,11 +437,14 @@ class Annotator:
         """
         logger.debug("Annotating sample hits with corresponding study annotation.")
         # Select cts not found in index and append columns required to merge later with annotated results
-        parsed_results = self._annotate_studies(parsed_results)
+
         # Group all indexing results by project_id. This allows us to query the database for each table once, regardless
         # of the query sequence. Annotation results are then merged back to the dataframe
+
         not_expressed = self._split_found(parsed_results)
-        parsed_results = parsed_results.dropna()
+        parsed_results.dropna(inplace=True, ignore_index=True)
+        parsed_results = self._annotate_studies(parsed_results)
+
         if len(parsed_results.index) == 0:
             logger.warning("None of the queried sequences was found in index.")
             return not_expressed
