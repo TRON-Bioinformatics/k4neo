@@ -182,6 +182,7 @@
         - "MELK_junc_2	adult	stomach	0.0"
         - "MELK_junc_2	adult	testis	0.0"
     - path: 'test_nx_tumor_sample_rate_raptor.tsv.gz'
+      contains: 
         - "MELK_junc_2	primary solid tumor	Triple Negative Breast Cancer	0.0"
   stdout:
     contains:
