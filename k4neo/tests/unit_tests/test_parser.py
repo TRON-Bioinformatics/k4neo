@@ -249,3 +249,47 @@ def test_parse_raptor(mocker, example_raptor_output):
     results = parser._parse_raptor()
 
     assert results == example_raptor_output[2]
+
+
+# Parsing of subindex results is happening in parallel.
+# Here we test that method results are correctly put together for further processing.
+
+
+def test_add_real_sample_to_placeholder_set():
+    """
+    Test that adding samples for default datastructure works
+    """
+    target = {None}
+    new = {"sample1", "sample2"}
+    IndexResultParser2.update_sample_set(target, new)
+    assert target == {"sample1", "sample2"}
+
+
+def test_add_placeholder_to_placeholder_set():
+    """
+    Test that placeholder stays if not detected in any sample
+    """
+    target = {None}
+    new = {None}
+    IndexResultParser2.update_sample_set(target, new)
+    assert target == {None}
+
+
+def test_add_placeholder_to_real_sample():
+    """
+    Test that placeholder of next subindex (if cts was not detected in any sample) result is ignored
+    """
+    target = {"sample1"}
+    new = {None}
+    IndexResultParser2.update_sample_set(target, new)
+    assert target == {"sample1"}
+
+
+def test_add_mix_of_placeholder_and_real_sample_to_real_sample():
+    """
+    Test that placeholder is also removed when mixed with real sample name
+    """
+    target = {"sample1"}
+    new = {"sample2", None}
+    IndexResultParser2.update_sample_set(target, new)
+    assert target == {"sample1", "sample2"}

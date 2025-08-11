@@ -19,16 +19,16 @@ import pandas as pd
 import time
 
 console = Console()
-# logger.remove()
-# logger.add(lambda msg: tqdm.write(msg, end=""), level="INFO", colorize=True)
 
 epilog = "Copyright (c) 2025 TRON gGmbH (See LICENSE for licensing details)"
+
 
 def process_chunk(chunk, annotator):
     results = annotator.annotate_cts(chunk)
     sample_hits = annotator.annotate_sequences(results)
     healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
     return sample_hits, healthy_sample_rate, tumor_sample_rate
+
 
 def build_database():
     parser = ArgumentParser(
@@ -219,7 +219,12 @@ def annotate():
             else pathlib.Path(args.output + "_non_querable.tsv")
         )
         DiskIO.write_df(annotator.non_queryable, output_non_queryable, args.compression)
-    
+
+    # Write a debug table that maps cts_ids to query_ids
+    annotator.sequence_table[["cts_id", "query_cts_id"]].to_csv(
+        pathlib.Path(args.output + "_cts_to_query_cts.tsv"), sep="\t", index=False
+    )
+
     for method_name in result_dict:
         total_cts = len(result_dict[method_name])
         logger.info(f"-> Annotating query results of method: {method_name}")
@@ -242,6 +247,7 @@ def annotate():
 
         first_chunk = True
 
+        # Start writer threads
         healthy_writer = AsyncDFWriter(output_healthy_rate, compression=args.compression)
         healthy_writer.start()
 
@@ -250,58 +256,17 @@ def annotate():
 
         annot_writer = AsyncDFWriter(output_annotated, compression=args.compression)
         annot_writer.start()
-        
-        #from concurrent.futures import ProcessPoolExecutor, as_completed
-#
-        #with ProcessPoolExecutor(max_workers = 8) as executor:
-        #    futures = []
-        #    batch_sizes = {}
-        #    
-        #    for _, batch_len, chunk in IndexResultParser2.generate_dataframe_in_batches({method_name: result_dict[method_name]}, batch_size=args.chunk_size):
-        #        this_future = executor.submit(process_chunk, chunk, annotator)
-        #        futures.append(this_future)
-        #        batch_sizes[this_future] = batch_len
-#
-        #    for this_future in as_completed(futures):
-        #        sample_hits, healthy_sample_rate, tumor_sample_rate = this_future.result()
-        #        header = first_chunk
-        #        annot_writer.write(
-        #            sample_hits,
-        #            [
-        #                "cts_id",
-        #                "count",
-        #                "total",
-        #                "disease",
-        #                "developmental_stage",
-        #                "tissue",
-        #                "study_id",
-        #            ],
-        #            append=not first_chunk,
-        #            header=first_chunk
-        #        )
-    #
-        #        healthy_writer.write(
-        #            healthy_sample_rate,
-        #            ["cts_id", "developmental_stage", "tissue", "sample_rate"],
-        #            append=not first_chunk,
-        #            header=first_chunk
-        #        )
-    #
-        #        tumor_writer.write(
-        #            tumor_sample_rate,
-        #            ["cts_id", "disease", "tissue", "sample_rate"],
-        #            append=not first_chunk,
-        #            header=first_chunk
-        #        )
-#
-        #        pbar.update(batch_sizes[this_future])
-        #        first_chunk = False
-        
-        for _, batch_len, chunk in IndexResultParser2.generate_dataframe_in_batches({method_name: result_dict[method_name]}, batch_size=args.chunk_size):
+
+        for _, batch_len, chunk in IndexResultParser2.generate_dataframe_in_batches(
+            {method_name: result_dict[method_name]}, batch_size=args.chunk_size
+        ):
+
+            # k4neo Annotation functions
             results = annotator.annotate_cts(chunk)
             sample_hits = annotator.annotate_sequences(results)
-            healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)    
+            healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
 
+            # Send metrics to background writer threads
             annot_writer.write(
                 sample_hits,
                 [
@@ -314,35 +279,37 @@ def annotate():
                     "study_id",
                 ],
                 append=not first_chunk,
-                header=first_chunk
+                header=first_chunk,
             )
 
             healthy_writer.write(
                 healthy_sample_rate,
                 ["cts_id", "developmental_stage", "tissue", "sample_rate"],
                 append=not first_chunk,
-                header=first_chunk
+                header=first_chunk,
             )
 
             tumor_writer.write(
                 tumor_sample_rate,
                 ["cts_id", "disease", "tissue", "sample_rate"],
                 append=not first_chunk,
-                header=first_chunk
+                header=first_chunk,
             )
 
             first_chunk = False  # turn off headers after first write
             pbar.update(batch_len)
-        
+
+        pbar.close()
         logger.info("Waiting for writer threads to finish")
+        # Wait for writer threads to finish and close
+        annot_writer.wait_until_done()
         healthy_writer.wait_until_done()
         tumor_writer.wait_until_done()
 
+        annot_writer.stop()
         healthy_writer.stop()
         tumor_writer.stop()
-        pbar.close()
 
- 
 
 def plot():
     parser = ArgumentParser(
