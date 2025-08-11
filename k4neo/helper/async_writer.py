@@ -2,6 +2,7 @@ import threading
 import queue
 from k4neo.helper.helper import DiskIO
 import pathlib
+from loguru import logger
 
 class AsyncDFWriter(threading.Thread):
     def __init__(self, output_path: pathlib.Path, compression: bool=False, max_queue_size=10):
@@ -16,16 +17,22 @@ class AsyncDFWriter(threading.Thread):
         while True:
             item = self.queue.get()
             if item is self._stop_signal:
+                self.queue.task_done()
                 break
-            df, columns, append, header = item
-            DiskIO.write_df(
-                df[columns],
-                self.output_path,
-                self.compression,
-                append=append,
-                header=header
-            )
-            self.queue.task_done()
+            try:
+                df, columns, append, header = item
+                #logger.info(f"Writing {len(df)} rows to {self.output_path}")
+                DiskIO.write_df(
+                    df[columns],
+                    self.output_path,
+                    self.compression,
+                    append=append,
+                    header=header
+                )
+            except Exception as e:
+                logger.error(f"Failed writing dataframe chunk: {e}")
+            finally:
+                self.queue.task_done()
 
     def write(self, df, columns, append, header):
         self.queue.put((df, columns, append, header))

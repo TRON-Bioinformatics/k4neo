@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "k4neo"
-version = "0.2.0"
+version = "0.2.1"
 description = ""
 authors = [
     "TRON - Translational Oncology at the University Medical Center", 
