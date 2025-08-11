@@ -90,7 +90,7 @@
         - '8f72c1d095e1114f5416e05def073c38	15	20	primary solid tumor	adult	Triple Negative Breast Cancer	Innotop_TNBC'
 
     - path: 'test_tx_healthy_sample_rate_raptor.tsv.gz'
-      contains:    
+      contains:
         # CLDN18
         - '7f0ad3f025864231672ae60d18956078	adult	bladder	0.0'
         - '7f0ad3f025864231672ae60d18956078	adult	brain	0.0'
@@ -153,7 +153,7 @@
       - "kmer_ratio=0.7"
       - "Finished query pipeline"
       - "Annotating query results of method: raptor"
-  
+
 - name: test_k4neo_seq_not_in_index
   tags:
     - integrationtest
@@ -169,7 +169,20 @@
   files:
     - path: 'test_nx_annotated_raptor.tsv.gz'
       contains:
-        - "MELK_junc_2	0	0			"
+        - "MELK_junc_2	0	0				"
+    - path: 'test_nx_healthy_sample_rate_raptor.tsv.gz'
+      contains:
+        - "MELK_junc_2	adult	bladder	0.0"
+        - "MELK_junc_2	adult	brain	0.0"
+        - "MELK_junc_2	adult	breast	0.0"
+        - "MELK_junc_2	adult	heart	0.0"
+        - "MELK_junc_2	adult	lung	0.0"
+        - "MELK_junc_2	adult	placenta	0.0"
+        - "MELK_junc_2	adult	spleen	0.0"
+        - "MELK_junc_2	adult	stomach	0.0"
+        - "MELK_junc_2	adult	testis	0.0"
+    - path: 'test_nx_tumor_sample_rate_raptor.tsv.gz'
+        - "MELK_junc_2	primary solid tumor	Triple Negative Breast Cancer	0.0"
   stdout:
     contains:
       - "query=True"
@@ -177,6 +190,7 @@
       - "kmer_ratio=0.7"
       - "Finished query pipeline"
       - "Annotating query results of method: raptor"
+      - "None of the queried sequences was found in index"
 
 - name: test_k4neo_plotting
   tags:

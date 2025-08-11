@@ -332,6 +332,8 @@ class Annotator:
         not_expressed["disease"] = np.nan
         not_expressed["developmental_stage"] = np.nan
         not_expressed["tissue"] = np.nan
+        not_expressed["study_id"] = np.nan
+
         return not_expressed
 
     def _calculate_sample_rate(self, parsed_results: pd.DataFrame):
@@ -379,7 +381,7 @@ class Annotator:
         )
         # Count occurence of each cts per tissue
         parsed_counts = parsed_results.groupby(
-            ["cts_id", "developmental_stage", "tissue"], as_index=False, dropna=False
+            ["cts_id", "developmental_stage", "tissue"], as_index=False, dropna=True
         ).agg(count=("count", "sum"))
 
         # Merge and calculate sample rate
@@ -410,7 +412,7 @@ class Annotator:
         )
         # Count occurence of each cts per tumor
         parsed_counts = parsed_results.groupby(
-            ["cts_id", "disease", "tissue"], as_index=False, dropna=False
+            ["cts_id", "disease", "tissue"], as_index=False, dropna=True
         ).agg(count=("count", "sum"))
 
         # Merge and calculate tumor rate
