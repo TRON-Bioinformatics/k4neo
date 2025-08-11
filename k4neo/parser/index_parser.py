@@ -23,7 +23,9 @@ class IndexResultParser2:
         self.cores = cores
 
     @staticmethod
-    def parse_results_of_kmer_search(this_method, this_index, this_sample_mapping, this_result_path, kmer_ratio):
+    def parse_results_of_kmer_search(
+        this_method, this_index, this_sample_mapping, this_result_path, kmer_ratio
+    ):
 
         kmer_parser = BinaryKmerIndexResultParser(
             search_results=this_result_path,
@@ -51,14 +53,16 @@ class IndexResultParser2:
         query_results = defaultdict(lambda: defaultdict(lambda: {None}))
         logger.debug("Parsing k-mer result files in parallel")
 
-        results = Parallel(n_jobs=self.cores, backend='multiprocessing')(
+        results = Parallel(n_jobs=self.cores, backend="multiprocessing")(
             delayed(IndexResultParser2.parse_results_of_kmer_search)(m, i, s, r, kmer_ratio)
-                for m, i, s, r in self.query_tables
-            )
+            for m, i, s, r in self.query_tables
+        )
 
         for this_method, detected_samples in results:
             for this_cts, this_sample_set in detected_samples.items():
-                IndexResultParser2.update_sample_set(query_results[this_method][this_cts], this_sample_set)
+                IndexResultParser2.update_sample_set(
+                    query_results[this_method][this_cts], this_sample_set
+                )
 
         return query_results
 
@@ -96,7 +100,9 @@ class IndexResultParser2:
         return query_results
 
     @staticmethod
-    def generate_dataframe_in_batches(parsed_results: Dict[str, Dict[str, Set[str]]], batch_size: int=10000) -> Generator[Tuple[str, int, pd.DataFrame], None, None]:
+    def generate_dataframe_in_batches(
+        parsed_results: Dict[str, Dict[str, Set[str]]], batch_size: int = 10000
+    ) -> Generator[Tuple[str, int, pd.DataFrame], None, None]:
         for method_name, cts_dict in parsed_results.items():
             it = iter(cts_dict.items())
             while True:
@@ -104,40 +110,29 @@ class IndexResultParser2:
                 if not batch:
                     break
                 # Generate cts/sample generators for dataframe creation
-                rows = (
-                    (cts, sample)
-                    for cts, samples in batch
-                    for sample in samples
-                )
+                rows = ((cts, sample) for cts, samples in batch for sample in samples)
                 df = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
                 yield method_name, len(batch), df
 
     @staticmethod
-    def remove_placeholder_None(samples: set) -> set:
+    def update_sample_set(target_set: set, new_set: set):
         """Remove placeholder None
 
         This method can be used to remove the classic “None” as a placeholder problem.
-        Each k-mer index result is parsed idenpendently using None as placeholder if not
-        detected in any sample of the subindex. If the sequence is missing in just one of the indices, the
-        placeholder will also be present in the set of detected samples. 
+        Each k-mer index result is parsed idenpendently using None as placeholder if the cts was
+        not detected in any sample of the subindex. If the sequence is missing in just one of the indices, the
+        placeholder will also be present in the set of detected samples.
 
         Clean up the set of samples for each cts so that None is removed if there is at least one “real” sample name
         in the parsed results.
 
         Args:
-            samples (set): A collection of sample names.
+            target_set (set): The set to update with sample names.
+            new_set (set): A set with sample names from parsing.
         Returns:
-            set: A set without placeholder if detected in at least one sample or a placeholder set.
+            set: The modified target_set without placeholder if detected in at least one sample or a placeholder set.
 
         """
-        if None in samples and len(samples) > 1:
-
-            return samples - {None}
-        else:
-            return samples
-
-    @staticmethod
-    def update_sample_set(target_set: set, new_set: set):
         pre_existing = len(target_set - {None})
         new_entries = new_set - {None}
 

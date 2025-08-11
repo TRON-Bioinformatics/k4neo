@@ -153,6 +153,30 @@
       - "kmer_ratio=0.7"
       - "Finished query pipeline"
       - "Annotating query results of method: raptor"
+  
+- name: test_k4neo_seq_not_in_index
+  tags:
+    - integrationtest
+  command: >
+    poetry run k4neo-annotator
+       --database tests/resources/index_metadata.db
+       --index tests/resources/index_manifest.yaml
+       --queries tests/resources/queries/test_seq_not_in_index.tsv
+       --working-dir .
+       --output test_nx
+       --ratio 0.7
+       --compress
+  files:
+    - path: 'test_nx_annotated_raptor.tsv.gz'
+      contains:
+        - "MELK_junc_2	0	0			"
+  stdout:
+    contains:
+      - "query=True"
+      - "indexing=False"
+      - "kmer_ratio=0.7"
+      - "Finished query pipeline"
+      - "Annotating query results of method: raptor"
 
 - name: test_k4neo_plotting
   tags:
