@@ -25,7 +25,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.10 <=3.12.4"
-pandas = "==2.2.2"
+pandas = "2.2.3"
 biopython = "==1.84"
 pyarrow = "==17.0.0"
 fastparquet = "==2024.5.0"
