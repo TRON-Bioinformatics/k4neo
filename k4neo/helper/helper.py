@@ -178,3 +178,36 @@ class DiskIO:
         assert not ret, f"-> Missing columns: {missing_cols} in input table"
 
         return seq
+
+class JellyFishHelper:
+
+    @staticmethod
+    def generate_index(fasta_file: pathlib.Path, index_file: pathlib.Path, bf_size = "3G", canonical=True, kmer_size = 21):
+        """Generate a genomic k-mer index
+
+        Generate a JellyFish k-mer index of the reference genome sequence. This
+        index makes use of canonical k-mers.
+
+
+        Args:
+            genome_fasta (pathlib.Path): _description_
+            genome_index (pathlib.Path): _description_
+        """
+        logger.info("🔄 Creating genomic reference index with jellyfish...")
+        cmd = ["jellyfish", "count", "-m", str(kmer_size), "-s", bf_size]
+        if canonical:
+            cmd.append("-C")
+        cmd.extend(["-o", index_file, fasta_file])
+        ShellExec.execute_cmd(cmd)
+    
+    @staticmethod
+    def query_index(index_file: pathlib.Path, sequence_to_search: str) -> int:
+        result = subprocess.run(
+            ["jellyfish", "query", index_file, sequence_to_search], capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            return 0
+        try:
+            return int(result.stdout.strip().split()[1])
+        except:
+            return 0    

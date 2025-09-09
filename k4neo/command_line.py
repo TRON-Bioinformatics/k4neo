@@ -63,6 +63,35 @@ def build_database():
     db.precomputations()
     logger.info("-> Finished metadata database creation.")
 
+def annotate_uniqueness():
+    parser = ArgumentParser(
+        description=f"k4neo {k4neo.VERSION} uniqueness annotation",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog=epilog,
+    )
+    parser.add_argument(
+        "--queries",
+        dest="queries",
+        help="Tabular format with context sequence and position of interest",
+        required=True,
+    )
+    parser.add_argument(
+        "--reference_indices", dest="ref_index", help="JellyFish indices of genome and transcriptome", required=True
+    )
+    parser.add_argument(
+        "--output",
+        dest="output",
+        help="Tabular output with uniqueness annotation",
+        required=True,
+    )
+    args = parser.parse_args()
+
+    log_file_name = pathlib.Path(args.output).parent / "k4neo_uniqueness_annot.log"
+
+    logger = setup_logging(log_file_name, verbose=True)
+
+    logger.info("Calculating uniqueness of sequences")
+
 
 def parse_output():
     parser = ArgumentParser(
