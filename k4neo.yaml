@@ -15,4 +15,4 @@ dependencies:
   - snakemake-executor-plugin-cluster-generic
   - snakemake-executor-plugin-slurm
   - loguru
-  - bioconda::jellyfish-2.2.10-h6bb024c_1
+  - bioconda::jellyfish=2.2.10-h6bb024c_1
