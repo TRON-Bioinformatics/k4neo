@@ -2,6 +2,7 @@ name: k4neo
 channels:
   - conda-forge
   - bioconda
+  - nodefaults
 dependencies:
   - conda-forge::pytest-workflow
   - conda-forge::pytest
@@ -14,3 +15,4 @@ dependencies:
   - snakemake-executor-plugin-cluster-generic
   - snakemake-executor-plugin-slurm
   - loguru
+  - bioconda::jellyfish-2.2.10-h6bb024c_1

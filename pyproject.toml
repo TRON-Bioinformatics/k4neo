@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "k4neo"
-version = "0.2.1"
+version = "0.3.0"
 description = ""
 authors = [
     "TRON - Translational Oncology at the University Medical Center", 
@@ -41,6 +41,8 @@ joblib = "^1.5.1"
 [tool.poetry.scripts]
 k4neo-annotator = "k4neo.command_line:annotate"
 k4neo-database = "k4neo.command_line:build_database"
+k4neo-ref-index = "k4neo.command_line:build_ref_index"
+k4neo-uniq = "k4neo.command_line:annotate_uniqueness"
 k4neo-plotter = "k4neo.command_line:plot"
 
 [build-system]

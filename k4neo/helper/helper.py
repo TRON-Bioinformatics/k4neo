@@ -193,7 +193,6 @@ class JellyFishHelper:
             genome_fasta (pathlib.Path): _description_
             genome_index (pathlib.Path): _description_
         """
-        logger.info("🔄 Creating genomic reference index with jellyfish...")
         cmd = ["jellyfish", "count", "-m", str(kmer_size), "-s", bf_size]
         if canonical:
             cmd.append("-C")
@@ -201,7 +200,8 @@ class JellyFishHelper:
         ShellExec.execute_cmd(cmd)
     
     @staticmethod
-    def query_index(index_file: pathlib.Path, sequence_to_search: str) -> int:
+    def query_index(sequence_to_search: str, index_file: pathlib.Path) -> int:
+        logger.debug(" ".join(["jellyfish", "query", index_file, sequence_to_search]))
         result = subprocess.run(
             ["jellyfish", "query", index_file, sequence_to_search], capture_output=True, text=True
         )
