@@ -155,24 +155,3 @@ class ReferenceIndexer:
 
         with open(os.path.join(outdir, "metadata.json"), "w") as f:
             json.dump(metadata, f, indent=2)
-
-
-#def run_annotation(args):
-#    annotator = KmerAnnotator(manifest=args.manifest, k=args.kmer)
-#    results = annotator.annotate_fasta(args.fasta)
-
-#    if args.format == "json":
-#        output = json.dumps(results, indent=2)
-#    else:
-#        lines = ["ID\tgene_specific_rate\ttranscript_specific_rate"]
-#        for seq_id, rates in results.items():
-#            lines.append(
-#                f"{seq_id}\t{rates['gene_specific_rate']:.4f}\t{rates['transcript_specific_rate']:.4f}"
-#            )
-#        output = "\n".join(lines)
-#
-#    if args.output:
-#        with open(args.output, "w") as f:
-#            f.write(output)
-#    else:
-#        print(output)
