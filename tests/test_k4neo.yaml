@@ -218,3 +218,24 @@
   stdout:
     contains:
       - "Annotated uniqueness of 14 sequences"
+
+- name: test_k4neo_ref_index
+  tags:
+    - integrationtest
+  command: >
+    poetry run k4neo-ref-index 
+      --genome tests/resources/index/ref_mini/minigenome.fa
+      --transcriptome tests/resources/index/ref_mini/minitranscriptome.fasta 
+      --kmer 21 --output .
+  files:
+    - path: 'genome.jf'
+    - path: 'transcriptome.jf'
+    - path: 'metadata.json'
+      contains:
+        - "kmer_size": "21"
+        - "genome_fasta": "minigenome.fa"
+        - "transcriptome_fasta": "minitranscriptome.fasta"
+  stdout:
+    contains:
+      - "jellyfish count -m 21 -s 3G -C -o ./genome.jf tests/resources/index/ref_mini/minigenome.fa"
+      - "jellyfish count -m 21 -s 100M -o ./transcriptome.jf tests/resources/index/ref_mini/minitranscriptome.fasta"
