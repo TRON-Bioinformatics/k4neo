@@ -232,9 +232,9 @@
     - path: 'transcriptome.jf'
     - path: 'metadata.json'
       contains:
-        - "kmer_size": "21"
-        - "genome_fasta": "minigenome.fa"
-        - "transcriptome_fasta": "minitranscriptome.fasta"
+        - '"kmer_size": "21"'
+        - '"genome_fasta": "minigenome.fa"'
+        - '"transcriptome_fasta": "minitranscriptome.fasta"'
   stdout:
     contains:
       - "jellyfish count -m 21 -s 3G -C -o ./genome.jf tests/resources/index/ref_mini/minigenome.fa"
