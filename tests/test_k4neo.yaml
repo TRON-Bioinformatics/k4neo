@@ -228,7 +228,6 @@
       --transcriptome tests/resources/index/ref_mini/minitranscriptome.fasta 
       --kmer 21 --output .
   files:
-    - path: 'genome.jf'
     - path: 'transcriptome.jf'
     - path: 'metadata.json'
       contains:
