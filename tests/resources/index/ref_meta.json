@@ -1,0 +1,6 @@
+{
+  "kmer_size": 21,
+  "genome_fasta": "minigenome.fa",
+  "transcriptome_fasta": "minitranscriptome.fasta",
+  "data_dir": "tests/resources/index"
+}

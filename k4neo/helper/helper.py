@@ -10,6 +10,7 @@ from Bio.SeqRecord import SeqRecord
 from loguru import logger
 from k4neo.annotator import EXPECTED_CTS_COLUMNS
 
+
 class FastaHandler:
     """
     Generic class to handle FASTA operations
@@ -40,8 +41,7 @@ class FastaHandler:
 
 
 class InputValidation:
-   
-   
+
     @staticmethod
     def columns_missing(df: pd.DataFrame, columns: List[str]) -> Tuple[bool, List[str]]:
         """Check if DataFrame is missing columns
@@ -59,6 +59,7 @@ class InputValidation:
         """
         missing = [col for col in columns if col not in df.columns]
         return bool(missing), missing
+
 
 class SequenceOperation:
     """
@@ -106,11 +107,12 @@ class SequenceOperation:
         """
         return xxhash.xxh64(cts_seq).hexdigest()
 
+
 class ShellExec:
     """
     Generic method for execution of shell command in subprocess
     """
-    
+
     @staticmethod
     def execute_cmd(cmd: List[str], working_dir: pathlib.Path = ".") -> int:
         """Run shell command in a subprocess and return the exit-code.
@@ -134,17 +136,25 @@ class ShellExec:
             logger.error(p.stderr)
         return p.returncode
 
+
 class DiskIO:
     """
     Generic methods for DiskIO operations, such as writing tables.
     """
-    
+
     @staticmethod
-    def write_df(df: pd.DataFrame, path: pathlib.Path, compression :bool =True, append: bool=False, sep: str="\t", header: bool=True):
+    def write_df(
+        df: pd.DataFrame,
+        path: pathlib.Path,
+        compression: bool = True,
+        append: bool = False,
+        sep: str = "\t",
+        header: bool = True,
+    ):
         """Write pandas dataframe to tsv file.
 
         Small wrapper method to either write or append a dataframe to a
-        tsv/csv file. 
+        tsv/csv file.
 
         Args:
             df (pd.DataFrame): A dataframe to write to disk.
@@ -154,7 +164,7 @@ class DiskIO:
             sep (str, optional): Delimiter of output file. Defaults to "\t" -> tsv.
             header (bool, optional): Write header to file. Disable when append is selected. Defaults to True.
         """
-        mode = 'a' if append else 'w'
+        mode = "a" if append else "w"
         if not compression:
             df.to_csv(path, index=False, mode=mode, sep=sep, header=header)
         else:
@@ -178,3 +188,43 @@ class DiskIO:
         assert not ret, f"-> Missing columns: {missing_cols} in input table"
 
         return seq
+
+
+class JellyFishHelper:
+
+    @staticmethod
+    def generate_index(
+        fasta_file: pathlib.Path,
+        index_file: pathlib.Path,
+        bf_size="3G",
+        canonical=True,
+        kmer_size=21,
+    ):
+        """Generate a genomic k-mer index
+
+        Generate a JellyFish k-mer index of the reference genome sequence. This
+        index makes use of canonical k-mers.
+
+
+        Args:
+            genome_fasta (pathlib.Path): _description_
+            genome_index (pathlib.Path): _description_
+        """
+        cmd = ["jellyfish", "count", "-m", str(kmer_size), "-s", bf_size]
+        if canonical:
+            cmd.append("-C")
+        cmd.extend(["-o", index_file, fasta_file])
+        ShellExec.execute_cmd(cmd)
+
+    @staticmethod
+    def query_index(sequence_to_search: str, index_file: pathlib.Path) -> int:
+        logger.debug(" ".join(["jellyfish", "query", index_file, sequence_to_search]))
+        result = subprocess.run(
+            ["jellyfish", "query", index_file, sequence_to_search], capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            return 0
+        try:
+            return int(result.stdout.strip().split()[1])
+        except:
+            return 0
