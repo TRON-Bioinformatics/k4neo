@@ -212,7 +212,7 @@
   files:
     - path: 'test_uniq.tsv'
       contains:
-        - "cts_id	gene_specific_rate	transcript_specific_rate	total_specific_rate	total_unspecific_rate"
+        - "cts_id	genome_specific_rate	transcript_specific_rate	cts_unique_rate	cts_ref_rate"
         - "52dcb9d5e335e70d	1.0000	0.0000	0.0000	1.0000"
         - "c655f2dce34f5636	0.9000	0.9000	0.0000	1.0000"
   stdout:

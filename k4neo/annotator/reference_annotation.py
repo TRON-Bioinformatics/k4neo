@@ -93,27 +93,27 @@ class KmerUniquenessAnnotator:
         transcript_specific = sum(
             1 for g, t in zip(genome_counts, transcriptome_counts) if g <= 1 and t == 1
         )
-        total_specific = sum(
+        cts_unique = sum(
             1 for g, t in zip(genome_counts, transcriptome_counts) if g == 0 and t == 0
         )
-        total_unspecific = sum(
+        cts_ref = sum(
             1 for g, t in zip(genome_counts, transcriptome_counts) if g >= 1 or t >= 1
         )
 
         total_kmers = len(kmers)
         if total_kmers == 0:
             return {
-                "gene_specific_rate": 0.0,
+                "genome_specific_rate": 0.0,
                 "transcript_specific_rate": 0.0,
-                "total_specific_rate": 0.0,
-                "total_unspecific_rate": 0.0
+                "cts_unique_rate": 0.0,
+                "cts_ref_rate": 0.0
             }
 
         return {
-            "gene_specific_rate": gene_specific / total_kmers,
+            "genome_specific_rate": gene_specific / total_kmers,
             "transcript_specific_rate": transcript_specific / total_kmers,
-            "total_specific_rate": total_specific / total_kmers,
-            "total_unspecific_rate": total_unspecific / total_kmers,
+            "cts_unique_rate": cts_unique / total_kmers,
+            "cts_ref_rate": cts_ref / total_kmers,
         }
 
     def annotate_fasta(self, fasta_file: str) -> Dict[str, Dict[str, float]]:
