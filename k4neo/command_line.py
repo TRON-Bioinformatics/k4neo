@@ -5,6 +5,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import k4neo
 from k4neo.database.database import DataBase, CreateDataBase
 from k4neo.annotator.annotator import Annotator
+from k4neo.annotator.reference_annotation import ReferenceIndexer, KmerUniquenessAnnotator
 from k4neo.parser.parser import IndexResultParser
 from k4neo.parser.index_parser import IndexResultParser2
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
@@ -62,6 +63,95 @@ def build_database():
     db.setup_db()
     db.precomputations()
     logger.info("-> Finished metadata database creation.")
+
+
+def build_ref_index():
+    parser = ArgumentParser(
+        description=f"k4neo {k4neo.VERSION} reference index",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog=epilog,
+    )
+    parser.add_argument(
+        "--genome",
+        dest="genome",
+        help="Genome fasta file",
+        required=True,
+    )
+    parser.add_argument(
+        "--transcriptome",
+        dest="transcriptome",
+        help="Transcriptome fasta file",
+        required=True,
+    )
+    parser.add_argument("--kmer", dest="kmer_size", help="K-mer size", default=21)
+    parser.add_argument(
+        "--output",
+        dest="output",
+        help="Output directory",
+        required=True,
+    )
+    args = parser.parse_args()
+
+    log_file_name = pathlib.Path(args.output).parent / "k4neo_ref_index.log"
+
+    logger = setup_logging(log_file_name, verbose=True)
+
+    ReferenceIndexer.prepare_data(args.genome, args.transcriptome, args.kmer_size, args.output)
+
+
+def annotate_uniqueness():
+    parser = ArgumentParser(
+        description=f"k4neo {k4neo.VERSION} uniqueness annotation",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog=epilog,
+    )
+    parser.add_argument(
+        "--fasta",
+        dest="queries",
+        help="FASTA file",
+        required=True,
+    )
+    parser.add_argument(
+        "--reference_indices",
+        dest="ref_index",
+        help="JellyFish indices of genome and transcriptome",
+        required=True,
+    )
+    parser.add_argument(
+        "--output",
+        dest="output",
+        help="Tabular output with uniqueness annotation",
+        required=True,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Verbose logs (default: False)",
+    )
+    args = parser.parse_args()
+
+    log_file_name = pathlib.Path(args.output).parent / "k4neo_uniqueness_annot.log"
+
+    logger = setup_logging(log_file_name, args.verbose)
+
+    logger.info("Calculating uniqueness of sequences")
+
+    uniq = KmerUniquenessAnnotator(args.ref_index)
+    results = uniq.annotate_fasta(args.queries)
+
+    counter = 0
+    with open(args.output, "w") as file_handle:
+        file_handle.write(
+            "cts_id\tgenome_specific_rate\ttranscript_specific_rate\tcts_unique_rate\tcts_ref_rate\n"
+        )
+        for seq_id, rates in results.items():
+            file_handle.write(
+                f"{seq_id}\t{rates['genome_specific_rate']:.4f}\t{rates['transcript_specific_rate']:.4f}\t{rates['cts_unique_rate']:.4f}\t{rates['cts_ref_rate']:.4f}\n"
+            )
+            counter += 1
+    logger.info(f"Annotated uniqueness of {counter} sequences")
 
 
 def parse_output():

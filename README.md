@@ -32,6 +32,7 @@
 - snakemake 9.x.x+
 - raptor 3.0.1
 - kmindex 0.5.2
+- jellyfish 2.2.10+
 - pandas
 - plotnine
 
@@ -49,7 +50,7 @@ conda activate k4neo_env/
 
 ```
 poetry build
-pip install dist/k4neo-*.wheel
+pip install dist/k4neo-*-py3-none-any.whl
 ```
 
 ### 🧪 Run tests
