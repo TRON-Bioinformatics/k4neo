@@ -212,9 +212,9 @@
   files:
     - path: 'test_uniq.tsv'
       contains:
-        - "cts_id	genome_specific_rate	transcript_specific_rate	cts_unique_rate	cts_ref_rate"
-        - "52dcb9d5e335e70d	1.0000	0.0000	0.0000	1.0000"
-        - "c655f2dce34f5636	0.9000	0.9000	0.0000	1.0000"
+        - "cts_id	cts_unique_rate	cts_ref_rate	cts_ref_single_gene_locus_rate	cts_ref_multi_gene_locus_rate"
+        - "52dcb9d5e335e70d	0.0000	1.0000	0.9500	0.0500"
+        - "533edcf076516d19	0.0000	1.0000	0.0000	1.0000"
   stdout:
     contains:
       - "Annotated uniqueness of 14 sequences"

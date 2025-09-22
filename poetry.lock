@@ -1045,6 +1045,18 @@ files = [
 diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
+name = "pyprobables"
+version = "0.6.1"
+description = "Probabilistic data structures in python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "pyprobables-0.6.1-py3-none-any.whl", hash = "sha256:090d0c973f9e160f15927e8eb911dabf126285a7a1ecd478b7a9e04149e28392"},
+    {file = "pyprobables-0.6.1.tar.gz", hash = "sha256:64b4d165d51beff05e716c01231c8a5503297844e58adee8771e5e7af130321d"},
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 description = "Extensions to the standard Python datetime module"
@@ -1478,4 +1490,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10 <=3.12.4"
-content-hash = "f6414cf0dd0d221b7b7e528ca14dca85dd7c7b515379e703d86bf85297d27246"
+content-hash = "6e817251cde9f47f245905895f10fb93055b7fcdd06ac485029efb87c8ba92c5"

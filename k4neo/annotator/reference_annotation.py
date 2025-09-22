@@ -8,7 +8,7 @@ from Bio import SeqIO
 from typing import List, Dict
 from k4neo.helper.helper import JellyFishHelper
 from loguru import logger
-
+from probables import CountingBloomFilter
 
 class KmerUniquenessAnnotator:
 
@@ -25,6 +25,7 @@ class KmerUniquenessAnnotator:
         
         self.genome_index = os.path.join(self.meta["data_dir"], "genome.jf")
         self.transcriptome_index = os.path.join(self.meta["data_dir"], "transcriptome.jf")
+        self.gene_index = CountingBloomFilter(filepath=os.path.join(self.meta["data_dir"], "gene.bf"))
 
     def _get_kmers(self, sequence: str) -> List[str]:
         """Extract k-mers from sequence
@@ -80,40 +81,47 @@ class KmerUniquenessAnnotator:
             Dict[str, float]: A dict with uniqueness rates.
         """
         kmers = self._get_kmers(sequence)
+        total_kmers = len(kmers)
+
         # For genome we search the canoncial representation
         genome_counts = [JellyFishHelper.query_index(KmerUniquenessAnnotator.canonicalize(kmer), self.genome_index) for kmer in kmers]
         # For transcriptome annotation we require the strand of the k-mer to match as this matters for uniqueness of antisense transcripts etc.
         transcriptome_counts = [
             JellyFishHelper.query_index(kmer, self.transcriptome_index) for kmer in kmers
         ]
+        # Check if k-mer is unique to one genic location or multiple genes have a transcript containing this k-mer
+        gene_counts = [
+            self.gene_index.check(kmer) for kmer in kmers
+        ]
 
-        gene_specific = sum(
-            1 for g, t in zip(genome_counts, transcriptome_counts) if g <= 1 and t >= 1
-        )
-        transcript_specific = sum(
-            1 for g, t in zip(genome_counts, transcriptome_counts) if g <= 1 and t == 1
-        )
+        #gene_specific = sum(
+        #    1 for g, t in zip(genome_counts, transcriptome_counts) if g <= 1 and t >= 1
+        #)
+        #transcript_specific = sum(
+        #    1 for g, t in zip(genome_counts, transcriptome_counts) if g <= 1 and t == 1
+        #)
         cts_unique = sum(
             1 for g, t in zip(genome_counts, transcriptome_counts) if g == 0 and t == 0
         )
-        cts_ref = sum(
-            1 for g, t in zip(genome_counts, transcriptome_counts) if g >= 1 or t >= 1
+        cts_ref = total_kmers - cts_unique
+        cts_ref_single_gene_locus_rate = sum(
+            1 for count in gene_counts if count == 1
         )
+        cts_ref_multi_gene_locus_rate = total_kmers - cts_ref_single_gene_locus_rate
 
-        total_kmers = len(kmers)
         if total_kmers == 0:
             return {
-                "genome_specific_rate": 0.0,
-                "transcript_specific_rate": 0.0,
                 "cts_unique_rate": 0.0,
-                "cts_ref_rate": 0.0
+                "cts_ref_rate": 0.0,
+                "cts_ref_single_gene_locus_rate": 0.0,
+                "cts_ref_multi_gene_locus_rate": 0.0
             }
 
         return {
-            "genome_specific_rate": gene_specific / total_kmers,
-            "transcript_specific_rate": transcript_specific / total_kmers,
             "cts_unique_rate": cts_unique / total_kmers,
             "cts_ref_rate": cts_ref / total_kmers,
+            "cts_ref_single_gene_locus_rate": cts_ref_single_gene_locus_rate / total_kmers,
+            "cts_ref_multi_gene_locus_rate": cts_ref_multi_gene_locus_rate / total_kmers
         }
 
     def annotate_fasta(self, fasta_file: str) -> Dict[str, Dict[str, float]]:
