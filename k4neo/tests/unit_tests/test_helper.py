@@ -75,3 +75,16 @@ class TestSequenceOperation:
         # pos = 9, length = 3 → start = 8, stop = 10 → "ATA"
         result = SequenceOperation.subset_cts(self.SEQ, pos=9, length=3)
         assert result == "ATA"
+
+    def test_kmer(self):
+        result = SequenceOperation.get_kmers(self.SEQ, 5)
+        #ATGGTAGATA
+        assert result == ["ATGGT", "TGGTA", "GGTAG", "GTAGA", "TAGAT", "AGATA"]
+    
+    def test_canonicalize(self):
+        # Test rev complemenent is returned
+        result = SequenceOperation.canonicalize("ATGGT")
+        assert result == "ACCAT"
+        # Test k-mer is returned
+        result = SequenceOperation.canonicalize("AGATA")
+        assert result == "AGATA"
