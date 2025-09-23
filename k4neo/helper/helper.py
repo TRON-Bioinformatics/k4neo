@@ -107,6 +107,39 @@ class SequenceOperation:
         """
         return xxhash.xxh64(cts_seq).hexdigest()
 
+    @staticmethod
+    def get_kmers(sequence: str, k: int) -> List[str]:
+        """Extract k-mers from sequence
+
+        Args:
+            sequence (str): A sequence to kmerize
+            k (int): Size of k-mer
+        Returns:
+            List[str]: A list of len(sequence) - k + 1 k-mers
+        """
+        return [sequence[i : i + k] for i in range(len(sequence) - k + 1)]
+
+    @staticmethod
+    def canonicalize(kmer):
+        """Canonical representation of k-mer
+
+        A canonical k-mer is defined as the lexicographic smaller string of
+        a k-mer and it's reverse complement
+
+        Args:
+            kmer (str): The k-mer to bring into canonical form
+
+        Returns:
+            str: The canonical k-mer
+        """
+        reverse_complement = {"A": "T", "T": "A", "C": "G", "G": "C"}
+        kmer_rev = kmer[::-1]
+        kmer_rev = [reverse_complement[char] for char in kmer_rev]
+        kmer_rev = "".join(kmer_rev)
+        if kmer < kmer_rev:
+            return kmer
+        return kmer_rev
+
 
 class ShellExec:
     """

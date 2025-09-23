@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "k4neo"
-version = "0.3.0"
+version = "0.3.1"
 description = ""
 authors = [
     "TRON - Translational Oncology at the University Medical Center", 
@@ -37,6 +37,7 @@ rich = "^14.0.0"
 plotnine = "^0.14.5"
 tqdm = "^4.67.1"
 joblib = "^1.5.1"
+pyprobables = "^0.6.1"
 
 [tool.poetry.scripts]
 k4neo-annotator = "k4neo.command_line:annotate"
