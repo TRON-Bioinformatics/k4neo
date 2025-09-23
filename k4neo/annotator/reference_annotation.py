@@ -59,7 +59,7 @@ class KmerUniquenessAnnotator:
         # For genome we search the canoncial representation
         genome_counts = [
             JellyFishHelper.query_index(
-                KmerUniquenessAnnotator.canonicalize(kmer), self.genome_index
+                SequenceOperation.canonicalize(kmer), self.genome_index
             )
             for kmer in kmers
         ]
