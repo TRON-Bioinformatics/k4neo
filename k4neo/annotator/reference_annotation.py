@@ -6,8 +6,9 @@ import os
 import json
 from Bio import SeqIO
 from typing import List, Dict
-from k4neo.helper.helper import JellyFishHelper
+from k4neo.helper.helper import JellyFishHelper, SequenceOperation
 from loguru import logger
+from probables import CountingBloomFilter
 
 
 class KmerUniquenessAnnotator:
@@ -19,48 +20,21 @@ class KmerUniquenessAnnotator:
 
         self.k = k or self.meta["kmer_size"]
         if self.k != self.meta["kmer_size"]:
-            raise ValueError(f"K-mer size mismatch! Expected {self.meta['kmer_size']}, got {self.k}")
-        
+            raise ValueError(
+                f"K-mer size mismatch! Expected {self.meta['kmer_size']}, got {self.k}"
+            )
+
         self.canonical = False
-        
+
         self.genome_index = os.path.join(self.meta["data_dir"], "genome.jf")
         self.transcriptome_index = os.path.join(self.meta["data_dir"], "transcriptome.jf")
 
-    def _get_kmers(self, sequence: str) -> List[str]:
-        """Extract k-mers from sequence
-
-        Args:
-            sequence (str): A nucleotide sequence
-
-        Returns:
-            List[str]: A list of len(sequence) - self.k + 1 k-mers 
-        """
-        return [sequence[i : i + self.k] for i in range(len(sequence) - self.k + 1)]
-
-    @staticmethod
-    def canonicalize(kmer):
-        """Canonical representation of k-mer
-
-        A canonical k-mer is defined as the lexicographic smaller string of
-        a k-mer and it's reverse complement
-
-        Args:
-            kmer (str): The k-mer to bring into canonical form
-
-        Returns:
-            str: The canonical k-mer
-        """
-        reverse_complement = {'A':'T',
-                              'T':'A',
-                              'C':'G',
-                              'G':'C'}
-        kmer_rev = kmer[::-1]
-        kmer_rev = [reverse_complement[char] for char in kmer_rev]
-        kmer_rev = ''.join(kmer_rev)
-        if kmer < kmer_rev:
-            return kmer
-        return kmer_rev
-
+        self.gene_index = CountingBloomFilter(
+            filepath=os.path.join(self.meta["data_dir"], "gene.bf")
+        )
+        self.transcript_index = CountingBloomFilter(
+            filepath=os.path.join(self.meta["data_dir"], "transcriptome.bf")
+        )
 
     def annotate_sequence(self, sequence: str) -> Dict[str, float]:
         """Uniqueness annotation of sequence
@@ -79,41 +53,70 @@ class KmerUniquenessAnnotator:
         Returns:
             Dict[str, float]: A dict with uniqueness rates.
         """
-        kmers = self._get_kmers(sequence)
+        kmers = SequenceOperation.get_kmers(sequence, self.k)
+        total_kmers = len(kmers)
+
         # For genome we search the canoncial representation
-        genome_counts = [JellyFishHelper.query_index(KmerUniquenessAnnotator.canonicalize(kmer), self.genome_index) for kmer in kmers]
+        genome_counts = [
+            JellyFishHelper.query_index(
+                SequenceOperation.canonicalize(kmer), self.genome_index
+            )
+            for kmer in kmers
+        ]
         # For transcriptome annotation we require the strand of the k-mer to match as this matters for uniqueness of antisense transcripts etc.
         transcriptome_counts = [
             JellyFishHelper.query_index(kmer, self.transcriptome_index) for kmer in kmers
         ]
+        # Check if k-mer is unique to one genic location or multiple genes have a transcript containing this k-mer
+        gene_counts = [self.gene_index.check(this_kmer) for this_kmer in kmers]
+        transcript_counts = [self.transcript_index.check(this_kmer) for this_kmer in kmers]
 
-        gene_specific = sum(
-            1 for g, t in zip(genome_counts, transcriptome_counts) if g <= 1 and t >= 1
-        )
-        transcript_specific = sum(
-            1 for g, t in zip(genome_counts, transcriptome_counts) if g <= 1 and t == 1
-        )
+        # gene_specific = sum(
+        #    1 for g, t in zip(genome_counts, transcriptome_counts) if g <= 1 and t >= 1
+        # )
+        # transcript_specific = sum(
+        #    1 for g, t in zip(genome_counts, transcriptome_counts) if g <= 1 and t == 1
+        # )
+        # Unique k-mers of the sequence
         cts_unique = sum(
             1 for g, t in zip(genome_counts, transcriptome_counts) if g == 0 and t == 0
         )
-        cts_ref = sum(
-            1 for g, t in zip(genome_counts, transcriptome_counts) if g >= 1 or t >= 1
+        # k-mers occuring in the reference
+        cts_ref = total_kmers - cts_unique
+        # k-mers in reference from a single genic loci
+        cts_ref_single_gene_locus_rate = sum(1 for count in gene_counts if count == 1)
+        # k-mers in reference from multiple genic loci
+        cts_ref_multi_gene_locus_rate = total_kmers - cts_ref_single_gene_locus_rate
+        # k-mers specific to a single transcript from the reference
+        cts_ref_single_transcript_rate = sum(
+            1
+            for gx_count, tx_count in zip(gene_counts, transcript_counts)
+            if gx_count == 1 and tx_count == 1
+        )
+        # k-mers from multiple transcripts
+        cts_ref_multi_transcript_rate = sum(
+            1
+            for gx_count, tx_count in zip(gene_counts, transcript_counts)
+            if gx_count == 1 and tx_count > 1
         )
 
-        total_kmers = len(kmers)
         if total_kmers == 0:
             return {
-                "genome_specific_rate": 0.0,
-                "transcript_specific_rate": 0.0,
                 "cts_unique_rate": 0.0,
-                "cts_ref_rate": 0.0
+                "cts_ref_rate": 0.0,
+                "cts_ref_single_gene_locus_rate": 0.0,
+                "cts_ref_multi_gene_locus_rate": 0.0,
+                "cts_ref_single_transcript_rate": 0.0,
+                "cts_ref_multi_transcript_rate": 0.0,
             }
 
         return {
-            "genome_specific_rate": gene_specific / total_kmers,
-            "transcript_specific_rate": transcript_specific / total_kmers,
             "cts_unique_rate": cts_unique / total_kmers,
             "cts_ref_rate": cts_ref / total_kmers,
+            "cts_ref_single_gene_locus_rate": cts_ref_single_gene_locus_rate / total_kmers,
+            "cts_ref_multi_gene_locus_rate": cts_ref_multi_gene_locus_rate / total_kmers,
+            "cts_ref_single_transcript_rate": cts_ref_single_transcript_rate / total_kmers,
+            "cts_ref_multi_transcript_rate": cts_ref_multi_transcript_rate / total_kmers,
         }
 
     def annotate_fasta(self, fasta_file: str) -> Dict[str, Dict[str, float]]:
@@ -131,8 +134,9 @@ class KmerUniquenessAnnotator:
             results[record.id] = rates
         return results
 
+
 class ReferenceIndexer:
-    
+
     @staticmethod
     def prepare_data(genome_fasta: str, transcriptome_fasta: str, kmer_size: int, outdir: str):
         os.makedirs(outdir, exist_ok=True)
@@ -141,16 +145,24 @@ class ReferenceIndexer:
 
         if not os.path.exists(genome_index):
             logger.info("Creating genomic reference index with jellyfish...")
-            JellyFishHelper.generate_index(genome_fasta, genome_index, bf_size="3G", canonical=True, kmer_size=kmer_size)
+            JellyFishHelper.generate_index(
+                genome_fasta, genome_index, bf_size="3G", canonical=True, kmer_size=kmer_size
+            )
         if not os.path.exists(transcriptome_index):
             logger.info("Creating transcriptomic reference index with jellyfish...")
-            JellyFishHelper.generate_index(transcriptome_fasta, transcriptome_index, bf_size="100M", canonical=False, kmer_size=kmer_size)
+            JellyFishHelper.generate_index(
+                transcriptome_fasta,
+                transcriptome_index,
+                bf_size="100M",
+                canonical=False,
+                kmer_size=kmer_size,
+            )
 
         metadata = {
             "kmer_size": kmer_size,
             "genome_fasta": os.path.basename(genome_fasta),
             "transcriptome_fasta": os.path.basename(transcriptome_fasta),
-            "data_dir": os.path.abspath(outdir)
+            "data_dir": os.path.abspath(outdir),
         }
 
         with open(os.path.join(outdir, "metadata.json"), "w") as f:
