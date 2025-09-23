@@ -144,11 +144,11 @@ def annotate_uniqueness():
     counter = 0
     with open(args.output, "w") as file_handle:
         file_handle.write(
-            "cts_id\tcts_unique_rate\tcts_ref_rate\tcts_ref_single_gene_locus_rate\tcts_ref_multi_gene_locus_rate\n"
+            "cts_id\tcts_unique_rate\tcts_ref_rate\tcts_ref_single_gene_locus_rate\tcts_ref_multi_gene_locus_rate\tcts_ref_single_transcript_rate\tcts_ref_multi_transcript_rate\n"
         )
         for seq_id, rates in results.items():
             file_handle.write(
-                f"{seq_id}\t{rates['cts_unique_rate']:.4f}\t{rates['cts_ref_rate']:.4f}\t{rates['cts_ref_single_gene_locus_rate']:.4f}\t{rates['cts_ref_multi_gene_locus_rate']:.4f}\n"
+                f"{seq_id}\t{rates['cts_unique_rate']:.4f}\t{rates['cts_ref_rate']:.4f}\t{rates['cts_ref_single_gene_locus_rate']:.4f}\t{rates['cts_ref_multi_gene_locus_rate']:.4f}\t{rates['cts_ref_single_transcript_rate']:.4f}\t{rates['cts_ref_multi_transcript_rate']:.4f}\n"
             )
             counter += 1
     logger.info(f"Annotated uniqueness of {counter} sequences")
