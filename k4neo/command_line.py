@@ -11,7 +11,7 @@ from k4neo.parser.index_parser import IndexResultParser2
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 from k4neo.plotter.plotter import Plotter
 from k4neo.setup_logging import setup_logging
-from k4neo.helper.helper import DiskIO
+from k4neo.helper.helper import DiskIO, QuantMetrics
 from k4neo.helper.async_writer import AsyncDFWriter
 from rich.console import Console
 from tqdm import tqdm
@@ -399,6 +399,104 @@ def annotate():
         annot_writer.stop()
         healthy_writer.stop()
         tumor_writer.stop()
+
+def quant_annotation():
+    parser = ArgumentParser(
+        description=f"k4neo {k4neo.VERSION} quantitative annotation",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog=epilog,
+    )
+    # Index yaml manifest
+    parser.add_argument(
+        "--index",
+        dest="index_manifest",
+        help="k-mer index to query.",
+        required=True
+    )
+    parser.add_argument(
+        "--fasta",
+        dest="query_fasta",
+        help="FASTA file",
+        required=True,
+    )
+    parser.add_argument(
+        "--output",
+        dest="output",
+        help="Output prefix for annotated sequences"
+    )
+    parser.add_argument(
+        "--working-dir",
+        dest="working_dir",
+        help="Working directory of k4neo pipeline",
+        default="./k4neo_query",
+    )
+    parser.add_argument(
+        "--workflow",
+        dest="workflow",
+        help="path to tronmake k-mer pipeline",
+        default=pathlib.Path(__file__).parent
+        / "pipeline"
+        / "tronmake-kmer-pipeline"
+        / "workflow"
+        / "Snakefile",
+    )
+    parser.add_argument(
+        "--profile",
+        dest="workflow_profile",
+        help="A yaml file containing snakemake options for execution. Options are described in SnakeMake documentation",
+        default=pathlib.Path(__file__).parent / "pipeline" / "default_profile.yaml",
+    )
+    parser.add_argument(
+        "--cpu",
+        dest="cpu",
+        help="Number of cpus for local execution",
+        default=16,
+        type=int,
+    )
+    parser.add_argument(
+        "--slurm",
+        dest="slurm",
+        help="Submit query job to slurm",
+        action="store_true"
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Verbose logs (default: False)",
+    )
+
+    args = parser.parse_args()
+
+    log_file_name = pathlib.Path(args.output).parent / "k4neo_quantitative_annotation.log"
+
+    logger = setup_logging(log_file_name, args.verbose)
+
+    logger.info("Annotating sequences with quantitative information")
+    from k4neo.index.index import KmerIndex
+    from k4neo.parser.index_parser import QuantitativeKmerIndexParser
+    
+    quant_index = KmerIndex(
+        pipeline=args.workflow,
+        workflow_profile=args.workflow_profile,
+        index_manifest=args.index_manifest,
+        quantitative=True
+    )
+
+    query_pipeline_results = quant_index.search_index(
+            args.query_fasta, pathlib.Path(args.working_dir), slurm=args.slurm, cores=args.cpu
+        )
+    print(query_pipeline_results)
+    list_df = []
+    for _, index_name, this_path in query_pipeline_results.query_path:
+        p = QuantitativeKmerIndexParser(this_path, "jellyfish")
+        cts_res = p.parse_jellyfish()
+        cts_res = QuantMetrics.quant_metrics(cts_res)
+        cts_res['sample'] = index_name
+        list_df.append(cts_res)
+    df = pd.concat(list_df, ignore_index=True)
+    DiskIO.write_df(df, args.output)
 
 
 def plot():

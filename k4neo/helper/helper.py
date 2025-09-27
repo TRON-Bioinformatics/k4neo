@@ -8,6 +8,9 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from loguru import logger
+import math
+import statistics
+from collections import defaultdict
 from k4neo.annotator import EXPECTED_CTS_COLUMNS
 
 
@@ -261,3 +264,39 @@ class JellyFishHelper:
             return int(result.stdout.strip().split()[1])
         except:
             return 0
+
+class QuantMetrics:
+
+    @staticmethod
+    def quant_metrics(cts_kmer_count: dict) -> pd.DataFrame:
+        """Calculate quantitative metrics
+
+        Given the search results of CountingBloomFilter e.g.
+        Jellyfish, calculate several descriptive k-mer statistics
+        of the searched sequences.
+
+        * median, mean k-mer counts
+        * max,min k-mer counts
+
+        Args:
+            cts_kmer_count (dict): A dict mapping nucleotide sequences to counts
+
+        Returns:
+            pd.DataFrame: DataFrame with calculated metrics
+        """
+        metrics = defaultdict(dict)
+        for this_cts, this_counts in cts_kmer_count.items():
+            total_kmers = len(this_counts)
+            metrics[this_cts]['cts_id'] = this_cts
+            metrics[this_cts]['median_kmer_count'] = statistics.median(this_counts)
+            metrics[this_cts]['mean_kmer_count'] = statistics.mean(this_counts)
+            metrics[this_cts]['max_kmer_count'] = max(this_counts)
+            metrics[this_cts]['min_kmer_count'] = min(this_counts)
+            metrics[this_cts]['rate_non_zero_kmers'] = sum(c > 0 for c in this_counts) / total_kmers
+            metrics[this_cts]['rate_zero_kmers'] = 1 - metrics[this_cts]['rate_non_zero_kmers']
+            metrics[this_cts]["variance"] = statistics.pvariance(this_counts)
+            metrics[this_cts]["cv"] = statistics.pstdev(this_counts) / metrics[this_cts]['mean_kmer_count'] if metrics[this_cts]['mean_kmer_count'] > 0 else 0
+
+        result = pd.DataFrame.from_dict(metrics).transpose()
+        return result
+

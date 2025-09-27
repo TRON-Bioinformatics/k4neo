@@ -1,6 +1,6 @@
 import pathlib
 import yaml
-from k4neo.pipeline.query_pipeline import QueryPipeline, QueryPipelineConfig
+from k4neo.pipeline.query_pipeline import QueryPipeline, QueryPipelineConfig, QuantitativeQueryPipeline
 from k4neo.parser.parser import IndexResultParser
 from k4neo.parser.index_parser import IndexResultParser2
 from loguru import logger
@@ -20,6 +20,7 @@ class KmerIndex(object):
         workflow_profile: pathlib.Path,
         index_manifest: pathlib.Path,
         kmer_ratio: float = 0.7,
+        quantitative: bool = False
     ):
 
         # Generate config representation that can be passed directly to the snakemake call
@@ -29,10 +30,13 @@ class KmerIndex(object):
         self.kmer_ratio = kmer_ratio
 
         self.index_struct = self.read_index_struct()
-
-        self.index_to_sample_mapping = {
-            key: value["sample_mapping"] for key, value in self.index_struct.items()
-        }
+        
+        self.quantitative = quantitative
+        if not quantitative:
+            # This is only required for raptor
+            self.index_to_sample_mapping = {
+                key: value["sample_mapping"] for key, value in self.index_struct.items()
+            }
 
         self.index_to_method_mapping = {
             key: value["method"] for key, value in self.index_struct.items()
@@ -73,7 +77,7 @@ class KmerIndex(object):
         query_sequences: pathlib.Path,
         working_dir: pathlib.Path,
         slurm: bool = True,
-        cores: int = 8,
+        cores: int = 8
     ):
         """Execute k-mer query pipeline
 
@@ -94,7 +98,10 @@ class KmerIndex(object):
         # the config with the search sequence. Here execution specific modifications can be applied
         pipeline_config = self.pipeline_config.config.copy()
         pipeline_config["query"].update({"query_fasta": str(query_sequences)})
-        pipeline = QueryPipeline(self.pipeline, self.workflow_profile, pipeline_config, working_dir)
+        if self.quantitative:
+            pipeline = QuantitativeQueryPipeline(self.pipeline, self.workflow_profile, pipeline_config, working_dir)
+        else:
+            pipeline = QueryPipeline(self.pipeline, self.workflow_profile, pipeline_config, working_dir)
         logger.info("-> Searching index for context sequences")
         result = pipeline.run_pipeline(slurm=slurm, cores=cores)
         return result
