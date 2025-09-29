@@ -218,15 +218,23 @@ This will generate a file called `quant_annotation.tsv` with the following annot
 
 ## Authors & Acknowledgements 
 
-The k4neo package was originally developed by Johannes Hausmann at [TRON - Translational Oncology at the Medical Center of the Johannes Gutenberg University Mainz gGmbH (non-profit)](https://tron-mainz.de/).
+The k4neo package was originally developed in the Computational Genomics group at [TRON - Translational Oncology at the Medical Center of the Johannes Gutenberg University Mainz gGmbH (non-profit)](https://tron-mainz.de/).
+
+Idea and conceptualisation:
+
+- [Jonas Ibn-Salem, TRON gGmbH](mailto:jonas.ibn-salem@tron-mainz.de)
+- [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)  
 
 Main developers: 
 
-- [Johannes Hausmann](mailto:johannes.hausmann@tron-mainz.de)   
+- [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)   
 
-Contributers:
+Contributors and code reviewers:
 
-- Luis Kress, TRON gGmbH
-- Jonas Ibn-Salem, TRON gGmbH
-- Franziska Lang, TRON gGmbH
+- [Özlem Muslu, TRON gGmbH](mailto:Oezlem.Muslu@TrOn-Mainz.DE)
+- [Luis Kress, TRON gGmbH](mailto:luis.kress@tron-mainz.de)
+
+Bug hunter:
+
+- [Franziska Lang, TRON gGmbH](mailto:franziska.lang@tron-mainz.de)
 
