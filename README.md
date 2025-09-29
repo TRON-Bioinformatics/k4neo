@@ -187,9 +187,9 @@ This feature was inspired by the KmeratorSuite, however without the information 
 #### (4) Quantitative annotation of sequences.
 
 k4neo allows to annotate sequences with quantitative information from a limited set of RNA-seq samples. Here, for each sample a CountingBloomFilter is queried
-to derive the approximate counts of each query k-mers. We provide per indexed sample / query combination descriptice statistics that allow to approximate expression in individual samples.
+to derive the approximate counts of each query k-mers. We provide per indexed sample / query combination descriptive statistics that allow to approximate expression in individual samples.
 
-This feature is experimental and should be used with caution
+This feature is experimental and should be used with caution!
 
 The current implementation can be run after k4neo annotation based on the `query.fa` fasta file. 
 
@@ -220,21 +220,21 @@ This will generate a file called `quant_annotation.tsv` with the following annot
 
 The k4neo package was originally developed in the Computational Genomics group at [TRON - Translational Oncology at the Medical Center of the Johannes Gutenberg University Mainz gGmbH (non-profit)](https://tron-mainz.de/).
 
-Idea and conceptualisation:
+💡 Idea and conceptualisation:
 
 - [Jonas Ibn-Salem, TRON gGmbH](mailto:jonas.ibn-salem@tron-mainz.de)
 - [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)  
 
-Main developer: 
+🛠️ Main developer: 
 
 - [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)   
 
-Contributors and code reviewers:
+✨ Contributors and code reviewers:
 
 - [Özlem Muslu, TRON gGmbH](mailto:Oezlem.Muslu@TrOn-Mainz.DE)
 - [Luis Kress, TRON gGmbH](mailto:luis.kress@tron-mainz.de)
 
-Bug hunter:
+🐞 Bug hunter:
 
 - [Franziska Lang, TRON gGmbH](mailto:franziska.lang@tron-mainz.de)
 
