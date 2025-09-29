@@ -195,7 +195,7 @@ The current implementation can be run after k4neo annotation based on the `query
 
 ```{bash}
 k4neo-quant \
-  --index /path/to/quant.yaml \
+  --index /path/to/quant_index.yaml \
   --fasta query.fa \
   --output quant_annotation.tsv \
   --cpu 2
@@ -225,7 +225,7 @@ Idea and conceptualisation:
 - [Jonas Ibn-Salem, TRON gGmbH](mailto:jonas.ibn-salem@tron-mainz.de)
 - [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)  
 
-Main developers: 
+Main developer: 
 
 - [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)   
 
@@ -238,3 +238,6 @@ Bug hunter:
 
 - [Franziska Lang, TRON gGmbH](mailto:franziska.lang@tron-mainz.de)
 
+## Contributing
+
+Please see our [CONTRIBUTING](./CONTRIBUTING.md) file.
