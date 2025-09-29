@@ -267,28 +267,32 @@ class BinaryKmerIndexResultParser:
         logger.info(f"Parsed {len(results.keys())} query sequences from raptor output")
         return results
 
+
 class QuantitativeKmerIndexParser:
     """
     Class provides functions to parse results from quantitative indices
     Currently limited to JellyFish
     """
 
-    def __init__(
-        self,
-        search_results: str,
-        method: str
-    ) -> None:
+    def __init__(self, search_results: str, method: str) -> None:
 
         self.search_results = search_results
         self.method = method
-    
+
     def parse_jellyfish(self) -> dict:
         cts_kmer_count = defaultdict(list)
-        result = pd.DataFrame(columns = [
-            'cts_id', 'median_kmer_count', 'mean_kmer_count'
-            'max_kmer_count', 'min_kmer_count',
-            'rate_non_zero_kmers', 'rate_zero_kmers', "variance", "cv"
-        ])
+        result = pd.DataFrame(
+            columns=[
+                "cts_id",
+                "median_kmer_count",
+                "mean_kmer_count" "max_kmer_count",
+                "min_kmer_count",
+                "rate_non_zero_kmers",
+                "rate_zero_kmers",
+                "variance",
+                "cv",
+            ]
+        )
 
         with open(self.search_results, "r") as file_handle:
             for this_line in file_handle:

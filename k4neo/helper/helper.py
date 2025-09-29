@@ -265,6 +265,7 @@ class JellyFishHelper:
         except:
             return 0
 
+
 class QuantMetrics:
 
     @staticmethod
@@ -287,16 +288,19 @@ class QuantMetrics:
         metrics = defaultdict(dict)
         for this_cts, this_counts in cts_kmer_count.items():
             total_kmers = len(this_counts)
-            metrics[this_cts]['cts_id'] = this_cts
-            metrics[this_cts]['median_kmer_count'] = statistics.median(this_counts)
-            metrics[this_cts]['mean_kmer_count'] = statistics.mean(this_counts)
-            metrics[this_cts]['max_kmer_count'] = max(this_counts)
-            metrics[this_cts]['min_kmer_count'] = min(this_counts)
-            metrics[this_cts]['rate_non_zero_kmers'] = sum(c > 0 for c in this_counts) / total_kmers
-            metrics[this_cts]['rate_zero_kmers'] = 1 - metrics[this_cts]['rate_non_zero_kmers']
+            metrics[this_cts]["cts_id"] = this_cts
+            metrics[this_cts]["median_kmer_count"] = statistics.median(this_counts)
+            metrics[this_cts]["mean_kmer_count"] = statistics.mean(this_counts)
+            metrics[this_cts]["max_kmer_count"] = max(this_counts)
+            metrics[this_cts]["min_kmer_count"] = min(this_counts)
+            metrics[this_cts]["rate_non_zero_kmers"] = sum(c > 0 for c in this_counts) / total_kmers
+            metrics[this_cts]["rate_zero_kmers"] = 1 - metrics[this_cts]["rate_non_zero_kmers"]
             metrics[this_cts]["variance"] = statistics.pvariance(this_counts)
-            metrics[this_cts]["cv"] = statistics.pstdev(this_counts) / metrics[this_cts]['mean_kmer_count'] if metrics[this_cts]['mean_kmer_count'] > 0 else 0
+            metrics[this_cts]["cv"] = (
+                statistics.pstdev(this_counts) / metrics[this_cts]["mean_kmer_count"]
+                if metrics[this_cts]["mean_kmer_count"] > 0
+                else 0
+            )
 
         result = pd.DataFrame.from_dict(metrics).transpose()
         return result
-

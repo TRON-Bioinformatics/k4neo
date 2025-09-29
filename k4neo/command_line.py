@@ -140,15 +140,32 @@ def annotate_uniqueness():
 
     uniq = KmerUniquenessAnnotator(args.ref_index)
     results = uniq.annotate_fasta(args.queries)
-
+    header = [
+        "cts_id",
+        "cts_unique_rate",
+        "cts_ref_rate",
+        "cts_ref_single_gene_locus_rate",
+        "cts_ref_multi_gene_locus_rate",
+        "cts_ref_single_transcript_rate",
+        "cts_ref_multi_transcript_rate",
+    ]
     counter = 0
     with open(args.output, "w") as file_handle:
-        file_handle.write(
-            "cts_id\tcts_unique_rate\tcts_ref_rate\tcts_ref_single_gene_locus_rate\tcts_ref_multi_gene_locus_rate\tcts_ref_single_transcript_rate\tcts_ref_multi_transcript_rate\n"
-        )
+        file_handle.write(f"{'\t'.join(header)}\n")
         for seq_id, rates in results.items():
             file_handle.write(
-                f"{seq_id}\t{rates['cts_unique_rate']:.4f}\t{rates['cts_ref_rate']:.4f}\t{rates['cts_ref_single_gene_locus_rate']:.4f}\t{rates['cts_ref_multi_gene_locus_rate']:.4f}\t{rates['cts_ref_single_transcript_rate']:.4f}\t{rates['cts_ref_multi_transcript_rate']:.4f}\n"
+                "\t".join(
+                    [
+                        seq_id,
+                        f"{rates['cts_unique_rate']:.4f}",
+                        f"{rates['cts_ref_rate']:.4f}",
+                        f"{rates['cts_ref_single_gene_locus_rate']:.4f}",
+                        f"{rates['cts_ref_multi_gene_locus_rate']:.4f}",
+                        f"{rates['cts_ref_single_transcript_rate']:.4f}",
+                        f"{rates['cts_ref_multi_transcript_rate']:.4f}",
+                    ]
+                )
+                + "\n"
             )
             counter += 1
     logger.info(f"Annotated uniqueness of {counter} sequences")
@@ -400,6 +417,7 @@ def annotate():
         healthy_writer.stop()
         tumor_writer.stop()
 
+
 def quant_annotation():
     parser = ArgumentParser(
         description=f"k4neo {k4neo.VERSION} quantitative annotation",
@@ -408,10 +426,7 @@ def quant_annotation():
     )
     # Index yaml manifest
     parser.add_argument(
-        "--index",
-        dest="index_manifest",
-        help="k-mer index to query.",
-        required=True
+        "--index", dest="index_manifest", help="k-mer index to query.", required=True
     )
     parser.add_argument(
         "--fasta",
@@ -419,11 +434,7 @@ def quant_annotation():
         help="FASTA file",
         required=True,
     )
-    parser.add_argument(
-        "--output",
-        dest="output",
-        help="Output prefix for annotated sequences"
-    )
+    parser.add_argument("--output", dest="output", help="Output prefix for annotated sequences")
     parser.add_argument(
         "--working-dir",
         dest="working_dir",
@@ -454,10 +465,7 @@ def quant_annotation():
         type=int,
     )
     parser.add_argument(
-        "--slurm",
-        dest="slurm",
-        help="Submit query job to slurm",
-        action="store_true"
+        "--slurm", dest="slurm", help="Submit query job to slurm", action="store_true"
     )
     parser.add_argument(
         "-v",
@@ -476,24 +484,24 @@ def quant_annotation():
     logger.info("Annotating sequences with quantitative information")
     from k4neo.index.index import KmerIndex
     from k4neo.parser.index_parser import QuantitativeKmerIndexParser
-    
+
     quant_index = KmerIndex(
         pipeline=args.workflow,
         workflow_profile=args.workflow_profile,
         index_manifest=args.index_manifest,
-        quantitative=True
+        quantitative=True,
     )
 
     query_pipeline_results = quant_index.search_index(
-            args.query_fasta, pathlib.Path(args.working_dir), slurm=args.slurm, cores=args.cpu
-        )
+        args.query_fasta, pathlib.Path(args.working_dir), slurm=args.slurm, cores=args.cpu
+    )
     print(query_pipeline_results)
     list_df = []
     for _, index_name, this_path in query_pipeline_results.query_path:
         p = QuantitativeKmerIndexParser(this_path, "jellyfish")
         cts_res = p.parse_jellyfish()
         cts_res = QuantMetrics.quant_metrics(cts_res)
-        cts_res['sample'] = index_name
+        cts_res["sample"] = index_name
         list_df.append(cts_res)
     df = pd.concat(list_df, ignore_index=True)
     DiskIO.write_df(df, args.output)

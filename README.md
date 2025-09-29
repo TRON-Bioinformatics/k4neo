@@ -184,6 +184,36 @@ These metrics are estimated using the reference genome and transcriptome sequenc
 
 This feature was inspired by the KmeratorSuite, however without the information of the reference annotation and the ability to assembly the sequences back into  search contigs. 
 
+#### (4) Quantitative annotation of sequences.
+
+k4neo allows to annotate sequences with quantitative information from a limited set of RNA-seq samples. Here, for each sample a CountingBloomFilter is queried
+to derive the approximate counts of each query k-mers. We provide per indexed sample / query combination descriptice statistics that allow to approximate expression in individual samples.
+
+This feature is experimental and should be used with caution
+
+The current implementation can be run after k4neo annotation based on the `query.fa` fasta file. 
+
+```{bash}
+k4neo-quant \
+  --index /path/to/quant.yaml \
+  --fasta query.fa \
+  --output quant_annotation.tsv \
+  --cpu 2
+```
+
+This will generate a file called `quant_annotation.tsv` with the following annotation columns.
+
+* `cts_id`: The query cts_id.
+* `sample`: The identifier of the indexed sample.
+* `median_kmer_count`: Median count of query k-mers.
+* `mean_kmer_count`: Mean count of query k-mers.
+* `max_kmer_count`: Maximal k-mer count of query.
+* `min_kmer_count`: Minimal k-mer count of query.
+* `rate_non_zero_kmers`: The rate of k-mers that have counts in the index.
+* `rate_zero_kmers`: The rate of k-mers with zero count in the index.
+* `variance`: Variance of k-mer counts. How uniform is the cooverage.
+* `cv`: Coefficient of variation.
+
 
 
 ## Authors & Acknowledgements 
