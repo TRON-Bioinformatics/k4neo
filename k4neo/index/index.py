@@ -1,6 +1,7 @@
 import pathlib
 import yaml
-from k4neo.pipeline.query_pipeline import QueryPipeline, QueryPipelineConfig, QuantitativeQueryPipeline
+from k4neo.pipeline.query_pipeline import QueryPipeline, QueryPipelineConfig
+from k4neo.pipeline import TARGET_RULES_OF_METHODS
 from k4neo.parser.parser import IndexResultParser
 from k4neo.parser.index_parser import IndexResultParser2
 from loguru import logger
@@ -48,6 +49,7 @@ class KmerIndex(object):
             index_to_method_mapping=self.index_to_method_mapping,
         )
 
+
     def read_index_struct(self):
         """
         Read k4neo meta index definition file.
@@ -71,6 +73,15 @@ class KmerIndex(object):
                 continue
             index_methods.add(method)
         return index_methods
+    
+    def _get_pipeline_target_rules(self):
+        """
+        """
+        target_rules = set()
+        methods = set(self.index_to_method_mapping.values())
+        for this_method in methods:
+            target_rules.add(TARGET_RULES_OF_METHODS[this_method])
+        return " ".join(target_rules)
 
     def search_index(
         self,
@@ -98,10 +109,8 @@ class KmerIndex(object):
         # the config with the search sequence. Here execution specific modifications can be applied
         pipeline_config = self.pipeline_config.config.copy()
         pipeline_config["query"].update({"query_fasta": str(query_sequences)})
-        if self.quantitative:
-            pipeline = QuantitativeQueryPipeline(self.pipeline, self.workflow_profile, pipeline_config, working_dir)
-        else:
-            pipeline = QueryPipeline(self.pipeline, self.workflow_profile, pipeline_config, working_dir)
+        target_rule = self._get_pipeline_target_rules()
+        pipeline = QueryPipeline(self.pipeline, self.workflow_profile, pipeline_config, working_dir, target_rule=target_rule)
         logger.info("-> Searching index for context sequences")
         result = pipeline.run_pipeline(slurm=slurm, cores=cores)
         return result

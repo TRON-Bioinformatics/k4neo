@@ -58,7 +58,7 @@ class Pipeline:
         self.config = config
         self.target_rule = target_rule
 
-    def run(self, dryrun: bool = False, slurm: bool = True, cores: int = 8, target_rule="query_raptor") -> int:
+    def run(self, dryrun: bool = False, slurm: bool = True, cores: int = 8) -> int:
         """Build and execute pipeline
 
         The run method implements the execution of the pipeline. It takes care
@@ -97,7 +97,7 @@ class Pipeline:
             "--profile",
             str(self.workflow_profile.parent),
             "--until",
-            target_rule,
+            self.target_rule,
         ]
         if slurm:
             cmd.extend(["--executor", "slurm"])
@@ -118,10 +118,11 @@ class QueryPipeline(Pipeline):
         workflow_profile: pathlib.Path,
         config: dict,
         working_dir: pathlib.Path,
+        target_rule: str
     ):
         """Parameter initialization"""
         logger.debug("Initialising of k4neo query pipeline.")
-        super().__init__(workflow, workflow_profile, config, working_dir, target_rule="query")
+        super().__init__(workflow, workflow_profile, config, working_dir, target_rule=target_rule)
 
     def determine_final_query(self):
         """Based on selected methods in index manifest, find query output that could be created by pipeline"""
@@ -148,15 +149,24 @@ class QueryPipeline(Pipeline):
                             self.working_dir / "query" / "kmindex" / this_index_name / "search.tsv",
                         )
                     )
+                case "jellyfish":
+                    # query/jellyfish/{subindex}/search.tsv"
+                    results.append(
+                        (
+                            this_method,
+                            this_index_name,
+                            self.working_dir / "query" / "jellyfish" / this_index_name / "quantitative_search.tsv",
+                        )
+                    )
                 case _:
                     raise ValueError(f"-> Tool {this_method} not supported by k4neo query pipeline")
         return results
 
-    def run_pipeline(self, slurm: bool = True, cores: int = 8, target_rule="query_raptor") -> QueryPipelineResult:
+    def run_pipeline(self, slurm: bool = True, cores: int = 8) -> QueryPipelineResult:
         """Execute query pipeline"""
         final_query = self.determine_final_query()
         logger.info("Submitting query pipeline.")
-        return_code = self.run(dryrun=False, slurm=slurm, cores=cores, target_rule=target_rule)
+        return_code = self.run(dryrun=False, slurm=slurm, cores=cores)
         if return_code != 0:
             logger.error("Pipeline command returned non zero exit code.")
             raise K4neoPipelineException("Pipeline failed to execute")
@@ -170,51 +180,6 @@ class QueryPipeline(Pipeline):
         if return_code != 0:
             raise K4neoPipelineException("Pipeline failed to execute")
 
-class QuantitativeQueryPipeline(QueryPipeline):
-    """Semi-Quantitative pipeline
-    
-    """
-    def __init__(
-        self,
-        workflow: pathlib.Path,
-        workflow_profile: pathlib.Path,
-        config: dict,
-        working_dir: pathlib.Path,
-    ):
-        """Parameter initialization"""
-        logger.debug("Initialising of k4neo quantitative pipeline.")
-        super().__init__(workflow, workflow_profile, config, working_dir)
-    
-    def determine_final_query(self):
-        """Based on selected methods in index manifest, find query output that could be created by pipeline"""
-        results = []
-        for this_index_name, this_method in self.config.get(
-            "index_to_method_mapping", dict
-        ).items():
-            match this_method:
-                case "jellyfish":
-                    # query/jellyfish/{subindex}/search.tsv"
-                    results.append(
-                        (
-                            this_method,
-                            this_index_name,
-                            self.working_dir / "query" / "jellyfish" / this_index_name / "quantitative_search.tsv",
-                        )
-                    )
-                case _:
-                    raise ValueError(f"-> Tool {this_method} not supported by k4neo query pipeline")
-        return results
-    
-    def run_pipeline(self, slurm: bool = True, cores: int = 8, target_rule="all") -> QueryPipelineResult:
-        """Execute query pipeline"""
-        final_query = self.determine_final_query()
-        logger.info("Submitting query pipeline.")
-        return_code = self.run(dryrun=False, slurm=slurm, cores=cores, target_rule=target_rule)
-        if return_code != 0:
-            logger.error("Pipeline command returned non zero exit code.")
-            raise K4neoPipelineException("Pipeline failed to execute")
-        logger.info("Finished query pipeline.")
-        return QueryPipelineResult(query_path=final_query)
 
 class IndexPipeline(Pipeline):
     """

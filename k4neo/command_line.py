@@ -495,7 +495,7 @@ def quant_annotation():
     query_pipeline_results = quant_index.search_index(
         args.query_fasta, pathlib.Path(args.working_dir), slurm=args.slurm, cores=args.cpu
     )
-    print(query_pipeline_results)
+    # Collect all query results. Here, an index is a single RNA-seq sample
     list_df = []
     for _, index_name, this_path in query_pipeline_results.query_path:
         p = QuantitativeKmerIndexParser(this_path, "jellyfish")
@@ -504,6 +504,7 @@ def quant_annotation():
         cts_res["sample"] = index_name
         list_df.append(cts_res)
     df = pd.concat(list_df, ignore_index=True)
+    
     DiskIO.write_df(df, args.output)
 
 
