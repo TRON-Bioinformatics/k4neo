@@ -266,7 +266,7 @@ class JellyFishHelper:
             return 0
 
 
-class QuantMetrics:
+class QuantIndexHelper:
 
     @staticmethod
     def quant_metrics(cts_kmer_count: dict) -> pd.DataFrame:
@@ -304,3 +304,32 @@ class QuantMetrics:
 
         result = pd.DataFrame.from_dict(metrics).transpose()
         return result
+    
+    @staticmethod
+    def normalize_kmer_count_by_depth(cts_kmer_count: dict, kmer_depth: int, normalization_factor = 1e9) -> dict:
+        """_summary_
+
+        Args:
+            cts_kmer_count (dict): A dict mapping nucleotide sequences to counts
+            kmer_depth (int): Number of k-mers in index
+            normalization_factors (dict): Normailzation factor to use. Here 1e9
+
+        Returns:
+            dict: A normalized kmer count dict. In case of wrong parameters the unnormalized dict
+        """
+
+        if kmer_depth == 0:
+            logger.warning("k-mer depth was 0. No normalization applied")
+            return cts_kmer_count
+
+        if normalization_factor == 0:
+            logger.warning("Normalization factor was zero. No normalization applied")
+            return cts_kmer_count
+
+        normalized_dict = defaultdict(list)
+        
+        for this_cts, this_counts in cts_kmer_count.items():
+            normalized_counts = map(lambda x: x * normalization_factor / kmer_depth, this_counts)
+            normalized_dict[this_cts] = list(normalized_counts)
+        
+        return normalized_dict

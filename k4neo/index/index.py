@@ -43,6 +43,11 @@ class KmerIndex(object):
             key: value["method"] for key, value in self.index_struct.items()
         }
 
+        if quantitative:
+            self.kmer_depth_mapping = {
+                key: value.get("kmer_depth", 0) for key, value in self.index_struct.items()
+            }
+
         self.pipeline_config = QueryPipelineConfig(
             index=self.index_manifest,
             kmer_ratio=self.kmer_ratio,

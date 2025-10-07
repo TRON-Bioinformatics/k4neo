@@ -11,7 +11,7 @@ from k4neo.parser.index_parser import IndexResultParser2
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 from k4neo.plotter.plotter import Plotter
 from k4neo.setup_logging import setup_logging
-from k4neo.helper.helper import DiskIO, QuantMetrics
+from k4neo.helper.helper import DiskIO, QuantIndexHelper
 from k4neo.helper.async_writer import AsyncDFWriter
 from rich.console import Console
 from tqdm import tqdm
@@ -468,6 +468,19 @@ def quant_annotation():
         "--slurm", dest="slurm", help="Submit query job to slurm", action="store_true"
     )
     parser.add_argument(
+        "--normalize",
+        dest="normalize",
+        help="Normalize quant counts by k-mer present in each cBF.",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--normalize-factor",
+        dest="normalize_factor",
+        help="Normalization factor for k-mer counts",
+        default=1e9,
+        type=float,
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         dest="verbose",
@@ -495,16 +508,28 @@ def quant_annotation():
     query_pipeline_results = quant_index.search_index(
         args.query_fasta, pathlib.Path(args.working_dir), slurm=args.slurm, cores=args.cpu
     )
+    if args.normalize:
+        logger.info(f"Normalization of quantitative k-mer counts will be performed using {args.normalize_factor:.1e} as scaling factor")
     # Collect all query results. Here, an index is a single RNA-seq sample
     list_df = []
+    
+    logger.info(f"Annotating sequences with quantitative information from {len(quant_index.index_to_method_mapping.keys())} indices")
     for _, index_name, this_path in query_pipeline_results.query_path:
         p = QuantitativeKmerIndexParser(this_path, "jellyfish")
         cts_res = p.parse_jellyfish()
-        cts_res = QuantMetrics.quant_metrics(cts_res)
+        
+        if args.normalize:
+            cts_res = QuantIndexHelper.normalize_kmer_count_by_depth(
+                cts_res,
+                quant_index.kmer_depth_mapping.get(index_name),
+                args.normalize_factor
+            )
+        cts_res = QuantIndexHelper.quant_metrics(cts_res)
         cts_res["sample"] = index_name
         list_df.append(cts_res)
-    df = pd.concat(list_df, ignore_index=True)
     
+    df = pd.concat(list_df, ignore_index=True)
+
     DiskIO.write_df(df, args.output)
 
 

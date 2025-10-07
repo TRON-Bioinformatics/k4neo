@@ -6,7 +6,7 @@
 ![Pandas](https://img.shields.io/badge/pandas-150458?style=flat-square&logo=pandas&logoColor=white)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Snakemake](https://img.shields.io/badge/snakemake-9.1.6-brightgreen.svg?style=flat-square)](https://snakemake.readthedocs.io)
-[![Release](https://img.shields.io/badge/release-v0.3.1-blue?style=flat)](https://github.com/TRON-Private/k4neo)
+[![Release](https://img.shields.io/badge/release-v0.3.3-blue?style=flat)](https://github.com/TRON-Private/k4neo)
 
 <!-- badges: end -->
 
@@ -188,8 +188,10 @@ This feature was inspired by the KmeratorSuite, however without the information 
 
 k4neo allows to annotate sequences with quantitative information from a limited set of RNA-seq samples. Here, for each sample a CountingBloomFilter is queried
 to derive the approximate counts of each query k-mers. We provide per indexed sample / query combination descriptive statistics that allow to approximate expression in individual samples.
+Quantitative counts can also be normalized to using the parameters `--normalize` and `--normalize-factor`. By default, this will normalize k-mer counts per billion of k-mers present 
+in the index. Pervious studies have shown that this correlates very well with gene and transcript-level TPM values/normalized counts determined by kallisto.
 
-This feature is experimental and should be used with caution!
+**This feature is experimental and should be used with caution for analysis!** 
 
 The current implementation can be run after k4neo annotation based on the `query.fa` fasta file. 
 
@@ -198,7 +200,8 @@ k4neo-quant \
   --index /path/to/quant_index.yaml \
   --fasta query.fa \
   --output quant_annotation.tsv \
-  --cpu 2
+  --cpu 2 \
+  --normalize
 ```
 
 This will generate a file called `quant_annotation.tsv` with the following annotation columns.
