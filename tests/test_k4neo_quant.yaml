@@ -25,5 +25,37 @@
       - "IT_N_103=jellyfish"
       - "IT_T_188=jellyfish"
       - "Initialising of k4neo query pipeline."
+      - "Annotating sequences with quantitative information from 2 indices"
       - "Finished query pipeline"
+    must_not_contain:
+      - "Normalization of quantitative k-mer counts will be performed using 1.0e+06 as scaling factor"
 
+- name: test_k4neo_quant_normalize
+  tags:
+    - integrationtest
+  command: >
+    poetry run k4neo-quant 
+        --index tests/resources/quant_index_manifest.yaml 
+        --fasta tests/resources/queries/query_splice.fa
+        --output test_quant.tsv.gz
+        --working-dir .
+        --cpu 1
+        -v
+        --normalize
+        --normalize-factor 1e6
+  files:
+    - path: 'test_quant.tsv.gz'
+      contains:
+       - "cts_id	median_kmer_count	mean_kmer_count	max_kmer_count	min_kmer_count	rate_non_zero_kmers	rate_zero_kmers	variance	cv	sample"
+       - "52dcb9d5e335e70d	0.043620341805508764	0.15578693501967414	0.9596475197211928	0.043620341805508764	1.0	0.0	0.07893111067252365	1.803404188380039	IT_N_103"
+       - "533edcf076516d19	1.9192950394423856	2.018998677854977	2.6172205083305258	1.5703323049983153	1.0	0.0	0.09824321580919226	0.15524415234517644	IT_N_103"
+  stdout:
+    contains:
+      - "query=True"
+      - "indexing=False"
+      - "kmer_ratio=0.7"
+      - "IT_N_103=jellyfish"
+      - "IT_T_188=jellyfish"
+      - "Initialising of k4neo query pipeline."
+      - "Normalization of quantitative k-mer counts will be performed using 1.0e+06 as scaling factor"
+      - "Finished query pipeline"
