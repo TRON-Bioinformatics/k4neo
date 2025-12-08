@@ -10,21 +10,24 @@
 
 <!-- badges: end -->
 
-
-
 **Predicting tumor-specificity in a blast. A modern k-mer based approach to screen for (neo)antigens in healthy and tumor tissue RNA-seq**
 
-
 --- 
-
 ## 🔧 Features
 
-- ⚡ Fast k-mer based tumor and normal expression breadth annotation
-- 🐍 Built with python
-- 🔁 Workflow management with Snakemake
+<img align="right" src="https://github.com/user-attachments/assets/c177cd46-14ca-468b-b983-5fb5264a4c45" width="227" />
+
+- ⚡ Fast k-mer based tumor and normal expression breadth annotation  
+- 🐍 Built with python  
+- 🔁 Workflow management with Snakemake  
 - 📊 Ideal for tumor-specificity analyses of (neo)antigen candidates
+- Semi-quantitative expression annotation
+- k-mer uniqueness annotation with respect to genome and transcriptome
+
+<br clear="right"/>
 
 ---
+
 
 ## 📦 Requirements
 
@@ -191,7 +194,7 @@ to derive the approximate counts of each query k-mers. We provide per indexed sa
 Quantitative counts can also be normalized to using the parameters `--normalize` and `--normalize-factor`. By default, this will normalize k-mer counts per billion of k-mers present 
 in the index. Pervious studies have shown that this correlates very well with gene and transcript-level TPM values/normalized counts determined by kallisto.
 
-**This feature is experimental and should be used with caution for analysis!** 
+**This feature is experimental and should be used with caution for analysis! Moreover, the scalability to many samples is very limited** 
 
 The current implementation can be run after k4neo annotation based on the `query.fa` fasta file. 
 
