@@ -285,7 +285,8 @@ class QuantitativeKmerIndexParser:
             columns=[
                 "cts_id",
                 "median_kmer_count",
-                "mean_kmer_count" "max_kmer_count",
+                "mean_kmer_count",
+                "max_kmer_count",
                 "min_kmer_count",
                 "rate_non_zero_kmers",
                 "rate_zero_kmers",
