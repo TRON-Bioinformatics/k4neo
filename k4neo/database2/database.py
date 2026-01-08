@@ -14,6 +14,7 @@ Todo:
 
 
 """
+
 import pathlib
 from typing import List, Tuple
 import sqlite3
@@ -44,32 +45,39 @@ class DataBase:
     def connect(self):
         if self.test:
             self.connection = sqlite3.connect(
-                ":memory:",
-                timeout=self.timeout,
-                check_same_thread=False
+                ":memory:", timeout=self.timeout, check_same_thread=False
             )
             logger.info("Established in-memory database")
         else:
-           self.connection = sqlite3.connect(
-               self.db_file,
-               timeout=self.timeout,
-               check_same_thread=False
+            self.connection = sqlite3.connect(
+                self.db_file, timeout=self.timeout, check_same_thread=False
             )
-           logger.info(f"Established connection to: {self.db_file}")
+            logger.info(f"Established connection to: {self.db_file}")
         self.connection.execute("PRAGMA journal_mode=WAL;")
         self.connection.execute("PRAGMA foreign_keys=ON;")
-    
+
     def close(self):
         if not self.connection is None:
             self.connection.close()
             self.connection = None
+
+    # Required for usage with context manager
+    def __enter__(self):
+        self.connect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
 class CreateDataBase(DataBase):
     """
     Class to construct k4neo metadata tables.
     """
-    def __init__(self, db_file, data_set_file, tissue_map, test: bool = False, timeout: float = 30.0):
+
+    def __init__(
+        self, db_file, data_set_file, tissue_map, test: bool = False, timeout: float = 30.0
+    ):
         """
 
         Args:
@@ -82,30 +90,34 @@ class CreateDataBase(DataBase):
         super().__init__(db_file, test=test, timeout=timeout)
         self.data_set_file = data_set_file
         self.tissue_map = tissue_map
-        self.connect()
-        self.cursor = self.connection.cursor()
-    
+
     def create_static_tables(self):
         """
         Create static metadata table
         """
-        self.cursor.execute("""
+        cursor = self.connection.cursor()
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS sample_study_mapping (
                 sample_name TEXT,
                 study_id TEXT,
                 PRIMARY KEY (sample_name, study_id)
             );
-            """)
+            """
+        )
 
-        self.cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS tissue_map (
                 tissue_public TEXT PRIMARY KEY,
                 tissue TEXT NOT NULL,
                 subtissue TEXT
             );
-            """)
-        
-        self.cursor.execute("""
+            """
+        )
+
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS samples (
                 sample_name TEXT,
                 study_id TEXT, 
@@ -120,9 +132,11 @@ class CreateDataBase(DataBase):
                     ON UPDATE CASCADE
                     ON DELETE RESTRICT
             );
-            """)
-        
-        self.cursor.execute("""
+            """
+        )
+
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS tissue_counts (
                 tissue TEXT NOT NULL,
                 study_id TEXT NOT NULL,
@@ -131,28 +145,35 @@ class CreateDataBase(DataBase):
                 count INTEGER NOT NULL,
                 PRIMARY KEY (tissue, study_id, disease, developmental_stage)
             );
-            """)
-        
+            """
+        )
+
         self.connection.commit()
-    
+        cursor.close()
+
     def insert_sample_table(self, study_records: dict):
-       
-        self.cursor.executemany("""
+        cursor = self.connection.cursor()
+        cursor.executemany(
+            """
             INSERT INTO samples (sample_name, study_id, runs, tissue, developmental_stage, disease, sex) 
             VALUES (:sample_name, :study_id, :runs, :tissue, :developmental_stage, :disease, :sex)
-        """, study_records
+            """,
+            study_records,
         )
         self.connection.commit()
-    
+        cursor.close()
+
     def insert_tissue_table(self, tissue_records: dict):
-        
-        self.cursor.executemany("""
+        cursor = self.connection.cursor()
+        cursor.executemany(
+            """
             INSERT INTO tissue_map (tissue_public, tissue, subtissue) 
             VALUES (:tissue_public, :tissue, :subtissue)
-        """, tissue_records
+            """,
+            tissue_records,
         )
         self.connection.commit()
-
+        cursor.close()
 
     def _parse_study_table(self):
         """
@@ -163,7 +184,9 @@ class CreateDataBase(DataBase):
                 elements = line.rstrip().split("\t")
                 yield elements[0], elements[1], int(elements[2])
 
-    def _add_samples(self, study_id: str, study_annot: dict, sample_count: str, update: bool = False):
+    def _add_samples(
+        self, study_id: str, study_annot: dict, sample_count: str, update: bool = False
+    ):
         """
         Check consistency of metadata database. Compare in-memory database to sample tables shipped
         with k4neo. Add or update documents in database.
@@ -178,36 +201,44 @@ class CreateDataBase(DataBase):
             - Simplify arguments
             - Simplify function
         """
+        cursor = self.connection.cursor()
 
-        # Returns a list of 
-        sample_table = self.cursor.execute("SELECT * from samples WHERE study_id == ?", (study_id, )).fetchall()
+        # Returns a list of
+        sample_table = cursor.execute(
+            "SELECT * from samples WHERE study_id == ?", (study_id,)
+        ).fetchall()
         # Check if sampe table is already initialiazed
         if len(sample_table) == sample_count:
             logger.info(f"-> Samples of {study_id} are already in database")
             return
-        
+
         if len(sample_table) == 0:
             logger.info(f"-> Inserting samples of study {study_id}")
-            
+
             self.insert_sample_table(study_annot)
-            
+
             logger.info(f"-> Loaded {len(study_annot)} documents into study table")
-        
+
         # Query DB for missing entries
         elif len(sample_table) != sample_count:
             counter = 0
             for element in study_annot:
-                exists = self.cursor.execute("SELECT * from ? WHERE sample_name == ?", (study_id, element["sample_name"]))
+                exists = cursor.execute(
+                    "SELECT * from ? WHERE sample_name == ?", (study_id, element["sample_name"])
+                )
                 if not exists:
-                    self.cursor.execute("""
+                    cursor.execute(
+                        """
                         INSERT INTO samples (sample_name, study_id, runs, tissue, developmental_stage, diesease, age, sex) 
                         VALUES (:sample_name, :study_id, :runs, :tissue, :developmental_stage, :disease, :age, :sex)
-                    """, element
+                        """,
+                        element,
                     )
                     counter += 1
             logger.info(f"-> Loaded {counter} missing documents from {study_id} into sample table")
         else:
             logger.error("-> Don't know what to do here")
+        cursor.close()
 
     def setup_db(self):
         """
@@ -228,10 +259,12 @@ class CreateDataBase(DataBase):
             # Update samples with tissue mapping and add subtissue section
             study_elements = validate_sample_record(study_elements)
             if len(study_elements) != sample_count:
-                logger.debug(f"Dropped {sample_count - len(study_elements)} because of validation")
+                logger.debug(
+                    f"Dropped {sample_count - len(study_elements)} samples because of validation"
+                )
                 sample_count = sample_count - len(study_elements)
 
-            self._add_samples(study_id, study_elements, sample_count) 
+            self._add_samples(study_id, study_elements, sample_count)
 
     def precomputations(self):
         """
@@ -244,14 +277,15 @@ class CreateDataBase(DataBase):
             FROM samples s
             JOIN tissue_map t
             ON s.tissue = t.tissue_public
-            """, self.connection)
-        table = table[["tissue", "developmental_stage", "disease", "study_id"]].value_counts()
-        # Returns record in document format
-        #tissue_counts = table.to_frame().reset_index().to_dict(orient="records")
-        table.to_sql(name="tissue_counts", 
-                             con=self.connection,
-                             if_exists="replace",
-                             index=False)
-        logger.info(
-            f"-> Added {len(table)} precomputed tissue counts for into database"
+            """,
+            self.connection,
         )
+        table = (
+            table[["tissue", "developmental_stage", "disease", "study_id"]]
+            .value_counts()
+            .to_frame()
+            .reset_index()
+        )
+        # Returns record in document format
+        table.to_sql(name="tissue_counts", con=self.connection, if_exists="replace", index=False)
+        logger.info(f"-> Added {len(table)} precomputed tissue counts for into database")

@@ -1,9 +1,12 @@
 import sys
 import pathlib
-import gzip
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from itertools import batched
 import k4neo
-from k4neo.database.database import DataBase, CreateDataBase
+
+# from k4neo.database.database import DataBase, CreateDataBase
+from k4neo.database2.database import DataBase, CreateDataBase
+from k4neo.database2.queries import Queries
 from k4neo.annotator.annotator import Annotator
 from k4neo.annotator.reference_annotation import ReferenceIndexer, KmerUniquenessAnnotator
 from k4neo.parser.parser import IndexResultParser
@@ -11,13 +14,14 @@ from k4neo.parser.index_parser import IndexResultParser2
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 from k4neo.plotter.plotter import Plotter
 from k4neo.setup_logging import setup_logging
-from k4neo.helper.helper import DiskIO
+from k4neo.helper.helper import DiskIO, Worker
 from k4neo.helper.async_writer import AsyncDFWriter
 from rich.console import Console
 from tqdm import tqdm
 import gc
 import pandas as pd
 import time
+from joblib import Parallel, delayed
 
 console = Console()
 
@@ -59,9 +63,9 @@ def build_database():
     logger = setup_logging(log_file_name, verbose=True)
 
     logger.info("-> Starting metadata database creation.")
-    db = CreateDataBase(args.database, args.sample_table, args.tissue_map)
-    db.setup_db()
-    db.precomputations()
+    with CreateDataBase(args.database, args.sample_table, args.tissue_map) as db_handle:
+        db_handle.setup_db()
+        db_handle.precomputations()
     logger.info("-> Finished metadata database creation.")
 
 
@@ -290,8 +294,9 @@ def annotate():
     workflow_profile = pathlib.Path(args.workflow_profile).resolve()
     index_manifest = pathlib.Path(args.index_manifest).resolve()
 
-    annotator = Annotator(working_dir, args.queries, args.database)
+    annotator = Annotator(working_dir, args.queries)
     annotator.prepare_cts()
+
     result_dict = annotator.search_cts(
         pipeline=pipeline,
         workflow_profile=workflow_profile,
@@ -300,6 +305,7 @@ def annotate():
         cores=args.cpu,
         slurm=args.slurm,
     )
+
     # Write non-queryable sequences to disk
     if len(annotator.non_queryable.index > 0):
         logger.info("-> Writing non-queryable sequences to disk")
@@ -347,47 +353,56 @@ def annotate():
         annot_writer = AsyncDFWriter(output_annotated, compression=args.compression)
         annot_writer.start()
 
-        for _, batch_len, chunk in IndexResultParser2.generate_dataframe_in_batches(
-            {method_name: result_dict[method_name]}, batch_size=args.chunk_size
+        # Batch dataframe chunks for parallel processing
+        for this_batch in batched(
+            IndexResultParser2.generate_dataframe_in_batches(
+                {method_name: result_dict[method_name]}, batch_size=args.chunk_size
+            ),
+            args.cpu,
         ):
-
-            # k4neo Annotation functions
-            results = annotator.annotate_cts(chunk)
-            sample_hits = annotator.annotate_sequences(results)
-            healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
-
-            # Send metrics to background writer threads
-            annot_writer.write(
-                sample_hits,
-                [
-                    "cts_id",
-                    "count",
-                    "total",
-                    "disease",
-                    "developmental_stage",
-                    "tissue",
-                    "study_id",
-                ],
-                append=not first_chunk,
-                header=first_chunk,
+            # Extract only dfs to pass to worker
+            chunks_lst = [chunk for _, _, chunk in this_batch]
+            # Multiprocessing of annotation class functions
+            results = Parallel(n_jobs=1)(
+                delayed(Worker.annotator_worker)(this_chunk, annotator, args.database)
+                for this_chunk in chunks_lst
             )
+            # Get batch length and results from chunk and result tuple
+            for (_, batch_len, _), (sample_hits, healthy_sample_rate, tumor_sample_rate) in zip(
+                this_batch, results
+            ):
+                # Send metrics to background writer threads
+                annot_writer.write(
+                    sample_hits,
+                    [
+                        "cts_id",
+                        "count",
+                        "total",
+                        "disease",
+                        "developmental_stage",
+                        "tissue",
+                        "study_id",
+                    ],
+                    append=not first_chunk,
+                    header=first_chunk,
+                )
 
-            healthy_writer.write(
-                healthy_sample_rate,
-                ["cts_id", "developmental_stage", "tissue", "sample_rate"],
-                append=not first_chunk,
-                header=first_chunk,
-            )
+                healthy_writer.write(
+                    healthy_sample_rate,
+                    ["cts_id", "developmental_stage", "tissue", "sample_rate"],
+                    append=not first_chunk,
+                    header=first_chunk,
+                )
 
-            tumor_writer.write(
-                tumor_sample_rate,
-                ["cts_id", "disease", "tissue", "sample_rate"],
-                append=not first_chunk,
-                header=first_chunk,
-            )
+                tumor_writer.write(
+                    tumor_sample_rate,
+                    ["cts_id", "disease", "tissue", "sample_rate"],
+                    append=not first_chunk,
+                    header=first_chunk,
+                )
 
-            first_chunk = False  # turn off headers after first write
-            pbar.update(batch_len)
+                first_chunk = False  # turn off headers after first write
+                pbar.update(batch_len)
 
         pbar.close()
         logger.info("Waiting for writer threads to finish")
