@@ -3,8 +3,7 @@
 import pathlib
 import pandas as pd
 from k4neo.index.index import KmerIndex
-from k4neo.database2.database import DataBase
-from k4neo.database2.queries import Queries
+from k4neo.database_sqlite.queries import Queries
 from k4neo.annotator import (
     EXPECTED_CTS_COLUMNS,
     NON_TUMOR_TISSUE,

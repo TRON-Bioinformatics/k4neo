@@ -3,7 +3,7 @@
     - integrationtest
   command: >
     poetry run k4neo-annotator
-      --database tests/resources/index_metadata.db
+      --database tests/resources/index_metadata.sqlite3
       --index tests/resources/index_manifest.yaml
       --queries tests/resources/queries/test_junction_k4neo_input.tsv
       --working-dir .
@@ -68,7 +68,7 @@
     - integrationtest
   command: >
     poetry run k4neo-annotator
-       --database tests/resources/index_metadata.db
+       --database tests/resources/index_metadata.sqlite3
        --index tests/resources/index_manifest.yaml
        --queries tests/resources/queries/test_transcript_k4neo_input.tsv
        --working-dir .
@@ -130,7 +130,7 @@
     - integrationtest
   command: >
     poetry run k4neo-annotator
-       --database tests/resources/index_metadata.db
+       --database tests/resources/index_metadata.sqlite3
        --index tests/resources/index_manifest.yaml
        --queries tests/resources/queries/test_seq_to_short.tsv
        --working-dir .
@@ -159,7 +159,7 @@
     - integrationtest
   command: >
     poetry run k4neo-annotator
-       --database tests/resources/index_metadata.db
+       --database tests/resources/index_metadata.sqlite3
        --index tests/resources/index_manifest.yaml
        --queries tests/resources/queries/test_seq_not_in_index.tsv
        --working-dir .
@@ -198,7 +198,7 @@
     - integrationtest
   command: >
     bash -c "
-    poetry run k4neo-annotator --database tests/resources/index_metadata.db --index tests/resources/index_manifest.yaml --queries tests/resources/queries/test_junction_k4neo_input.tsv --compress --working-dir . --output ./test_jx ;
+    poetry run k4neo-annotator --database tests/resources/index_metadata.sqlite3 --index tests/resources/index_manifest.yaml --queries tests/resources/queries/test_junction_k4neo_input.tsv --compress --working-dir . --output ./test_jx ;
     poetry run k4neo-plotter --input ./test_jx --output test_picture.png
     "
   files:

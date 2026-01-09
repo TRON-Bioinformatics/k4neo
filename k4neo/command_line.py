@@ -5,8 +5,8 @@ from itertools import batched
 import k4neo
 
 # from k4neo.database.database import DataBase, CreateDataBase
-from k4neo.database2.database import DataBase, CreateDataBase
-from k4neo.database2.queries import Queries
+from k4neo.database_sqlite.database import DataBase, CreateDataBase
+from k4neo.database_sqlite.queries import Queries
 from k4neo.annotator.annotator import Annotator
 from k4neo.annotator.reference_annotation import ReferenceIndexer, KmerUniquenessAnnotator
 from k4neo.parser.parser import IndexResultParser

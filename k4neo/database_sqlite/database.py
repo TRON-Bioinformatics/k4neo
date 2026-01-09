@@ -19,7 +19,7 @@ import pathlib
 from typing import List, Tuple
 import sqlite3
 from k4neo.parser.parser import Parser
-from k4neo.database2.validate import validate_tissue_record, validate_sample_record
+from k4neo.database_sqlite.validate import validate_tissue_record, validate_sample_record
 import pandas as pd
 from loguru import logger
 

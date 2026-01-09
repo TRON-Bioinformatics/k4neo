@@ -1,6 +1,6 @@
 - name: test_k4neo_database_creation
   tags:
-    - integrationtest
+    - integrationtestold
   command: >
     k4neo-database
       --sample-tables tests/resources/index_data/study_annotation.tsv
@@ -27,3 +27,14 @@
         - '"disease": "healthy",'
         - '"study_id": "Innotop_Normal",'
         - '"tissue": "heart"'
+
+- name: test_k4neo_database_creation_sqlite
+  tags:
+    - integrationtest
+  command: >
+    k4neo-database
+      --sample-tables tests/resources/index_data/study_annotation.tsv
+      --database index_metadata.sqlite3
+      --tissue-map tests/resources/index_data/tissue_mapping/tissue_mapping.tsv
+  files:
+    - path: "index_metadata.db"

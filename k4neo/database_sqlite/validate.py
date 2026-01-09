@@ -1,5 +1,5 @@
-from pydantic import BaseModel
 import pydantic_core
+from pydantic import BaseModel
 from typing import List
 from loguru import logger
 

@@ -10,8 +10,8 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from loguru import logger
 from k4neo.annotator import EXPECTED_CTS_COLUMNS
-from k4neo.database2.database import DataBase
-from k4neo.database2.queries import Queries
+from k4neo.database_sqlite.database import DataBase
+from k4neo.database_sqlite.queries import Queries
 from typing import TYPE_CHECKING
 
 # Import only for type checking. Prevents circular import
