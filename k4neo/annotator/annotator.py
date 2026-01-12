@@ -468,9 +468,8 @@ class Annotator:
         Add sample rate to sequences
         """
         tissue_counts = queries.get_tissue_counts()
-        breakpoint()
+
         healthy_sample_rate = self._calculate_healthy_sample_rate(annotated_cts, tissue_counts)
-        breakpoint()
         healthy_sample_rate = pd.merge(
             self.sequence_table,
             healthy_sample_rate,
@@ -504,3 +503,4 @@ class Annotator:
         tumor_sample_rate = tumor_sample_rate.loc[tumor_sample_rate["index_count"] >= min_total]
 
         return healthy_sample_rate, tumor_sample_rate
+    
