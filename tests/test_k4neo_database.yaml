@@ -1,10 +1,70 @@
 - name: test_k4neo_database_creation_sqlite
   tags:
     - integrationtest
+    - db_test
   command: >
-    k4neo-database
-      --sample-tables tests/resources/index_data/study_annotation.tsv
-      --database index_metadata.sqlite3
-      --tissue-map tests/resources/index_data/tissue_mapping/tissue_mapping.tsv
+    bash -c "
+      k4neo-database \
+        --sample-tables tests/resources/index_data/study_annotation.tsv \
+        --database index_metadata.sqlite3 \
+        --tissue-map tests/resources/index_data/tissue_mapping/tissue_mapping.tsv && \
+      sqlite3 index_metadata.sqlite3 \
+        '.headers on' \
+        '.mode csv' \
+        '.output test_samples_table.csv' \
+        'SELECT * FROM samples;'
+      sqlite3 index_metadata.sqlite3 \
+        '.headers on' \
+        '.mode csv' \
+        '.output test_tissue_counts_table.csv' \
+        'SELECT * FROM tissue_counts;'
+      sqlite3 index_metadata.sqlite3 \
+        '.headers on' \
+        '.mode csv' \
+        '.output test_tissue_map_table.csv' \
+        'SELECT * FROM tissue_map;'
+    "
   files:
-    - path: "index_metadata.db"
+    - path: "index_metadata.sqlite3"
+    
+    - path: "test_samples_table.csv"
+      contains:
+        - 'sample_name,study_id,runs,tissue,developmental_stage,disease,sex'
+        - 'IT_N_222_SL1,Innotop_Normal,"",Lung,adult,healthy,'
+        - 'IT_N_223_SL1,Innotop_Normal,"",Lung,adult,healthy,'
+        - 'T_N_134_sLR,Innotop_Normal,"",Heart,adult,healthy,'
+        - 'IT_N_160_RNA,Innotop_Normal,"",Placenta,adult,healthy,'
+        - 'IT_N_161_RNA,Innotop_Normal,"",Placenta,adult,healthy,'
+        - 'IT_N_162_RNA,Innotop_Normal,"",Placenta,adult,healthy,'
+        - 'IT_T_175_sRL_ACAGTG_L001,Innotop_TNBC,"",TNBC,adult,"primary solid tumor",'
+        - 'IT_T_182_sRL_CCGTCC_L003,Innotop_TNBC,"",TNBC,adult,"primary solid tumor",'
+        - 'IT_T_185_sRL_GTCCGC_L003,Innotop_TNBC,"",TNBC,adult,"primary solid tumor",'
+    
+    - path: 'test_tissue_counts_table.csv'
+      contains:
+        - 'tissue,developmental_stage,disease,study_id,count'
+        - '"Triple Negative Breast Cancer",adult,"primary solid tumor",Innotop_TNBC,20'
+        - 'bladder,adult,healthy,Innotop_Normal,3'
+        - 'brain,adult,healthy,Innotop_Normal,3'
+        - 'breast,adult,healthy,Innotop_Normal,3'
+        - 'heart,adult,healthy,Innotop_Normal,3'
+        - 'lung,adult,healthy,Innotop_Normal,3'
+        - 'placenta,adult,healthy,Innotop_Normal,3'
+        - 'spleen,adult,healthy,Innotop_Normal,3'
+        - 'stomach,adult,healthy,Innotop_Normal,3'
+        - 'testis,adult,healthy,Innotop_Normal,3'
+    
+    - path: 'test_tissue_map_table.csv'
+      contains:
+        - 'tissue_public,tissue,subtissue'
+        - 'Lung,lung,NA'
+        - 'Testis,testis,NA'
+        - 'StomacH,stomacH,NA'
+        - 'Bladder,bladder,NA'
+        - 'Heart,heart,NA'
+        - 'Placenta,placenta,NA'
+        - 'Breast,breast,NA'
+        - 'Brain,brain,NA'
+        - 'Spleen,spleen,NA'
+        - 'Stomach,stomach,NA'
+        - 'TNBC,"Triple Negative Breast Cancer",NA'
