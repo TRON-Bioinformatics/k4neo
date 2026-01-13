@@ -20,10 +20,10 @@ class TestPipeline:
         qconfig = QueryPipelineConfig(
             index=self.index_manifest,
             kmer_ratio=self.kmer_ratio,
-            index_to_method_mapping={"test_index": "raptor"},
+            index_to_method_mapping={"test_index": "raptor"}
         )
         qconfig.config["query"].update({"query_fasta": str(self.fasta)})
-        pipeline = QueryPipeline(self.pipeline, self.profile, qconfig.config, pathlib.Path("./"))
+        pipeline = QueryPipeline(self.pipeline, self.profile, qconfig.config, pathlib.Path("./"), target_rule="query_raptor")
         result = pipeline.run_pipeline(slurm=False, cores=1)
         assert isinstance(result, QueryPipelineResult)
         assert isinstance(result.query_path, list)
@@ -32,6 +32,27 @@ class TestPipeline:
                 "raptor",
                 "test_index",
                 pathlib.Path("./").resolve() / "query/raptor/test_index/search.tsv",
+            )
+        ]
+    
+    def test_jellyfish_query_pipeline(self):
+        quant_manifest = pathlib.Path(__file__).parent.parent / "resources" / "quant_index_manifest.yaml"
+        qconfig = QueryPipelineConfig(
+            index=quant_manifest,
+            kmer_ratio=self.kmer_ratio,
+            index_to_method_mapping={"IT_N_103": "jellyfish"}
+        )
+        qconfig.config["query"].update({"query_fasta": str(self.fasta)})
+        
+        pipeline = QueryPipeline(self.pipeline, self.profile, qconfig.config, pathlib.Path("./"), target_rule="all")
+        result = pipeline.run_pipeline(slurm=False, cores=1)
+        assert isinstance(result, QueryPipelineResult)
+        assert isinstance(result.query_path, list)
+        assert result.query_path == [
+            (
+                "jellyfish",
+                "IT_N_103",
+                pathlib.Path("./").resolve() / "query/jellyfish/IT_N_103/quantitative_search.tsv",
             )
         ]
 

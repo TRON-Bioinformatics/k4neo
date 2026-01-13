@@ -11,7 +11,7 @@ from k4neo.parser.index_parser import IndexResultParser2
 from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 from k4neo.plotter.plotter import Plotter
 from k4neo.setup_logging import setup_logging
-from k4neo.helper.helper import DiskIO
+from k4neo.helper.helper import DiskIO, QuantIndexHelper
 from k4neo.helper.async_writer import AsyncDFWriter
 from rich.console import Console
 from tqdm import tqdm
@@ -140,15 +140,32 @@ def annotate_uniqueness():
 
     uniq = KmerUniquenessAnnotator(args.ref_index)
     results = uniq.annotate_fasta(args.queries)
-
+    header = [
+        "cts_id",
+        "cts_unique_rate",
+        "cts_ref_rate",
+        "cts_ref_single_gene_locus_rate",
+        "cts_ref_multi_gene_locus_rate",
+        "cts_ref_single_transcript_rate",
+        "cts_ref_multi_transcript_rate",
+    ]
     counter = 0
     with open(args.output, "w") as file_handle:
-        file_handle.write(
-            "cts_id\tcts_unique_rate\tcts_ref_rate\tcts_ref_single_gene_locus_rate\tcts_ref_multi_gene_locus_rate\tcts_ref_single_transcript_rate\tcts_ref_multi_transcript_rate\n"
-        )
+        file_handle.write(f"{'\t'.join(header)}\n")
         for seq_id, rates in results.items():
             file_handle.write(
-                f"{seq_id}\t{rates['cts_unique_rate']:.4f}\t{rates['cts_ref_rate']:.4f}\t{rates['cts_ref_single_gene_locus_rate']:.4f}\t{rates['cts_ref_multi_gene_locus_rate']:.4f}\t{rates['cts_ref_single_transcript_rate']:.4f}\t{rates['cts_ref_multi_transcript_rate']:.4f}\n"
+                "\t".join(
+                    [
+                        seq_id,
+                        f"{rates['cts_unique_rate']:.4f}",
+                        f"{rates['cts_ref_rate']:.4f}",
+                        f"{rates['cts_ref_single_gene_locus_rate']:.4f}",
+                        f"{rates['cts_ref_multi_gene_locus_rate']:.4f}",
+                        f"{rates['cts_ref_single_transcript_rate']:.4f}",
+                        f"{rates['cts_ref_multi_transcript_rate']:.4f}",
+                    ]
+                )
+                + "\n"
             )
             counter += 1
     logger.info(f"Annotated uniqueness of {counter} sequences")
@@ -399,6 +416,121 @@ def annotate():
         annot_writer.stop()
         healthy_writer.stop()
         tumor_writer.stop()
+
+
+def quant_annotation():
+    parser = ArgumentParser(
+        description=f"k4neo {k4neo.VERSION} quantitative annotation",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        epilog=epilog,
+    )
+    # Index yaml manifest
+    parser.add_argument(
+        "--index", dest="index_manifest", help="k-mer index to query.", required=True
+    )
+    parser.add_argument(
+        "--fasta",
+        dest="query_fasta",
+        help="FASTA file",
+        required=True,
+    )
+    parser.add_argument("--output", dest="output", help="Output prefix for annotated sequences")
+    parser.add_argument(
+        "--working-dir",
+        dest="working_dir",
+        help="Working directory of k4neo pipeline",
+        default="./k4neo_query",
+    )
+    parser.add_argument(
+        "--workflow",
+        dest="workflow",
+        help="path to tronmake k-mer pipeline",
+        default=pathlib.Path(__file__).parent
+        / "pipeline"
+        / "tronmake-kmer-pipeline"
+        / "workflow"
+        / "Snakefile",
+    )
+    parser.add_argument(
+        "--profile",
+        dest="workflow_profile",
+        help="A yaml file containing snakemake options for execution. Options are described in SnakeMake documentation",
+        default=pathlib.Path(__file__).parent / "pipeline" / "default_profile.yaml",
+    )
+    parser.add_argument(
+        "--cpu",
+        dest="cpu",
+        help="Number of cpus for local execution",
+        default=16,
+        type=int,
+    )
+    parser.add_argument(
+        "--slurm", dest="slurm", help="Submit query job to slurm", action="store_true"
+    )
+    parser.add_argument(
+        "--normalize",
+        dest="normalize",
+        help="Normalize quant counts by k-mer present in each cBF.",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--normalize-factor",
+        dest="normalize_factor",
+        help="Normalization factor for k-mer counts",
+        default=1e9,
+        type=float,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Verbose logs (default: False)",
+    )
+
+    args = parser.parse_args()
+
+    log_file_name = pathlib.Path(args.output).parent / "k4neo_quantitative_annotation.log"
+
+    logger = setup_logging(log_file_name, args.verbose)
+
+    logger.info("Annotating sequences with quantitative information")
+    from k4neo.index.index import KmerIndex
+    from k4neo.parser.index_parser import QuantitativeKmerIndexParser
+
+    quant_index = KmerIndex(
+        pipeline=args.workflow,
+        workflow_profile=args.workflow_profile,
+        index_manifest=args.index_manifest,
+        quantitative=True,
+    )
+
+    query_pipeline_results = quant_index.search_index(
+        args.query_fasta, pathlib.Path(args.working_dir), slurm=args.slurm, cores=args.cpu
+    )
+    if args.normalize:
+        logger.info(f"Normalization of quantitative k-mer counts will be performed using {args.normalize_factor:.1e} as scaling factor")
+    # Collect all query results. Here, an index is a single RNA-seq sample
+    list_df = []
+    
+    logger.info(f"Annotating sequences with quantitative information from {len(quant_index.index_to_method_mapping.keys())} indices")
+    for _, index_name, this_path in query_pipeline_results.query_path:
+        p = QuantitativeKmerIndexParser(this_path, "jellyfish")
+        cts_res = p.parse_jellyfish()
+        
+        if args.normalize:
+            cts_res = QuantIndexHelper.normalize_kmer_count_by_depth(
+                cts_res,
+                quant_index.kmer_depth_mapping.get(index_name),
+                args.normalize_factor
+            )
+        cts_res = QuantIndexHelper.quant_metrics(cts_res)
+        cts_res["sample"] = index_name
+        list_df.append(cts_res)
+    
+    df = pd.concat(list_df, ignore_index=True)
+
+    DiskIO.write_df(df, args.output)
 
 
 def plot():

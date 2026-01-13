@@ -97,7 +97,7 @@ class Pipeline:
             "--profile",
             str(self.workflow_profile.parent),
             "--until",
-            "query_raptor",
+            self.target_rule,
         ]
         if slurm:
             cmd.extend(["--executor", "slurm"])
@@ -118,10 +118,11 @@ class QueryPipeline(Pipeline):
         workflow_profile: pathlib.Path,
         config: dict,
         working_dir: pathlib.Path,
+        target_rule: str
     ):
         """Parameter initialization"""
         logger.debug("Initialising of k4neo query pipeline.")
-        super().__init__(workflow, workflow_profile, config, working_dir, target_rule="query")
+        super().__init__(workflow, workflow_profile, config, working_dir, target_rule=target_rule)
 
     def determine_final_query(self):
         """Based on selected methods in index manifest, find query output that could be created by pipeline"""
@@ -146,6 +147,15 @@ class QueryPipeline(Pipeline):
                             this_method,
                             this_index_name,
                             self.working_dir / "query" / "kmindex" / this_index_name / "search.tsv",
+                        )
+                    )
+                case "jellyfish":
+                    # query/jellyfish/{subindex}/search.tsv"
+                    results.append(
+                        (
+                            this_method,
+                            this_index_name,
+                            self.working_dir / "query" / "jellyfish" / this_index_name / "quantitative_search.tsv",
                         )
                     )
                 case _:

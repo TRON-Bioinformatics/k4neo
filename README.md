@@ -6,25 +6,28 @@
 ![Pandas](https://img.shields.io/badge/pandas-150458?style=flat-square&logo=pandas&logoColor=white)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Snakemake](https://img.shields.io/badge/snakemake-9.1.6-brightgreen.svg?style=flat-square)](https://snakemake.readthedocs.io)
-[![Release](https://img.shields.io/badge/release-v0.3.1-blue?style=flat)](https://github.com/TRON-Private/k4neo)
+[![Release](https://img.shields.io/badge/release-v0.3.3-blue?style=flat)](https://github.com/TRON-Private/k4neo)
 
 <!-- badges: end -->
 
-
-
 **Predicting tumor-specificity in a blast. A modern k-mer based approach to screen for (neo)antigens in healthy and tumor tissue RNA-seq**
 
-
 --- 
-
 ## 🔧 Features
 
-- ⚡ Fast k-mer based tumor and normal expression breadth annotation
-- 🐍 Built with python
-- 🔁 Workflow management with Snakemake
+<img align="right" src="https://github.com/user-attachments/assets/c177cd46-14ca-468b-b983-5fb5264a4c45" width="227" />
+
+- ⚡ Fast k-mer based tumor and normal expression breadth annotation  
+- 🐍 Built with python  
+- 🔁 Workflow management with Snakemake  
 - 📊 Ideal for tumor-specificity analyses of (neo)antigen candidates
+- Semi-quantitative expression annotation
+- k-mer uniqueness annotation with respect to genome and transcriptome
+
+<br clear="right"/>
 
 ---
+
 
 ## 📦 Requirements
 
@@ -184,19 +187,63 @@ These metrics are estimated using the reference genome and transcriptome sequenc
 
 This feature was inspired by the KmeratorSuite, however without the information of the reference annotation and the ability to assembly the sequences back into  search contigs. 
 
+#### (4) Quantitative annotation of sequences.
+
+k4neo allows to annotate sequences with quantitative information from a limited set of RNA-seq samples. Here, for each sample a CountingBloomFilter is queried
+to derive the approximate counts of each query k-mers. We provide per indexed sample / query combination descriptive statistics that allow to approximate expression in individual samples.
+Quantitative counts can also be normalized to using the parameters `--normalize` and `--normalize-factor`. By default, this will normalize k-mer counts per billion of k-mers present 
+in the index. Pervious studies have shown that this correlates very well with gene and transcript-level TPM values/normalized counts determined by kallisto.
+
+**This feature is experimental and should be used with caution for analysis! Moreover, the scalability to many samples is very limited** 
+
+The current implementation can be run after k4neo annotation based on the `query.fa` fasta file. 
+
+```{bash}
+k4neo-quant \
+  --index /path/to/quant_index.yaml \
+  --fasta query.fa \
+  --output quant_annotation.tsv \
+  --cpu 2 \
+  --normalize
+```
+
+This will generate a file called `quant_annotation.tsv` with the following annotation columns.
+
+* `cts_id`: The query cts_id.
+* `sample`: The identifier of the indexed sample.
+* `median_kmer_count`: Median count of query k-mers.
+* `mean_kmer_count`: Mean count of query k-mers.
+* `max_kmer_count`: Maximal k-mer count of query.
+* `min_kmer_count`: Minimal k-mer count of query.
+* `rate_non_zero_kmers`: The rate of k-mers that have counts in the index.
+* `rate_zero_kmers`: The rate of k-mers with zero count in the index.
+* `variance`: Variance of k-mer counts. How uniform is the cooverage.
+* `cv`: Coefficient of variation.
+
 
 
 ## Authors & Acknowledgements 
 
-The k4neo package was originally developed by Johannes Hausmann at [TRON - Translational Oncology at the Medical Center of the Johannes Gutenberg University Mainz gGmbH (non-profit)](https://tron-mainz.de/).
+The k4neo package was originally developed in the Computational Genomics group at [TRON - Translational Oncology at the Medical Center of the Johannes Gutenberg University Mainz gGmbH (non-profit)](https://tron-mainz.de/).
 
-Main developers: 
+💡 Idea and conceptualisation:
 
-- [Johannes Hausmann](mailto:johannes.hausmann@tron-mainz.de)   
+- [Jonas Ibn-Salem, TRON gGmbH](mailto:jonas.ibn-salem@tron-mainz.de)
+- [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)  
 
-Contributers:
+🛠️ Main developer: 
 
-- Luis Kress, TRON gGmbH
-- Jonas Ibn-Salem, TRON gGmbH
-- Franziska Lang, TRON gGmbH
+- [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)   
 
+✨ Contributors and code reviewers:
+
+- [Özlem Muslu, TRON gGmbH](mailto:Oezlem.Muslu@TrOn-Mainz.DE)
+- [Luis Kress, TRON gGmbH](mailto:luis.kress@tron-mainz.de)
+
+🐞 Bug hunter:
+
+- [Franziska Lang, TRON gGmbH](mailto:franziska.lang@tron-mainz.de)
+
+## Contributing
+
+Please see our [CONTRIBUTING](./CONTRIBUTING.md) file.
