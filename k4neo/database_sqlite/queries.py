@@ -119,7 +119,6 @@ class Queries:
 
         tissue_counts.rename(columns={"count": "total"}, inplace=True)
         samples = pd.merge(samples, tissue_counts, how="left")
-        breakpoint()
         return samples
 
     def get_tissue_counts(self) -> pd.DataFrame:
