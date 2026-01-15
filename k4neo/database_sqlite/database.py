@@ -8,11 +8,7 @@ and will only be based on standard sqlite3 library. We plan to provide a thin wr
 top that somehow acts as the old implementation and provides API compatibility for existing methods.
 
 Todo:
-    * Implement sqlite3 as backend
-    * Add table statements
-    * Error and value handling
-
-
+    Better error and value handling
 """
 
 import pathlib
@@ -33,8 +29,8 @@ class DataBase:
         """Parameter initialization
 
         Args:
-            db_file (pathlib.Path):  A path to a TinyDB database file.
-            test (bool, optional): Establish TinyDB database in-memory for testing. Defaults to False.
+            db_file (pathlib.Path):  A path to a database file.
+            test (bool, optional): Establish database in-memory for testing. Defaults to False.
             timeout(float, optional): How many seconds should we wait before raising error that table is locked. Defaults to 30s.
         """
         self.db_file = db_file
@@ -43,6 +39,7 @@ class DataBase:
         self.test = test
 
     def connect(self):
+        """Establish connection and apply PRAGMA statements"""
         if self.test:
             self.connection = sqlite3.connect(
                 ":memory:", timeout=self.timeout, check_same_thread=False
@@ -72,20 +69,25 @@ class DataBase:
 
 class CreateDataBase(DataBase):
     """
-    Class to construct k4neo metadata tables.
+    Class to construct k4neo metadata database from k4neo index data.
     """
 
     def __init__(
-        self, db_file, data_set_file, tissue_map, test: bool = False, timeout: float = 30.0
+        self,
+        db_file: pathlib.Path,
+        data_set_file: pathlib.Path,
+        tissue_map: pathlib.Path,
+        test: bool = False,
+        timeout: float = 30.0,
     ):
-        """
+        """Generate metadata database
 
         Args:
-            db_file (_type_): _description_
-            data_set_file (_type_): _description_
-            tissue_map (_type_): _description_
-            test (bool, optional): _description_. Defaults to False.
-            timeout (float, optional): _description_. Defaults to 30.0.
+            db_file (pathlib.Path): A path to a database file. Can be empty string, when test equals to true.
+            data_set_file (pathlib.Path): A file listing documents to insert into database.
+            tissue_map (pathlib.Path): A file with accepted tissue identifiers.
+            test (bool, optional): Establish database in-memory for testing. Defaults to False.
+            timeout (float, optional): Seconds before table is locked error is raised. Defaults to 30.0.
         """
         super().__init__(db_file, test=test, timeout=timeout)
         self.data_set_file = data_set_file
@@ -93,7 +95,14 @@ class CreateDataBase(DataBase):
 
     def create_static_tables(self):
         """
-        Create static metadata table
+        Create metadata database tables. Currently the database consists of 4 static tables
+
+        * sample_study_mapping: A table mapping samples to study ids
+        * tissue_map: A table mapping public tissue identifiers to k4neo tissue identifiers.
+        * samples: A table describing indexed samples.
+        * tissue_counts: A table with tissue counts per study, diasease and developmental_stage
+        * index_information:
+
         """
         cursor = self.connection.cursor()
         cursor.execute(
@@ -152,6 +161,14 @@ class CreateDataBase(DataBase):
         cursor.close()
 
     def insert_sample_table(self, study_records: dict):
+        """Insert records into sample table
+
+        Method to insert sample records batchwise into database
+
+        Returns:
+            None
+
+        """
         cursor = self.connection.cursor()
         cursor.executemany(
             """
@@ -164,6 +181,14 @@ class CreateDataBase(DataBase):
         cursor.close()
 
     def insert_tissue_table(self, tissue_records: dict):
+        """Insert records into tissue table
+
+        Method to insert tissue records batchwise into database
+
+        Returns:
+            None
+
+        """
         cursor = self.connection.cursor()
         cursor.executemany(
             """
@@ -175,9 +200,12 @@ class CreateDataBase(DataBase):
         self.connection.commit()
         cursor.close()
 
-    def _parse_study_table(self):
+    def _parse_study_table(self) -> Tuple[str, str, int]:
         """
         Parse study table and yield study specific arguments
+
+        Yields:
+            Tuple (str): Study name, Path to study annotation table, Number of samples
         """
         with open(self.data_set_file, "r") as file_handle:
             for line in file_handle:
