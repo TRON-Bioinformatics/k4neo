@@ -3,3 +3,4 @@ TARGET_RULES_OF_METHODS = {
     "jellyfish": "all",
     "kmindex": "query_kmindex"
 }
+K4NEO_SUPPORTED_TOOLS = list(TARGET_RULES_OF_METHODS.keys())

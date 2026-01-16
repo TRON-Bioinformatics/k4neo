@@ -1,0 +1,24 @@
+test_index:
+  samples: 2
+  path: 'k4neo/tests/resources/index/raptor.index'
+  sample_mapping: 'k4neo/tests/resources/index/index_mapping.txt'
+  method: raptor
+
+test_index2:
+  samples: 20
+  path: 'k4neo/tests/resources/index/raptor.index'
+  sample_mapping: 'k4neo/tests/resources/index/index_mapping.txt'
+  method: raptor
+
+test_index3:
+  samples: 400
+  path: 'k4neo/tests/resources/index/raptor.index'
+  sample_mapping: 'k4neo/tests/resources/index/index_mapping.txt'
+  method: raptor
+
+test_index4:
+  samples: 5
+  path: 'k4neo/tests/resources/index'
+  sample_mapping: 'k4neo/tests/resources/index/index_mapping.txt'
+  method: kmindex
+
