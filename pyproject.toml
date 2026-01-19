@@ -39,6 +39,7 @@ tqdm = "^4.67.1"
 joblib = "^1.5.1"
 pyprobables = "^0.6.1"
 black = "^26.1.0"
+pydantic = "^2.12.5"
 
 [tool.poetry.scripts]
 k4neo-annotator = "k4neo.command_line:annotate"
