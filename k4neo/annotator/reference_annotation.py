@@ -58,9 +58,7 @@ class KmerUniquenessAnnotator:
 
         # For genome we search the canoncial representation
         genome_counts = [
-            JellyFishHelper.query_index(
-                SequenceOperation.canonicalize(kmer), self.genome_index
-            )
+            JellyFishHelper.query_index(SequenceOperation.canonicalize(kmer), self.genome_index)
             for kmer in kmers
         ]
         # For transcriptome annotation we require the strand of the k-mer to match as this matters for uniqueness of antisense transcripts etc.

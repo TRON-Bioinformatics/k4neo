@@ -23,13 +23,6 @@ console = Console()
 epilog = "Copyright (c) 2026 TRON gGmbH (See LICENSE for licensing details)"
 
 
-def process_chunk(chunk, annotator):
-    results = annotator.annotate_cts(chunk)
-    sample_hits = annotator.annotate_sequences(results)
-    healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
-    return sample_hits, healthy_sample_rate, tumor_sample_rate
-
-
 def build_database():
     parser = ArgumentParser(
         description=f"k4neo {k4neo.VERSION} database builder",
@@ -505,13 +498,14 @@ def quant_annotation():
     logger = setup_logging(log_file_name, args.verbose)
 
     logger.info("Annotating sequences with quantitative information")
-    from k4neo.index.index import KmerIndex
+    from k4neo.index.index_loader import load_metaindex_from_manifest
+    from k4neo.index.index_processor import KmerIndexProcessor
     from k4neo.parser.index_parser import QuantitativeKmerIndexParser
 
-    quant_index = KmerIndex(
+    quant_index = KmerIndexProcessor(
+        meta_index=load_metaindex_from_manifest(args.index_manifest),
         pipeline=args.workflow,
         workflow_profile=args.workflow_profile,
-        index_manifest=args.index_manifest,
         quantitative=True,
     )
 
@@ -520,14 +514,21 @@ def quant_annotation():
     )
     if args.normalize:
         logger.info(
-            f"Normalization of quantitative k-mer counts will be performed using {args.normalize_factor:.1e} as scaling factor"
+            (
+                "Normalization of quantitative k-mer counts will "
+                f"be performed using {args.normalize_factor:.1e} as scaling factor"
+            )
         )
     # Collect all query results. Here, an index is a single RNA-seq sample
     list_df = []
 
     logger.info(
-        f"Annotating sequences with quantitative information from {len(quant_index.index_to_method_mapping.keys())} indices"
+        (
+            "Annotating sequences with quantitative information from "
+            f"{len(quant_index.index_to_method_mapping.keys())} indices"
+        )
     )
+
     for _, index_name, this_path in query_pipeline_results.query_path:
         p = QuantitativeKmerIndexParser(this_path, "jellyfish")
         cts_res = p.parse_jellyfish()

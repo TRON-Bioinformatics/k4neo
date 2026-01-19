@@ -3,7 +3,11 @@ import re
 from six import PY2
 from collections import ChainMap
 from k4neo.parser.parser import Parser, IndexResultParser
-from k4neo.parser.index_parser import IndexResultParser2, BinaryKmerIndexResultParser
+from k4neo.parser.index_parser import (
+    IndexResultParser2,
+    BinaryKmerIndexResultParser,
+    QuantitativeKmerIndexParser,
+)
 
 # Tests for Parser class
 
@@ -292,3 +296,37 @@ def test_add_mix_of_placeholder_and_real_sample_to_real_sample():
     new = {"sample2", None}
     IndexResultParser2.update_sample_set(target, new)
     assert target == {"sample1", "sample2"}
+
+
+def test_parse_jellyfish_basic(mocker):
+    # Simulate a jellyfish output file with two cts_ids and multiple kmer counts
+    file_content = (
+        "cts1\tAAA\t5\n" "cts1\tAAC\t7\n" "cts2\tAAG\t2\n" "cts2\tAAT\t3\n" "cts2\tACC\t4\n"
+    )
+    mock_open = mocker.patch("builtins.open", mocker.mock_open(read_data=file_content))
+    parser = QuantitativeKmerIndexParser("dummy.txt", "jellyfish")
+    result = parser.parse_jellyfish()
+    assert result == {
+        "cts1": [5, 7],
+        "cts2": [2, 3, 4],
+    }
+    mock_open.assert_called_once_with("dummy.txt", "r")
+
+
+def test_parse_jellyfish_empty_file(mocker):
+    # Simulate an empty jellyfish output file
+    mock_open = mocker.patch("builtins.open", mocker.mock_open(read_data=""))
+    parser = QuantitativeKmerIndexParser("dummy.txt", "jellyfish")
+    result = parser.parse_jellyfish()
+    assert result == {}
+    mock_open.assert_called_once_with("dummy.txt", "r")
+
+
+def test_parse_jellyfish_single_entry(mocker):
+    # Simulate a file with a single entry
+    file_content = "ctsX\tAAA\t42\n"
+    mock_open = mocker.patch("builtins.open", mocker.mock_open(read_data=file_content))
+    parser = QuantitativeKmerIndexParser("dummy.txt", "jellyfish")
+    result = parser.parse_jellyfish()
+    assert result == {"ctsX": [42]}
+    mock_open.assert_called_once_with("dummy.txt", "r")

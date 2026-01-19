@@ -2,8 +2,10 @@
 
 import pathlib
 import pandas as pd
-from k4neo.index.index import KmerIndex
-from k4neo.database_sqlite.queries import Queries
+from k4neo.index.index_loader import load_metaindex_from_manifest
+from k4neo.index.index_processor import KmerIndexProcessor
+from k4neo.database.database import DataBase
+from k4neo.database.queries import Queries
 from k4neo.annotator import (
     EXPECTED_CTS_COLUMNS,
     NON_TUMOR_TISSUE,
@@ -215,17 +217,16 @@ class Annotator:
         Returns:
             pd.DataFrame: A pandas DataFrame with parsed results for each method from manifest file.
         """
-        index = KmerIndex(
-            pipeline=pipeline,
-            workflow_profile=workflow_profile,
-            index_manifest=index_manifest,
-            kmer_ratio=kmer_ratio,
+        meta_index = load_metaindex_from_manifest(index_manifest)
+
+        index_processor = KmerIndexProcessor(
+            meta_index=meta_index, pipeline=pipeline, workflow_profile=workflow_profile
         )
-        query_pipeline_results = index.search_index(
-            self.query_fasta, self.working_dir, slurm=slurm, cores=cores
+        query_pipeline_results = index_processor.search_index(
+            self.query_fasta, self.working_dir, slurm=slurm, cores=cores, kmer_ratio=kmer_ratio
         )
-        parsed_results = index.result_parser2(
-            query_pipeline_results=query_pipeline_results, cores=cores
+        parsed_results = index_processor.result_parser2(
+            query_pipeline_results=query_pipeline_results, cores=cores, kmer_ratio=kmer_ratio
         )
         return parsed_results
 

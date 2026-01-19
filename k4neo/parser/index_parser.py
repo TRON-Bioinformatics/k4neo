@@ -297,7 +297,7 @@ class QuantitativeKmerIndexParser:
 
         with open(self.search_results, "r") as file_handle:
             for this_line in file_handle:
-                cts_id, kmer, count = this_line.rstrip().split("\t")
+                cts_id, _, count = this_line.rstrip().split("\t")
                 cts_kmer_count[cts_id].append(int(count))
 
         return cts_kmer_count

@@ -336,9 +336,11 @@ class QuantIndexHelper:
 
         result = pd.DataFrame.from_dict(metrics).transpose()
         return result
-    
+
     @staticmethod
-    def normalize_kmer_count_by_depth(cts_kmer_count: dict, kmer_depth: int, normalization_factor = 1e9) -> dict:
+    def normalize_kmer_count_by_depth(
+        cts_kmer_count: dict, kmer_depth: int, normalization_factor=1e9
+    ) -> dict:
         """_summary_
 
         Args:
@@ -359,9 +361,9 @@ class QuantIndexHelper:
             return cts_kmer_count
 
         normalized_dict = defaultdict(list)
-        
+
         for this_cts, this_counts in cts_kmer_count.items():
             normalized_counts = map(lambda x: x * normalization_factor / kmer_depth, this_counts)
             normalized_dict[this_cts] = list(normalized_counts)
-        
+
         return normalized_dict
