@@ -13,7 +13,9 @@ def setup_logging(log_file: pathlib.Path, verbose: bool = False):
     console_level = "DEBUG" if verbose else "INFO"
 
     # Add a tqdm write as new sink. Ensures that progress bar and logs fit together
-    logger.add(lambda msg: tqdm.write(msg, end=""), level=console_level, colorize=True, enqueue=True)
+    logger.add(
+        lambda msg: tqdm.write(msg, end=""), level=console_level, colorize=True, enqueue=True
+    )
 
     # Add sink for log file
     logger.add(

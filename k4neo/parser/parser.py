@@ -41,9 +41,7 @@ class Parser:
                 ), "Missing columns in input"
                 tissue_mapping.append(
                     {
-                        "tissue_public": line[
-                            "tissue_description_found_in_public_data"
-                        ],
+                        "tissue_public": line["tissue_description_found_in_public_data"],
                         "tissue": line["tissue"],
                         "subtissue": line["subtissue"],
                     }
@@ -161,9 +159,7 @@ class IndexResultParser:
         """
         query_results = defaultdict(set)
         with Pool(processes=cores) as pool:
-            for this_batch in IndexResultParser._iterate_parquet_in_batches(
-                path, batch_size
-            ):
+            for this_batch in IndexResultParser._iterate_parquet_in_batches(path, batch_size):
                 detected_samples_list = pool.map(
                     partial(
                         IndexResultParser._parse_table_row,
@@ -175,9 +171,9 @@ class IndexResultParser:
                 for parse_dict in detected_samples_list:
                     for this_cts, this_sample_set in parse_dict.items():
                         query_results[this_cts].update(this_sample_set)
-                #query_results.extend(detected_samples_list)
-        
-        #query_results = ChainMap(*query_results)
+                # query_results.extend(detected_samples_list)
+
+        # query_results = ChainMap(*query_results)
         return query_results
 
     @staticmethod

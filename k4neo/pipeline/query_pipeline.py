@@ -26,6 +26,107 @@ class IndexPipelineResult:
 
     index_path: str
 
+class PipelineConfig:
+    """
+    Class to represent a generic pipeline configuration.
+    """
+
+    def __init__(self, verbose=True):
+        """Parameter initialization
+
+        Args:
+            verbose (bool, optional): Print configuation details. Defaults to True.
+        """
+
+        if verbose:
+            self.log_configuration()
+
+    def log_configuration(self):
+        """Log configuration dictionary on command line"""
+        logger.info("Pipeline configuration:")
+        for item in self.config:
+            for k, v in self.config[item].items():
+                logger.info("  {}={}".format(k, v))
+
+
+class KmerPipelineConfig(PipelineConfig):
+    """
+    Class to represent a base TronMake k-mer pipeline configuration.
+    """
+
+    def __init__(self, query: bool, indexing: bool, verbose=True):
+        """Parameter initialization
+
+        Args:
+            query (bool): Pipeline should run in query mode.
+            indexing (bool): Pipeline should run in indexing mode.
+            verbose (bool, optional): Print configuation details. Defaults to True.
+        """
+        super().__init__(verbose=verbose)
+        self.config = {"modus": {"query": query, "indexing": indexing}}
+
+
+class QueryPipelineConfig(KmerPipelineConfig):
+    """Generate config for query modus"""
+
+    def __init__(
+        self, index: pathlib.Path, kmer_ratio: float, index_to_method_mapping: dict, verbose=True
+    ):
+        """Parameter initialization
+
+        Args:
+            index (pathlib.Path): Path to yaml based k-mer manifest file.
+            kmer_ratio (float): K-mer ratio used by raptor to determine presence/absence in indexed samples.
+            methods (set): k-mer methods of indices described in manifest.
+            verbose (bool, optional): Print configuation details. Defaults to True.
+        """
+        super().__init__(query=True, indexing=False, verbose=False)
+        # SnakeMake pipeline options - specific for TronMake k-mer pipeline
+        self.config["query"] = {
+            "index": str(index),
+            "kmer_ratio": kmer_ratio,
+        }
+        # Not for pipeline. This is used by the QueryPipeline class to determine the files
+        # and associated methods.
+        self.config["index_to_method_mapping"] = index_to_method_mapping
+        if verbose:
+            self.log_configuration()
+
+
+class IndexPipelineConfig(KmerPipelineConfig):
+    """Generate config for indexing modus"""
+
+    def __init__(
+        self,
+        samples: pathlib.Path,
+        method: str,
+        kmer_size: float = 21,
+        cutoff: int = 2,
+        fpr: float = 0.05,
+        verbose=True,
+    ):
+        """Parameter initialization
+
+        Args:
+            samples (str): Path to TSV files with samples to include in k-mer index.
+            method (str): k-mer method used for indexing.
+            kmer_size (float, optional): k-mer size of index. Defaults to 21.
+            cutoff (int, optional): A value to define solid and weak k-mers. k-mers with lower occurence are omitted from index. Defaults to 2.
+            fpr (float, optional): The theoretical false positive rate of bloom filters. Defaults to 0.05.
+            verbose (bool, optional): Print configuation details. Defaults to True.
+        """
+        super().__init__(query=False, indexing=True, verbose=False)
+        # Generate config object to be used with
+        self.config["indexing"] = {
+            "samples": samples,
+            "method": method,
+            "kmer_size": kmer_size,
+            "cutoff": cutoff,
+            "fpr": fpr,
+        }
+        if verbose:
+            self.log_configuration()
+
 
 class Pipeline:
     """
@@ -40,7 +141,7 @@ class Pipeline:
         self,
         worklow: pathlib.Path,
         workflow_profile: pathlib.Path,
-        config: dict,
+        config: QueryPipelineConfig,
         working_dir: pathlib.Path,
         target_rule: str = "all",
     ):
@@ -48,7 +149,7 @@ class Pipeline:
 
         Args:
             worklow (pathlib): The path to the tronmake-kmer-pipeline Snakefile.
-            config (dict): Pipeline configuration object.
+            config (QueryPipelineConfig): Pipeline configuration object.
             working_dir (pathlib.Path): Working directory of pipeline.
             target_rule (str, optional): Target rule to request from workflow. Defaults to "all".
         """
@@ -76,7 +177,7 @@ class Pipeline:
         with tempfile.NamedTemporaryFile(
             mode="w", delete=False, dir=self.working_dir
         ) as temp_config:
-            yaml.dump(self.config, temp_config)
+            yaml.dump(self.config.config, temp_config)
             temp_config.close()
         cmd = [
             "snakemake",
@@ -116,7 +217,7 @@ class QueryPipeline(Pipeline):
         self,
         workflow: pathlib.Path,
         workflow_profile: pathlib.Path,
-        config: dict,
+        config: QueryPipelineConfig,
         working_dir: pathlib.Path,
         target_rule: str
     ):
@@ -127,7 +228,7 @@ class QueryPipeline(Pipeline):
     def determine_final_query(self):
         """Based on selected methods in index manifest, find query output that could be created by pipeline"""
         results = []
-        for this_index_name, this_method in self.config.get(
+        for this_index_name, this_method in self.config.config.get(
             "index_to_method_mapping", dict
         ).items():
             match this_method:
@@ -229,105 +330,3 @@ class IndexPipeline(Pipeline):
         return_code = self.run(dryrun=True, slurm=False)
         if not return_code:
             raise K4neoPipelineException("Pipeline failed to execute")
-
-
-class PipelineConfig:
-    """
-    Class to represent a generic pipeline configuration.
-    """
-
-    def __init__(self, verbose=True):
-        """Parameter initialization
-
-        Args:
-            verbose (bool, optional): Print configuation details. Defaults to True.
-        """
-
-        if verbose:
-            self.log_configuration()
-
-    def log_configuration(self):
-        """Log configuration dictionary on command line"""
-        logger.info("Pipeline configuration:")
-        for item in self.config:
-            for k, v in self.config[item].items():
-                logger.info("  {}={}".format(k, v))
-
-
-class KmerPipelineConfig(PipelineConfig):
-    """
-    Class to represent a base TronMake k-mer pipeline configuration.
-    """
-
-    def __init__(self, query: bool, indexing: bool, verbose=True):
-        """Parameter initialization
-
-        Args:
-            query (bool): Pipeline should run in query mode.
-            indexing (bool): Pipeline should run in indexing mode.
-            verbose (bool, optional): Print configuation details. Defaults to True.
-        """
-        super().__init__(verbose=verbose)
-        self.config = {"modus": {"query": query, "indexing": indexing}}
-
-
-class QueryPipelineConfig(KmerPipelineConfig):
-    """Generate config for query modus"""
-
-    def __init__(
-        self, index: pathlib.Path, kmer_ratio: float, index_to_method_mapping: dict, verbose=True
-    ):
-        """Parameter initialization
-
-        Args:
-            index (pathlib.Path): Path to yaml based k-mer manifest file.
-            kmer_ratio (float): K-mer ratio used by raptor to determine presence/absence in indexed samples.
-            methods (set): k-mer methods of indices described in manifest.
-            verbose (bool, optional): Print configuation details. Defaults to True.
-        """
-        super().__init__(query=True, indexing=False, verbose=False)
-        # SnakeMake pipeline options - specific for TronMake k-mer pipeline
-        self.config["query"] = {
-            "index": str(index),
-            "kmer_ratio": kmer_ratio,
-        }
-        # Not for pipeline. This is used by the QueryPipeline class to determine the files
-        # and associated methods.
-        self.config["index_to_method_mapping"] = index_to_method_mapping
-        if verbose:
-            self.log_configuration()
-
-
-class IndexPipelineConfig(KmerPipelineConfig):
-    """Generate config for indexing modus"""
-
-    def __init__(
-        self,
-        samples: pathlib.Path,
-        method: str,
-        kmer_size: float = 21,
-        cutoff: int = 2,
-        fpr: float = 0.05,
-        verbose=True,
-    ):
-        """Parameter initialization
-
-        Args:
-            samples (str): Path to TSV files with samples to include in k-mer index.
-            method (str): k-mer method used for indexing.
-            kmer_size (float, optional): k-mer size of index. Defaults to 21.
-            cutoff (int, optional): A value to define solid and weak k-mers. k-mers with lower occurence are omitted from index. Defaults to 2.
-            fpr (float, optional): The theoretical false positive rate of bloom filters. Defaults to 0.05.
-            verbose (bool, optional): Print configuation details. Defaults to True.
-        """
-        super().__init__(query=False, indexing=True, verbose=False)
-        # Generate config object to be used with
-        self.config["indexing"] = {
-            "samples": samples,
-            "method": method,
-            "kmer_size": kmer_size,
-            "cutoff": cutoff,
-            "fpr": fpr,
-        }
-        if verbose:
-            self.log_configuration()

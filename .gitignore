@@ -1,7 +1,11 @@
 .idea
+.coverage
+.vscode
 k4neo/pipeline/.snakemake
 k4neo/pipeline/query
 k4neo/pipeline/index
+k4neo.log
+k4neo_quant.log
 .snakemake
 **/__pycache__
 k4neo/annotator/__pycache__/
@@ -16,3 +20,6 @@ k4neo.egg-info
 .snakemake
 tmp*
 k4neo_env/
+k4neo_quantitative_annotation.log
+test_jx*
+test_tx*
