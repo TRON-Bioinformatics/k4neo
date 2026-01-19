@@ -1,6 +1,6 @@
 import yaml
 import pathlib
-from k4neo.index.index2 import KmerIndex, KmerMetaIndex
+from k4neo.index.kmer_index import KmerIndex, KmerMetaIndex
 from loguru import logger
 import pydantic_core
 
@@ -29,7 +29,7 @@ def load_metaindex_from_manifest(manifest_path: pathlib.Path) -> KmerMetaIndex:
         try:
             KmerIndex(**this_index_properties)
         except pydantic_core._pydantic_core.ValidationError as e:
-            logger.warning("Excluding {this_index} as it failed validation")
+            logger.warning(f"Excluding {this_index} as it failed validation")
             continue
         keep_indices[this_index] = this_index_properties
 

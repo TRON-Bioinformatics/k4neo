@@ -1,3 +1,4 @@
 IT_N_103:
   path: tests/resources/index/quant_index/IT_N_103.jf
   method: jellyfish
+  kmer_depth: 22925084

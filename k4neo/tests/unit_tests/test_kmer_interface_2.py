@@ -1,4 +1,4 @@
-from k4neo.index.index2 import KmerIndex, KmerMetaIndex
+from k4neo.index.kmer_index import KmerIndex, KmerMetaIndex
 from k4neo.index.index_loader import load_metaindex_from_manifest
 import pathlib
 import yaml

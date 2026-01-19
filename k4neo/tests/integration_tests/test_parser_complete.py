@@ -1,6 +1,7 @@
 import pathlib
 from k4neo.parser.index_parser import IndexResultParser2, BinaryKmerIndexResultParser
 
+
 class TestBinaryKmerIndexResultPaser:
 
     def test_parsing_raptor(self):

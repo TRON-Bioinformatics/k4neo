@@ -21,7 +21,7 @@ class KmerIndex(object):
         workflow_profile: pathlib.Path,
         index_manifest: pathlib.Path,
         kmer_ratio: float = 0.7,
-        quantitative: bool = False
+        quantitative: bool = False,
     ):
 
         # Generate config representation that can be passed directly to the snakemake call
@@ -31,7 +31,7 @@ class KmerIndex(object):
         self.kmer_ratio = kmer_ratio
 
         self.index_struct = self.read_index_struct()
-        
+
         self.quantitative = quantitative
         if not quantitative:
             # This is only required for raptor
@@ -53,7 +53,6 @@ class KmerIndex(object):
             kmer_ratio=self.kmer_ratio,
             index_to_method_mapping=self.index_to_method_mapping,
         )
-
 
     def read_index_struct(self):
         """
@@ -78,10 +77,9 @@ class KmerIndex(object):
                 continue
             index_methods.add(method)
         return index_methods
-    
+
     def _get_pipeline_target_rules(self):
-        """
-        """
+        """ """
         target_rules = set()
         methods = set(self.index_to_method_mapping.values())
         for this_method in methods:
@@ -93,7 +91,7 @@ class KmerIndex(object):
         query_sequences: pathlib.Path,
         working_dir: pathlib.Path,
         slurm: bool = True,
-        cores: int = 8
+        cores: int = 8,
     ):
         """Execute k-mer query pipeline
 
@@ -115,14 +113,19 @@ class KmerIndex(object):
         pipeline_config = self.pipeline_config.config.copy()
         pipeline_config["query"].update({"query_fasta": str(query_sequences)})
         target_rule = self._get_pipeline_target_rules()
-        pipeline = QueryPipeline(self.pipeline, self.workflow_profile, pipeline_config, working_dir, target_rule=target_rule)
+        pipeline = QueryPipeline(
+            self.pipeline,
+            self.workflow_profile,
+            pipeline_config,
+            working_dir,
+            target_rule=target_rule,
+        )
         logger.info("-> Searching index for context sequences")
         result = pipeline.run_pipeline(slurm=slurm, cores=cores)
         return result
 
     def result_parser(self, query_pipeline_results, cores=8):
-        """
-        """
+        """ """
         parser = IndexResultParser(query_pipeline_results=query_pipeline_results, cores=cores)
         query_hits = parser.parse_results(kmer_ratio=self.kmer_ratio)
         return query_hits

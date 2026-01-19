@@ -8,7 +8,6 @@ from k4neo.annotator.annotator import Annotator
 from k4neo.annotator.reference_annotation import ReferenceIndexer, KmerUniquenessAnnotator
 from k4neo.parser.parser import IndexResultParser
 from k4neo.parser.index_parser import IndexResultParser2
-from k4neo.pipeline.query_pipeline import IndexPipeline, IndexPipelineConfig
 from k4neo.plotter.plotter import Plotter
 from k4neo.setup_logging import setup_logging
 from k4neo.helper.helper import DiskIO, QuantIndexHelper
@@ -22,13 +21,6 @@ import time
 console = Console()
 
 epilog = "Copyright (c) 2025 TRON gGmbH (See LICENSE for licensing details)"
-
-
-def process_chunk(chunk, annotator):
-    results = annotator.annotate_cts(chunk)
-    sample_hits = annotator.annotate_sequences(results)
-    healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results)
-    return sample_hits, healthy_sample_rate, tumor_sample_rate
 
 
 def build_database():
@@ -495,13 +487,14 @@ def quant_annotation():
     logger = setup_logging(log_file_name, args.verbose)
 
     logger.info("Annotating sequences with quantitative information")
-    from k4neo.index.index import KmerIndex
+    from k4neo.index.index_loader import load_metaindex_from_manifest
+    from k4neo.index.index_processor import KmerIndexProcessor
     from k4neo.parser.index_parser import QuantitativeKmerIndexParser
 
-    quant_index = KmerIndex(
+    quant_index = KmerIndexProcessor(
+        meta_index=load_metaindex_from_manifest(args.index_manifest),
         pipeline=args.workflow,
         workflow_profile=args.workflow_profile,
-        index_manifest=args.index_manifest,
         quantitative=True,
     )
 
@@ -509,25 +502,34 @@ def quant_annotation():
         args.query_fasta, pathlib.Path(args.working_dir), slurm=args.slurm, cores=args.cpu
     )
     if args.normalize:
-        logger.info(f"Normalization of quantitative k-mer counts will be performed using {args.normalize_factor:.1e} as scaling factor")
+        logger.info(
+            (
+                "Normalization of quantitative k-mer counts will "
+                f"be performed using {args.normalize_factor:.1e} as scaling factor"
+            )
+        )
     # Collect all query results. Here, an index is a single RNA-seq sample
     list_df = []
-    
-    logger.info(f"Annotating sequences with quantitative information from {len(quant_index.index_to_method_mapping.keys())} indices")
+
+    logger.info(
+        (
+            "Annotating sequences with quantitative information from "
+            f"{len(quant_index.index_to_method_mapping.keys())} indices"
+        )
+    )
+
     for _, index_name, this_path in query_pipeline_results.query_path:
         p = QuantitativeKmerIndexParser(this_path, "jellyfish")
         cts_res = p.parse_jellyfish()
-        
+
         if args.normalize:
             cts_res = QuantIndexHelper.normalize_kmer_count_by_depth(
-                cts_res,
-                quant_index.kmer_depth_mapping.get(index_name),
-                args.normalize_factor
+                cts_res, quant_index.kmer_depth_mapping.get(index_name), args.normalize_factor
             )
         cts_res = QuantIndexHelper.quant_metrics(cts_res)
         cts_res["sample"] = index_name
         list_df.append(cts_res)
-    
+
     df = pd.concat(list_df, ignore_index=True)
 
     DiskIO.write_df(df, args.output)
