@@ -12,7 +12,7 @@ Todo:
 """
 
 import pathlib
-from typing import List, Tuple
+from typing import Generator, List, Tuple
 import sqlite3
 from k4neo.parser.parser import Parser
 from k4neo.database_sqlite.validate import validate_tissue_record, validate_sample_record
@@ -105,28 +105,23 @@ class CreateDataBase(DataBase):
 
         """
         cursor = self.connection.cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS sample_study_mapping (
                 sample_name TEXT,
                 study_id TEXT,
                 PRIMARY KEY (sample_name, study_id)
             );
-            """
-        )
+            """)
 
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS tissue_map (
                 tissue_public TEXT PRIMARY KEY,
                 tissue TEXT NOT NULL,
                 subtissue TEXT
             );
-            """
-        )
+            """)
 
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS samples (
                 sample_name TEXT,
                 study_id TEXT, 
@@ -141,11 +136,9 @@ class CreateDataBase(DataBase):
                     ON UPDATE CASCADE
                     ON DELETE RESTRICT
             );
-            """
-        )
+            """)
 
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS tissue_counts (
                 tissue TEXT NOT NULL,
                 study_id TEXT NOT NULL,
@@ -154,8 +147,17 @@ class CreateDataBase(DataBase):
                 count INTEGER NOT NULL,
                 PRIMARY KEY (tissue, study_id, disease, developmental_stage)
             );
-            """
-        )
+            """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS aggregated_tissue_counts (
+                tissue TEXT NOT NULL,
+                disease TEXT NOT NULL,
+                developmental_stage TEXT NOT NULL,
+                count INTEGER NOT NULL,
+                PRIMARY KEY (tissue, disease, developmental_stage)
+            );
+            """)
 
         self.connection.commit()
         cursor.close()
@@ -200,7 +202,7 @@ class CreateDataBase(DataBase):
         self.connection.commit()
         cursor.close()
 
-    def _parse_study_table(self) -> Tuple[str, str, int]:
+    def _parse_study_table(self) -> Generator[str, str, int]:
         """
         Parse study table and yield study specific arguments
 
@@ -316,4 +318,27 @@ class CreateDataBase(DataBase):
         )
         # Returns record in document format
         table.to_sql(name="tissue_counts", con=self.connection, if_exists="replace", index=False)
-        logger.info(f"-> Added {len(table)} precomputed tissue counts for into database")
+        logger.info(
+            f"-> Added {len(table)} precomputed study-specific tissue counts for into database"
+        )
+
+        table = pd.read_sql(
+            """SELECT s.study_id, s.disease, s.developmental_stage,
+            t.tissue AS tissue
+            FROM samples s
+            JOIN tissue_map t
+            ON s.tissue = t.tissue_public
+            """,
+            self.connection,
+        )
+        table = (
+            table[["tissue", "developmental_stage", "disease"]]
+            .value_counts()
+            .to_frame()
+            .reset_index()
+        )
+        # Returns record in document format
+        table.to_sql(
+            name="aggregated_tissue_counts", con=self.connection, if_exists="replace", index=False
+        )
+        logger.info(f"-> Added {len(table)} precomputed aggregated tissue counts for into database")

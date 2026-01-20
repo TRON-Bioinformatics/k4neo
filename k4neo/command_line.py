@@ -20,7 +20,7 @@ from joblib import Parallel, delayed
 
 console = Console()
 
-epilog = "Copyright (c) 2026 TRON gGmbH (See LICENSE for licensing details)"
+epilog = "Copyright (c) 2024-2026 TRON gGmbH (See LICENSE for licensing details)"
 
 
 def build_database():
@@ -368,7 +368,7 @@ def annotate():
             # Extract only dfs to pass to worker
             chunks_lst = [chunk for _, _, chunk in this_batch]
             # Multiprocessing of annotation class functions
-            results = Parallel(n_jobs=1)(
+            results = Parallel(n_jobs=args.cpu)(
                 delayed(Worker.annotator_worker)(this_chunk, annotator, args.database)
                 for this_chunk in chunks_lst
             )

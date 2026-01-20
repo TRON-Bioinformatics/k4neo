@@ -273,10 +273,13 @@ class JellyFishHelper:
         except:
             return 0
 
+
 class Worker:
 
     @staticmethod
-    def annotator_worker(df_chunk: pd.DataFrame, annotator: Annotator, db_path: pathlib.Path) -> Tuple[str]:
+    def annotator_worker(
+        df_chunk: pd.DataFrame, annotator: Annotator, db_path: pathlib.Path
+    ) -> Tuple[str]:
         """Annotation worker function
 
         This function is used to parallelize the Annotator functions of k4neo using joblib.
@@ -291,12 +294,13 @@ class Worker:
         """
         with DataBase(db_path) as database_handle:
             query = Queries(database_handle)
-            
+
             results = annotator.annotate_cts(df_chunk, query)
             sample_hits = annotator.annotate_sequences(results)
             healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results, query)
-        
+
         return sample_hits, healthy_sample_rate, tumor_sample_rate
+
 
 class QuantIndexHelper:
 
@@ -341,7 +345,7 @@ class QuantIndexHelper:
     def normalize_kmer_count_by_depth(
         cts_kmer_count: dict, kmer_depth: int, normalization_factor=1e9
     ) -> dict:
-        """_summary_
+        """Normalize k-mer counts by sequencing depth
 
         Args:
             cts_kmer_count (dict): A dict mapping nucleotide sequences to counts

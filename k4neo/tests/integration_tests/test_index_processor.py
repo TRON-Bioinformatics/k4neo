@@ -5,6 +5,7 @@ from k4neo.index.index_processor import KmerIndexProcessor
 import pathlib
 import yaml
 
+
 class TestKmerIndexProcessor:
     kmer_ratio = 0.7
     pipeline = (
@@ -30,7 +31,9 @@ class TestKmerIndexProcessor:
         )
 
         assert processor.index_to_method_mapping == {"test_index": "raptor"}
-        assert processor.index_to_sample_mapping == {"test_index": pathlib.Path("k4neo/tests/resources/index/index_mapping.txt")}
+        assert processor.index_to_sample_mapping == {
+            "test_index": pathlib.Path("k4neo/tests/resources/index/index_mapping.txt")
+        }
 
         result = processor.search_index(
             query_sequences=self.fasta,
@@ -41,12 +44,14 @@ class TestKmerIndexProcessor:
         )
         assert isinstance(result, QueryPipelineResult)
         assert isinstance(result.query_path, list)
-        
+
         parsed_results = processor.result_parser2(result, cores=1, kmer_ratio=self.kmer_ratio)
-        
+
         assert isinstance(parsed_results, dict)
         assert "raptor" in parsed_results
-        assert set(parsed_results.keys()) == {"raptor", }
+        assert set(parsed_results.keys()) == {
+            "raptor",
+        }
         assert set(parsed_results["raptor"].keys()) == {
             "dde52f9b214f3e15",
             "b855999df5ed524d",
@@ -55,9 +60,11 @@ class TestKmerIndexProcessor:
             "8b0ee74a7458e72c",
             "3eb0221fe5e90c3c",
         }
-    
+
     def test_kmer_index_processor_quantitative(self):
-        index_manifest = pathlib.Path(__file__).parent.parent / "resources" / "quant_index_manifest.yaml"
+        index_manifest = (
+            pathlib.Path(__file__).parent.parent / "resources" / "quant_index_manifest.yaml"
+        )
         # Load meta index from manifest using helper function. Typical use case
         meta_index = load_metaindex_from_manifest(index_manifest)
 
@@ -69,7 +76,7 @@ class TestKmerIndexProcessor:
         )
 
         assert processor.index_to_method_mapping == {"IT_N_103": "jellyfish"}
-        assert processor.kmer_depth_mapping == {"IT_N_103": 22925084} 
+        assert processor.kmer_depth_mapping == {"IT_N_103": 22925084}
 
         result = processor.search_index(
             query_sequences=self.fasta,
@@ -80,4 +87,3 @@ class TestKmerIndexProcessor:
         )
         assert isinstance(result, QueryPipelineResult)
         assert isinstance(result.query_path, list)
-

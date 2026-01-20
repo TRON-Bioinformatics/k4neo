@@ -67,10 +67,10 @@ class KmerIndexProcessor:
 
         if quantitative:
             self.kmer_depth_mapping = self.meta_index.get_kmer_depth_mapping()
-            
-            #assert (
+
+            # assert (
             #    self.kmer_depth_mapping
-            #), "At least one index requires kmer_depth for quantitative search"
+            # ), "At least one index requires kmer_depth for quantitative search"
 
     def _get_pipeline_target_rules(self) -> str:
         """Obtain target rules for pipeline

@@ -10,7 +10,6 @@ from k4neo.annotator import (
     EXPECTED_CTS_COLUMNS,
     NON_TUMOR_TISSUE,
     TUMOR_TISSUE,
-    IMMUNO_PRIVILIGED_TISSUE,
 )
 from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation, DiskIO
 import numpy as np
@@ -504,4 +503,3 @@ class Annotator:
         tumor_sample_rate = tumor_sample_rate.loc[tumor_sample_rate["index_count"] >= min_total]
 
         return healthy_sample_rate, tumor_sample_rate
-    
