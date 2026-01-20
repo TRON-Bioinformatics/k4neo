@@ -34,7 +34,7 @@ class Queries:
         """
 
         project_id = pd.read_sql(
-            f"SELCT study_id FROM samples WHERE sample_name == ?",
+            f"SELECT study_id FROM samples WHERE sample_name == ?",
             self.db.connection,
             params=[
                 sample_name,
