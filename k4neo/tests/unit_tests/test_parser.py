@@ -186,13 +186,12 @@ def test_parse_table_rows_kmindex(example_table_rows):
     ],
 )
 def test_parse_kmindex(mocker, kmer_ratio, expected):
-    # Testdaten, wie sie vom DictReader kommen würden
     mock_data = [
         {"samples": "samples_2:d2e9c05e86abc70c804fc48a7f25aad8", "MCF7": "1", "SKBR3": "0.25"},
         {"samples": "samples_2:b410c5db97c66dc7a4d200ec44ce4a1d", "MCF7": "0.7", "SKBR3": "0.1"},
     ]
 
-    # csv.DictReader mocken
+    # mock csv.DictReader
     mocker.patch("k4neo.parser.index_parser.DictReader", return_value=mock_data)
     mocker.patch("builtins.open", mocker.mock_open(read_data="ignored"))
 

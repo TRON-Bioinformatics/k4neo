@@ -1,7 +1,6 @@
 import pytest
 import re
 from six import PY2
-from collections import ChainMap
 from k4neo.database.database import CreateDataBase
 from k4neo.parser.parser import Parser
 import pandas as pd

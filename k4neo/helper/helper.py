@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 from typing import List, Tuple, Optional
 import pathlib
 import subprocess
@@ -12,6 +13,13 @@ import math
 import statistics
 from collections import defaultdict
 from k4neo.annotator import EXPECTED_CTS_COLUMNS
+from k4neo.database_sqlite.database import DataBase
+from k4neo.database_sqlite.queries import Queries
+from typing import TYPE_CHECKING
+
+# Import only for type checking. Prevents circular import
+if TYPE_CHECKING:
+    from k4neo.annotator.annotator import Annotator
 
 
 class FastaHandler:
@@ -266,6 +274,34 @@ class JellyFishHelper:
             return 0
 
 
+class Worker:
+
+    @staticmethod
+    def annotator_worker(
+        df_chunk: pd.DataFrame, annotator: Annotator, db_path: pathlib.Path
+    ) -> Tuple[str]:
+        """Annotation worker function
+
+        This function is used to parallelize the Annotator functions of k4neo using joblib.
+
+        Args:
+            df_chunk (pd.DataFrame): A dataframe of k-mer search results to process and annotate
+            annotator (Annotator): An instance of k4neo annotator holding the sequences to annotate
+            db_path (pathlib.Path): Path to Sqlite3 metadata db
+
+        Returns:
+            Tuple[str]: Annotated samples, healthy and tumor tissue sample rates
+        """
+        with DataBase(db_path) as database_handle:
+            query = Queries(database_handle)
+
+            results = annotator.annotate_cts(df_chunk, query)
+            sample_hits = annotator.annotate_sequences(results)
+            healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results, query)
+
+        return sample_hits, healthy_sample_rate, tumor_sample_rate
+
+
 class QuantIndexHelper:
 
     @staticmethod
@@ -309,7 +345,7 @@ class QuantIndexHelper:
     def normalize_kmer_count_by_depth(
         cts_kmer_count: dict, kmer_depth: int, normalization_factor=1e9
     ) -> dict:
-        """_summary_
+        """Normalize k-mer counts by sequencing depth
 
         Args:
             cts_kmer_count (dict): A dict mapping nucleotide sequences to counts

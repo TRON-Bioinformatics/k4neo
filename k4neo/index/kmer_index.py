@@ -13,7 +13,7 @@ implementation yielding the same return types.
 """
 
 import pathlib
-from k4neo.pipeline import  K4NEO_SUPPORTED_TOOLS
+from k4neo.pipeline import K4NEO_SUPPORTED_TOOLS
 from typing import Literal, Dict, List
 from pydantic import BaseModel, RootModel, Field, ValidationError, field_validator, field_serializer
 
