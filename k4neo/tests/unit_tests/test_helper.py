@@ -78,9 +78,9 @@ class TestSequenceOperation:
 
     def test_kmer(self):
         result = SequenceOperation.get_kmers(self.SEQ, 5)
-        #ATGGTAGATA
+        # ATGGTAGATA
         assert result == ["ATGGT", "TGGTA", "GGTAG", "GTAGA", "TAGAT", "AGATA"]
-    
+
     def test_canonicalize(self):
         # Test rev complemenent is returned
         result = SequenceOperation.canonicalize("ATGGT")

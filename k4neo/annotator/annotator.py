@@ -2,14 +2,14 @@
 
 import pathlib
 import pandas as pd
-from k4neo.index.index import KmerIndex
+from k4neo.index.index_loader import load_metaindex_from_manifest
+from k4neo.index.index_processor import KmerIndexProcessor
 from k4neo.database.database import DataBase
 from k4neo.database.queries import Queries
 from k4neo.annotator import (
     EXPECTED_CTS_COLUMNS,
     NON_TUMOR_TISSUE,
     TUMOR_TISSUE,
-    IMMUNO_PRIVILIGED_TISSUE,
 )
 from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation, DiskIO
 import numpy as np
@@ -67,7 +67,7 @@ class Prepare:
         self._generate_target_sequence()
         self._filter_seq_to_short()
 
-        fasta_output =  self.working_dir / "query.fa"
+        fasta_output = self.working_dir / "query.fa"
         seq_to_short_output = self.working_dir / "seq_to_short.tsv"
         sequence_table = self.working_dir / "sequence_table.tsv"
 
@@ -95,6 +95,7 @@ class Prepare:
                 f"File: {sequence_table} already exists in working directory. Not overwriting"
             )
 
+
 class Annotator:
     """
     Annotator class
@@ -104,7 +105,6 @@ class Annotator:
         self,
         working_dir: str,
         sequence_table: str,
-        db_file: str,
         index_kmer_size: int = 21,
     ) -> None:
         self.working_dir = pathlib.Path(working_dir)
@@ -114,8 +114,6 @@ class Annotator:
         )
         # , self.non_queryable, index_kmer_size
         self.query_fasta = self.working_dir / "query.fa"
-        self.db = DataBase(db_file)
-        self.queries = Queries(self.db)
         self.index_kmer_size = index_kmer_size
 
     @staticmethod
@@ -218,31 +216,20 @@ class Annotator:
         Returns:
             pd.DataFrame: A pandas DataFrame with parsed results for each method from manifest file.
         """
-        index = KmerIndex(pipeline=pipeline, workflow_profile=workflow_profile, index_manifest=index_manifest, kmer_ratio=kmer_ratio)
-        query_pipeline_results = index.search_index(
-            self.query_fasta, self.working_dir, slurm=slurm, cores=cores
+        meta_index = load_metaindex_from_manifest(index_manifest)
+
+        index_processor = KmerIndexProcessor(
+            meta_index=meta_index, pipeline=pipeline, workflow_profile=workflow_profile
         )
-        parsed_results = index.result_parser2(
-            query_pipeline_results=query_pipeline_results, cores=cores
+        query_pipeline_results = index_processor.search_index(
+            self.query_fasta, self.working_dir, slurm=slurm, cores=cores, kmer_ratio=kmer_ratio
+        )
+        parsed_results = index_processor.result_parser2(
+            query_pipeline_results=query_pipeline_results, cores=cores, kmer_ratio=kmer_ratio
         )
         return parsed_results
 
-    def _annotate_studies(self, parsed_results: pd.DataFrame) -> pd.DataFrame:
-        """Annotate sample hits with study id
-
-        Retrive sample to study mapping from database and merge with search results.
-
-        Args:
-            parsed_results (pd.DataFrame): Parsed results of k-mer pipeline.
-
-        Returns:
-            pd.DataFrame: Updated DataFrame with study column.
-        """
-        study_annotation = self.queries.get_sample_study()
-        parsed_results = parsed_results.merge(study_annotation, how="left", on="sample_name")
-        return parsed_results
-
-    def _annotate_sample_metadata(self, parsed_results: pd.DataFrame) -> pd.DataFrame:
+    def _count_aggregation(self, parsed_results: pd.DataFrame) -> pd.DataFrame:
         """Annotate sample hits with metadata
 
         Each occurence of the query sequence in the k-mer index is annotated with
@@ -260,10 +247,6 @@ class Annotator:
             pd.DataFrame: Aggregated DataFrame with counts for each combination of tissue,
             developmental_stage and tissue per study.
         """
-        parsed_results = parsed_results.groupby("study_id", dropna=False).apply(
-            lambda sub_df: self.queries.annotate_samples_of_project(sub_df)
-        )
-        parsed_results.reset_index(drop=True, inplace=True)
         # Subset to required columns
         parsed_results = parsed_results.loc[
             :,
@@ -290,26 +273,6 @@ class Annotator:
         df = pd.merge(df, parsed_results, how="left")
         df["count"] = df["count"].fillna(0).astype("int")
         return df
-
-    def _annotate_counts(self, parsed_results: pd.DataFrame) -> pd.DataFrame:
-        """Add pre-computed tissue counts.
-
-        Retrieve pre-computed total tissue counts from database and add to
-        DataFrame.
-
-        Args:
-            parsed_results (pd.DataFrame): Parsed results of k-mer pipeline.
-
-        Returns:
-            pd.DataFrame: A DataFrame with total counts for each combination of tissue,
-            developmental_stage and tissue per study.
-        """
-        parsed_results = parsed_results.groupby("study_id", group_keys=False).apply(
-            lambda sub_df: self.queries.annotate_tissue_counts(sub_df)
-        )
-
-        parsed_results.reset_index(drop=True, inplace=True)
-        return parsed_results
 
     @staticmethod
     def _split_found(parsed_results: pd.DataFrame) -> pd.DataFrame:
@@ -429,7 +392,9 @@ class Annotator:
         """
         pass
 
-    def annotate_cts(self, parsed_results: pd.DataFrame, annot_style: str = "normal"):
+    def annotate_cts(
+        self, parsed_results: pd.DataFrame, queries: Queries, annot_style: str = "normal"
+    ):
         """
         Given all hits in an index collect tissue and number of tissue samples in whole index.
         Combine annotated CTS with not expressed targets and return aggegrated table
@@ -437,25 +402,35 @@ class Annotator:
         :param annot_style:
         :return:
         """
-        logger.debug("Annotating sample hits with corresponding study annotation.")
         # Select cts not found in index and append columns required to merge later with annotated results
 
         # Group all indexing results by project_id. This allows us to query the database for each table once, regardless
         # of the query sequence. Annotation results are then merged back to the dataframe
+        logger.debug("Removing sequences not detetcted in any sample of index")
 
         not_expressed = self._split_found(parsed_results)
         parsed_results.dropna(inplace=True, ignore_index=True)
-        parsed_results = self._annotate_studies(parsed_results)
+
+        logger.debug("Annotating sample hits with corresponding study annotation.")
+        study_annotation = queries.get_sample_study()
+        parsed_results = parsed_results.merge(study_annotation, how="left", on="sample_name")
 
         if len(parsed_results.index) == 0:
             logger.warning("None of the queried sequences was found in index.")
             return not_expressed
-
         logger.debug("Annotating sample hits with sample level metadata.")
-        parsed_results = self._annotate_sample_metadata(parsed_results)
+        parsed_results = parsed_results.groupby("study_id", dropna=False).apply(
+            lambda sub_df: queries.annotate_samples_of_project(sub_df)
+        )
+        parsed_results.reset_index(drop=True, inplace=True)
+        parsed_results = self._count_aggregation(parsed_results)
 
         logger.debug("Annotating with pre-computed counts from database.")
-        parsed_results = self._annotate_counts(parsed_results)
+        parsed_results = parsed_results.groupby("study_id", group_keys=False).apply(
+            lambda sub_df: queries.annotate_tissue_counts(sub_df)
+        )
+        parsed_results.reset_index(drop=True, inplace=True)
+
         parsed_results = pd.concat([parsed_results, not_expressed])
         parsed_results = parsed_results[
             [
@@ -488,29 +463,12 @@ class Annotator:
 
         return df
 
-    def annotate_sample_rate(self, annotated_cts, min_total=15):
+    def annotate_sample_rate2(self, annotated_cts, queries: Queries, min_total=1):
         """
         Add sample rate to sequences
         """
-        sample_rate_df = self._calculate_sample_rate(annotated_cts)
-        df = pd.merge(
-            self.sequence_table,
-            sample_rate_df,
-            left_on="query_cts_id",
-            right_on="cts_id",
-        )
-        df.drop("cts_id_y", inplace=True, axis=1)
-        df.rename(columns={"cts_id_x": "cts_id"}, inplace=True)
-        df["sample_rate"] = pd.to_numeric(df["sample_rate"])
-        df = df.loc[df["total"] >= min_total]
+        tissue_counts = queries.get_tissue_counts()
 
-        return df
-
-    def annotate_sample_rate2(self, annotated_cts, min_total=1):
-        """
-        Add sample rate to sequences
-        """
-        tissue_counts = self.queries.get_tissue_counts()
         healthy_sample_rate = self._calculate_healthy_sample_rate(annotated_cts, tissue_counts)
         healthy_sample_rate = pd.merge(
             self.sequence_table,
@@ -522,7 +480,9 @@ class Annotator:
         healthy_sample_rate.rename(columns={"cts_id_x": "cts_id"}, inplace=True)
         healthy_sample_rate["sample_rate"] = pd.to_numeric(healthy_sample_rate["sample_rate"])
         healthy_sample_rate["count"] = healthy_sample_rate["count"].astype(int)
-        healthy_sample_rate["samples_per_tissue"] = healthy_sample_rate["samples_per_tissue"].astype(int)
+        healthy_sample_rate["samples_per_tissue"] = healthy_sample_rate[
+            "samples_per_tissue"
+        ].astype(int)
         healthy_sample_rate = healthy_sample_rate.loc[
             healthy_sample_rate["samples_per_tissue"] >= min_total
         ]

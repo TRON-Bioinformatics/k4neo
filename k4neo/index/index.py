@@ -1,6 +1,7 @@
 import pathlib
 import yaml
 from k4neo.pipeline.query_pipeline import QueryPipeline, QueryPipelineConfig
+from k4neo.pipeline import TARGET_RULES_OF_METHODS
 from k4neo.parser.parser import IndexResultParser
 from k4neo.parser.index_parser import IndexResultParser2
 from loguru import logger
@@ -20,6 +21,7 @@ class KmerIndex(object):
         workflow_profile: pathlib.Path,
         index_manifest: pathlib.Path,
         kmer_ratio: float = 0.7,
+        quantitative: bool = False,
     ):
 
         # Generate config representation that can be passed directly to the snakemake call
@@ -30,13 +32,21 @@ class KmerIndex(object):
 
         self.index_struct = self.read_index_struct()
 
-        self.index_to_sample_mapping = {
-            key: value["sample_mapping"] for key, value in self.index_struct.items()
-        }
+        self.quantitative = quantitative
+        if not quantitative:
+            # This is only required for raptor
+            self.index_to_sample_mapping = {
+                key: value["sample_mapping"] for key, value in self.index_struct.items()
+            }
 
         self.index_to_method_mapping = {
             key: value["method"] for key, value in self.index_struct.items()
         }
+
+        if quantitative:
+            self.kmer_depth_mapping = {
+                key: value.get("kmer_depth", 0) for key, value in self.index_struct.items()
+            }
 
         self.pipeline_config = QueryPipelineConfig(
             index=self.index_manifest,
@@ -68,6 +78,14 @@ class KmerIndex(object):
             index_methods.add(method)
         return index_methods
 
+    def _get_pipeline_target_rules(self):
+        """ """
+        target_rules = set()
+        methods = set(self.index_to_method_mapping.values())
+        for this_method in methods:
+            target_rules.add(TARGET_RULES_OF_METHODS[this_method])
+        return " ".join(target_rules)
+
     def search_index(
         self,
         query_sequences: pathlib.Path,
@@ -94,14 +112,20 @@ class KmerIndex(object):
         # the config with the search sequence. Here execution specific modifications can be applied
         pipeline_config = self.pipeline_config.config.copy()
         pipeline_config["query"].update({"query_fasta": str(query_sequences)})
-        pipeline = QueryPipeline(self.pipeline, self.workflow_profile, pipeline_config, working_dir)
+        target_rule = self._get_pipeline_target_rules()
+        pipeline = QueryPipeline(
+            self.pipeline,
+            self.workflow_profile,
+            pipeline_config,
+            working_dir,
+            target_rule=target_rule,
+        )
         logger.info("-> Searching index for context sequences")
         result = pipeline.run_pipeline(slurm=slurm, cores=cores)
         return result
 
     def result_parser(self, query_pipeline_results, cores=8):
-        """
-        """
+        """ """
         parser = IndexResultParser(query_pipeline_results=query_pipeline_results, cores=cores)
         query_hits = parser.parse_results(kmer_ratio=self.kmer_ratio)
         return query_hits

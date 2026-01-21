@@ -4,8 +4,9 @@ from k4neo.helper.helper import DiskIO
 import pathlib
 from loguru import logger
 
+
 class AsyncDFWriter(threading.Thread):
-    def __init__(self, output_path: pathlib.Path, compression: bool=False, max_queue_size=10):
+    def __init__(self, output_path: pathlib.Path, compression: bool = False, max_queue_size=10):
         super().__init__()
         self.queue = queue.Queue(maxsize=max_queue_size)
         self._stop_signal = object()
@@ -21,13 +22,9 @@ class AsyncDFWriter(threading.Thread):
                 break
             try:
                 df, columns, append, header = item
-                #logger.info(f"Writing {len(df)} rows to {self.output_path}")
+                # logger.info(f"Writing {len(df)} rows to {self.output_path}")
                 DiskIO.write_df(
-                    df[columns],
-                    self.output_path,
-                    self.compression,
-                    append=append,
-                    header=header
+                    df[columns], self.output_path, self.compression, append=append, header=header
                 )
             except Exception as e:
                 logger.error(f"Failed writing dataframe chunk: {e}")
