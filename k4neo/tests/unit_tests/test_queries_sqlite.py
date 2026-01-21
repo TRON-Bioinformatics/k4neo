@@ -48,6 +48,9 @@ def test_get_project_id(setup_db):
     result = queries.get_project_id("S2")
     assert result.iloc[0] == "STUDY1"
 
+    result = queries.get_project_id("S3")
+    assert result is None
+
 def test_get_sample_study(setup_db):
     queries = Queries(setup_db)
     df = queries.get_sample_study()
@@ -66,6 +69,18 @@ def test_annotate_samples_of_project(setup_db):
     assert annotated.loc[0, "tissue"] == "B"
     assert annotated.loc[0, "developmental_stage"] == "adult"
     assert annotated.loc[0, "disease"] == "healthy"
+
+    # Check for a sample not in the database returns NaN annotations
+    df = pd.DataFrame([{"sample_name": "S3", "study_id": "STUDY3"}])
+    annotated = queries.annotate_samples_of_project(df)
+    
+    assert "tissue" in annotated.columns
+    assert "developmental_stage" in annotated.columns
+    assert "disease" in annotated.columns
+    
+    assert pd.isna(annotated.loc[0, "tissue"]) is True
+    assert pd.isna(annotated.loc[0, "developmental_stage"]) is True
+    assert pd.isna(annotated.loc[0, "disease"]) is True
 
 def test_document_to_pd():
     from k4neo.database_sqlite.queries import Queries
@@ -90,6 +105,23 @@ def test_annotate_tissue_counts(setup_db):
     annotated = queries.annotate_tissue_counts(df)
     assert "total" in annotated.columns
     assert annotated.shape[0] == 1
+
+    queries = Queries(setup_db)
+    df = pd.DataFrame([
+        { 
+            "sample_name": "S3",
+            "study_id": "STUDY3",
+            "runs": "R3",
+            "tissue": "A",
+            "developmental_stage": "adult",
+            "disease": "healthy",
+            "sex": "M",
+        }
+    ])
+    annotated = queries.annotate_tissue_counts(df)
+    assert "total" in annotated.columns
+    assert annotated.shape[0] == 0
+    assert pd.isna(annotated["total"]).all()
 
 def test_get_tissue_counts(setup_db):
     queries = Queries(setup_db)
