@@ -33,7 +33,7 @@ k4neo (`k4neo-annotator`) performs annotation of expression breadth in GTEx and 
 
 ### Metadata database
 
-k4neo stores metadata of indexed samples in a SQLite3 database. Please refer to [kmer-index-data]() repository for information about structured metadat and how to build the database.
+k4neo stores metadata of indexed samples in a SQLite3 database. Please refer to [kmer-index-data](https://github.com/TRON-Private/kmer_index_data) repository for information about structured metadat and how to build the database.
 
 ### Reference index
 

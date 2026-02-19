@@ -14,7 +14,7 @@
         docstring_section_style: list
         merge_init_into_class: true
         docstring_options:
-            ignore_init_summary: false
+            ignore_init_summary: true
 
 # Module `database`
 
@@ -30,4 +30,4 @@
         docstring_section_style: list
         merge_init_into_class: true
         docstring_options:
-            ignore_init_summary: false
+            ignore_init_summary: true
