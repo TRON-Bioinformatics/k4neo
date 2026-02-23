@@ -16,6 +16,7 @@
         docstring_options:
             ignore_init_summary: true
 
+
 # Module `database`
 
 # ::: k4neo.database.database

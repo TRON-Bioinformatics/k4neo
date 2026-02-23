@@ -25,4 +25,4 @@ This will execute the comprehensive integration tests. You can use this to verif
 
 ```
 pytest --git-aware --symlink --stderr-bytes 100000 tests/
-```v
+```

@@ -4,6 +4,8 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Usage: usage.md
+  - Input: input.md
+  - Output: output.md
   - API reference: api.md
   - References: references.md
   - About: about.md

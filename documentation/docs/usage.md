@@ -2,7 +2,7 @@
 
 k4neo provides six subcommands with different functionalities:
 
-* `k4neo-annotator`: Annotation of sequences with **expression breadth** across healthy and tumor tissues. This step requires the sequences as [TSV][input.md#k4neo-input] and a k4neo metaindex in [yaml format](input.md#k4neo-metaindex).
+* `k4neo-annotator`: Annotation of sequences with **expression breadth** across healthy and tumor tissues. This step requires the sequences as [TSV](input.md#k4neo-input) and a k4neo metaindex in [yaml format](input.md#k4neo-metaindex).
 
 
 * `k4neo-database`: Preparation of the **k4neo metadata database**. See [kmer-index-data](https://github.com/TRON-Private/kmer_index_data) repository for structured metadata and instructions to build the database.
@@ -50,6 +50,21 @@ Copyright (c) 2024-2026 TRON gGmbH (See LICENSE for licensing details)
 
 ```
 
+Required parameters are marked in **bold**.
+
+* **`database`**: Path to SQLite3 metadata database file.
+* **`index`**: Path to k4neo yaml metaindex file. (see [Input: k4neo metaindex format](input.md#k4neo-metaindex))
+* **`queries`**: Path to TSV file containing search sequences. (see [Input: k4neo input format](input.md#k4neo-input))
+* **`output`**: Prefix of output files.
+* `ratio`: Required ratio of detected k-mers along the query sequence to call sequence expressed in a sample (default: 70%).
+* `working-dir`: Working directory for pipeline.
+* `workflow`: Path of to tronmake-kmer-pipeline (default: pipeline shipped with python package).
+* `profile`: Path to yaml file with additional snakemake options. Can be used to customize snakemake execution, different executor plugins etc.
+* `kmer`: k-mer size of search indices. 
+* `cpu`: Number of cpus for local execution or number of jobs if submitting to slurm.
+* `chunk-size`: Size of in memory chunks when processing query results.
+* `compress`: Compress final output files with gzip. SHould be used if many sequences are searched and disk space might be limited. Note, that this makes k4neo slower.
+
 
 
 ## k4neo-database
@@ -95,10 +110,6 @@ Copyright (c) 2024-2026 TRON gGmbH (See LICENSE for licensing details)
 
 ## k4neo-uniq
 
-k4neo supports annotating sequences in the context of the reference genome and transcriptome. This enables estimation of the number of k-mers in a given query that might originate from other transcript variants of the same or different genic loci and therefore provides an estimate of the reliability of the k4neo prediction for novel sequences. When annotating wild-type sequences, such as CTAs, this feature is not required. The current implementation can be run after k4neo annotation based on the query.fa fasta file.
-
-This feature was inspired by the KmeratorSuite, however without the information of the reference annotation and the ability to assembly the sequences back into search contigs.
-
 Example usage:
 
 ```
@@ -118,10 +129,6 @@ Copyright (c) 2024-2026 TRON gGmbH (See LICENSE for licensing details)
 ```
 
 ## k4neo-quant
-
-k4neo allows to annotate sequences with quantitative information from a limited set of RNA-seq samples. Here, for each sample a CountingBloomFilter is queried to derive the approximate counts of each query k-mers. We provide per indexed sample / query combination descriptive statistics that allow to approximate expression in individual samples. Quantitative counts can also be normalized to using the parameters --normalize and --normalize-factor. By default, this will normalize k-mer counts per billion of k-mers present in the index. Pervious studies have shown that this correlates very well with gene and transcript-level TPM values/normalized counts determined by kallisto. The current implementation can be run after k4neo annotation based on the query.fa fasta file.
-
-**This feature is experimental and should be used with caution for analysis! Moreover, the scalability to many samples is very limited**
 
 Example usage:
 
