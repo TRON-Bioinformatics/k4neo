@@ -1,3 +1,5 @@
+# Input format
+
 ## k4neo-input
 
 The input should be a TSV table containing the query sequence (`cts_seq`) with a unique identifier (`cts_id`), and optionally the relative position of a region of interest, such as a splice junction or fusion breakpoint (`pos`), and the query length (`query_length`). The `pos` and `query_length` columns are only required when querying specific positions within the input sequence. Set them to `NaN` when the entire sequence should be annotated, such as for full-length transcript variants (e.g., cancer testis antigens).

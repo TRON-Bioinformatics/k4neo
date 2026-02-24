@@ -6,7 +6,7 @@
 ![Pandas](https://img.shields.io/badge/pandas-150458?style=flat-square&logo=pandas&logoColor=white)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Snakemake](https://img.shields.io/badge/snakemake-9.1.6-brightgreen.svg?style=flat-square)](https://snakemake.readthedocs.io)
-[![Release](https://img.shields.io/badge/release-v1.0.0-blue?style=flat)](https://github.com/TRON-Private/k4neo)
+[![Release](https://img.shields.io/badge/release-v1.0.1-blue?style=flat)](https://github.com/TRON-Private/k4neo)
 
 <!-- badges: end -->
 
@@ -29,11 +29,11 @@ The k4neo package provides several commands:
 
 ### Binary presence/absence annotation
 
-k4neo ([`k4neo-annotator`](usage.md#k4neo-annotator)) performs annotation of expression breadth in GTEx and TCGA data using binary presence/absence k-mer data structures. By default, we utilize Raptor hibf with $$k=21, w=25$$. Users can optionally query `kmindex` indices when provided in the manifest file. k4neo searches every sequence provided in the input file against the indices specified in the index manifest file. Query results are then annotated with sample-level metadata and aggregated to obtain expression breadth and profiles across all healthy and tumor tissues.
+k4neo ([`k4neo-annotator`](usage.md#k4neo-annotator)) performs annotation of expression breadth in GTEx and TCGA data using binary presence/absence k-mer data structures. By default, we utilize `raptor hibf` with $$k=21, w=25$$. Users can optionally query `kmindex` indices when provided in the manifest file. k4neo searches every sequence provided in the input file against the indices specified in the index manifest file. Query results are then annotated with sample-level metadata and aggregated to obtain expression breadth and profiles across all healthy and tumor tissues.
 
 ### Metadata database
 
-k4neo stores metadata of indexed samples in a SQLite3 database. Please refer to the [kmer-index-data](https://github.com/TRON-Private/kmer_index_data) repository for information about structured metadata and how to build the database. The database schema documentation will follow.
+k4neo stores metadata of indexed samples in a SQLite3 database ([`k4neo-database`](usage.md#k4neo-database)). Please refer to the [kmer-index-data](https://github.com/TRON-Private/kmer_index_data) repository for information about structured metadata and how to build the database. The database schema documentation will follow.
 
 ### Reference index and uniqueness annotation
 
