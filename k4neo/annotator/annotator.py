@@ -4,8 +4,7 @@ import pathlib
 import pandas as pd
 from k4neo.index.index_loader import load_metaindex_from_manifest
 from k4neo.index.index_processor import KmerIndexProcessor
-from k4neo.database.database import DataBase
-from k4neo.database.queries import Queries
+from k4neo.database_sqlite.queries import Queries
 from k4neo.annotator import (
     EXPECTED_CTS_COLUMNS,
     NON_TUMOR_TISSUE,
