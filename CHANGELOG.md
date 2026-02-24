@@ -1,6 +1,19 @@
 # Change Log
 
-## v1.0.0 - ToDo
+## v1.0.1
+
+### Added
+
+* mkdocs based annotation
+
+### Changes
+
+* Updated `tronmake-kmer-pipeline` submodule to track new major version v3.0.0
+
+### Fixed
+
+
+## v1.0.0
 
 ### Added
 
