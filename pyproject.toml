@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "k4neo"
-version = "1.0.1"
+version = "2.0.0"
 description = ""
 authors = [
     "TRON - Translational Oncology at the University Medical Center", 
@@ -39,6 +39,7 @@ black = "^26.1.0"
 pydantic = "^2.12.5"
 
 [tool.poetry.scripts]
+k4neo-prepare = "k4neo.command_line:prepare"
 k4neo-annotator = "k4neo.command_line:annotate"
 k4neo-database = "k4neo.command_line:build_database"
 k4neo-ref-index = "k4neo.command_line:build_ref_index"
