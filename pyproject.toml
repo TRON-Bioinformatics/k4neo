@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "k4neo"
-version = "1.0.0"
+version = "1.0.1"
 description = ""
 authors = [
     "TRON - Translational Oncology at the University Medical Center", 
@@ -65,3 +65,18 @@ filterwarnings = [
 force-exclude = "k4neo/pipeline/tronmake-kmer-pipeline"
 line-length = 100
 target-version = ["py312"]
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "==1.6.1"
+mkdocs-table-reader-plugin = "*"
+mkdocs-material = "*"
+mkdocs-include-markdown-plugin = "*"
+mkdocs-git-revision-date-plugin = "*"
+mkdocs-glightbox = "*"
+mkdocs-inline-select-svg-plugin = "*"
+mkdocstrings = "*"
+mkdocstrings-python = "*"
+markdown = "*"
