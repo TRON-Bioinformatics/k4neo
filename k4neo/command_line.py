@@ -1,4 +1,3 @@
-import sys
 import pathlib
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from itertools import batched
@@ -6,7 +5,6 @@ import k4neo
 from k4neo.database_sqlite.database import CreateDataBase
 from k4neo.annotator.annotator import Annotator
 from k4neo.annotator.reference_annotation import ReferenceIndexer, KmerUniquenessAnnotator
-from k4neo.parser.parser import IndexResultParser
 from k4neo.parser.index_parser import IndexResultParser2
 from k4neo.plotter.plotter import Plotter
 from k4neo.setup_logging import setup_logging
@@ -14,7 +12,6 @@ from k4neo.helper.helper import DiskIO, Worker, QuantIndexHelper
 from k4neo.helper.async_writer import AsyncDFWriter
 from rich.console import Console
 from tqdm import tqdm
-import gc
 import pandas as pd
 from joblib import Parallel, delayed
 

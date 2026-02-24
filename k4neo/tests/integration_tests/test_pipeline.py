@@ -1,5 +1,4 @@
 from k4neo.pipeline.query_pipeline import QueryPipeline, QueryPipelineConfig, QueryPipelineResult
-from k4neo.index.index import KmerIndex
 import pathlib
 
 
