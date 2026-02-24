@@ -60,7 +60,7 @@ jobs:
       - name: Build MkDocs site
         shell: bash -l {0}
         run: |
-          poetry run mkdocs build -f documentation/mkdocs.yml -d site
+          poetry run mkdocs build -f documentation/mkdocs.yaml -d site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -71,3 +71,4 @@ jobs:
         id: deployment
 
         uses: actions/deploy-pages@v4
+
