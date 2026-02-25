@@ -218,7 +218,15 @@ def annotate():
         "--index", dest="index_manifest", help="k-mer index to query.", required=True
     )
     
-    parser.add_argument("--output", dest="output", help="Output prefix for annotated sequences")
+    parser.add_argument(
+        "--output", dest="output", help="Output prefix for annotated sequences"
+    )
+    parser.add_argument(
+        "--input_yaml",
+        dest="input_yaml",
+        help="YAML file containg paths to input files and working directory for annotation.",
+        required=True,
+    )
     parser.add_argument(
         "--ratio",
         dest="kmer_ratio",
@@ -230,7 +238,7 @@ def annotate():
         "--working-dir",
         dest="working_dir",
         help="Working directory of k4neo pipeline",
-        default="./k4neo_query",
+        default=None,
     )
     parser.add_argument(
         "--workflow",
@@ -290,8 +298,11 @@ def annotate():
     console.print(k4neo.logo, style="bold red")
 
     # Create pipeline workdir if not existent
-    working_dir = pathlib.Path(args.working_dir).resolve()
-    working_dir.mkdir(parents=True, exist_ok=True)
+    working_dir = None
+    
+    if not args.working_dir is None:
+        working_dir = pathlib.Path(args.working_dir).resolve()
+        working_dir.mkdir(parents=True, exist_ok=True)
 
     # Setup logger
     output_directory = pathlib.Path(args.output).parent
@@ -303,8 +314,7 @@ def annotate():
     workflow_profile = pathlib.Path(args.workflow_profile).resolve()
     index_manifest = pathlib.Path(args.index_manifest).resolve()
 
-    annotator = Annotator(working_dir, args.queries)
-    annotator.prepare_cts()
+    annotator = Annotator(args.input_yaml, args.kmer_size, working_dir)
 
     result_dict = annotator.search_cts(
         pipeline=pipeline,
@@ -313,21 +323,6 @@ def annotate():
         kmer_ratio=args.kmer_ratio,
         cores=args.cpu,
         slurm=args.slurm,
-    )
-
-    # Write non-queryable sequences to disk
-    if len(annotator.non_queryable.index > 0):
-        logger.info("-> Writing non-queryable sequences to disk")
-        output_non_queryable = (
-            pathlib.Path(args.output + "_non_querable.tsv.gz")
-            if args.compression
-            else pathlib.Path(args.output + "_non_querable.tsv")
-        )
-        DiskIO.write_df(annotator.non_queryable, output_non_queryable, args.compression)
-
-    # Write a debug table that maps cts_ids to query_ids
-    annotator.sequence_table[["cts_id", "query_cts_id"]].to_csv(
-        pathlib.Path(args.output + "_cts_to_query_cts.tsv"), sep="\t", index=False
     )
 
     for method_name in result_dict:

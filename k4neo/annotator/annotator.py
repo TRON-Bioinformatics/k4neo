@@ -9,6 +9,7 @@ from k4neo.annotator import (
     EXPECTED_CTS_COLUMNS,
     NON_TUMOR_TISSUE,
     TUMOR_TISSUE,
+    load_annotator_config,
 )
 from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation, DiskIO
 import numpy as np
@@ -22,17 +23,24 @@ class Annotator:
 
     def __init__(
         self,
-        working_dir: str,
-        sequence_table: str,
+        config_yaml: pathlib.Path,
         index_kmer_size: int = 21,
+        working_dir: pathlib.Path | None = None,
     ) -> None:
-        self.working_dir = pathlib.Path(working_dir)
-        self.sequence_table = self.read_context_seq(sequence_table)
+        
+        self.config = load_annotator_config(config_yaml)
+        self.sequence_table = self.read_context_seq(self.config.sequence_table_output)
+        
+        if working_dir is None:
+            self.working_dir = self.config.working_dir
+        else:
+            self.working_dir = working_dir
+        
+        
         self.non_queryable = pd.DataFrame(
             columns=["cts_id", "cts_seq", "query_length", "pos", "query_sequence", "query_cts_id"]
         )
         # , self.non_queryable, index_kmer_size
-        self.query_fasta = self.working_dir / "query.fa"
         self.index_kmer_size = index_kmer_size
 
     @staticmethod
@@ -55,63 +63,7 @@ class Annotator:
         assert not ret, f"-> Missing columns: {missing_cols} in input table"
 
         return seq
-
-    def _generate_target_sequence(self):
-        """
-        Generate target sequence of interest by extracting
-        subsequence according to position and query_length column
-        """
-        self.sequence_table["query_sequence"] = self.sequence_table.apply(
-            lambda x: SequenceOperation.subset_cts(x.cts_seq, x.pos, x.query_length),
-            axis=1,
-        )
-
-        self.sequence_table["query_cts_id"] = self.sequence_table.apply(
-            lambda x: SequenceOperation.cts_id(x.query_sequence), axis=1
-        )
-
-    def _filter_seq_to_short(self):
-        """
-        Filter sequences that are shorter than minimiser_size are excluded from search
-        """
-        self.non_queryable = pd.concat(
-            [
-                self.non_queryable,
-                self.sequence_table[
-                    self.sequence_table["query_sequence"].str.len() < self.index_kmer_size + 4
-                ],
-            ]
-        )
-        self.sequence_table = self.sequence_table[
-            ~self.sequence_table["cts_id"].isin(self.non_queryable["cts_id"])
-        ]
-
-    def _write_to_fasta(self):
-        """
-        Wrapper to call FastaHandler class
-        """
-        if not self.query_fasta.exists():
-            logger.info(f"Writing context sequences to fasta file: {self.query_fasta}")
-            FastaHandler.write_fasta(self.sequence_table, self.query_fasta)
-            return
-        logger.warning(
-            f"Fasta file: {self.query_fasta} already exists in working directory. Re-using for annotation"
-        )
-
-    def prepare_cts(self):
-        """
-        Prepare context sequences provided by user for targeted search and
-        dump into fasta format for query
-        """
-        logger.debug("Generating breakpoint sequences.")
-        self._generate_target_sequence()
-
-        logger.debug("Filtering sequences to short for query in k-mer index.")
-        self._filter_seq_to_short()
-
-        logger.debug("Writing query sequences to fasta file.")
-        self._write_to_fasta()
-
+       
     def search_cts(
         self,
         pipeline: pathlib.Path,
@@ -141,7 +93,7 @@ class Annotator:
             meta_index=meta_index, pipeline=pipeline, workflow_profile=workflow_profile
         )
         query_pipeline_results = index_processor.search_index(
-            self.query_fasta, self.working_dir, slurm=slurm, cores=cores, kmer_ratio=kmer_ratio
+            self.config.query_fasta, self.working_dir, slurm=slurm, cores=cores, kmer_ratio=kmer_ratio
         )
         parsed_results = index_processor.result_parser2(
             query_pipeline_results=query_pipeline_results, cores=cores, kmer_ratio=kmer_ratio

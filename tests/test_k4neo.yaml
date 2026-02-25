@@ -5,7 +5,7 @@
     poetry run k4neo-annotator
       --database tests/resources/index_metadata.sqlite3
       --index tests/resources/index_manifest.yaml
-      --queries tests/resources/queries/test_junction_k4neo_input.tsv
+      --input_yaml tests/resources/yaml_input_jx/annotation_input.yaml 
       --working-dir .
       --output test_jx
       --ratio 0.7
@@ -70,7 +70,7 @@
     poetry run k4neo-annotator
        --database tests/resources/index_metadata.sqlite3
        --index tests/resources/index_manifest.yaml
-       --queries tests/resources/queries/test_transcript_k4neo_input.tsv
+       --input_yaml tests/resources/yaml_input_tx/annotation_input.yaml 
        --working-dir .
        --output test_tx
        --ratio 0.7
@@ -132,7 +132,7 @@
     poetry run k4neo-annotator
        --database tests/resources/index_metadata.sqlite3
        --index tests/resources/index_manifest.yaml
-       --queries tests/resources/queries/test_seq_to_short.tsv
+       --input_yaml tests/resources/yaml_input_seq_to_short/annotation_input.yaml
        --working-dir .
        --output test_sx
        --ratio 0.7
