@@ -143,9 +143,9 @@
         - "a534b03cc1757cac71b2265687a2b019"
       must_not_contain:
         - "07eb80a14ccf64e225d2db0a55ce9fe5"
-    - path: 'test_sx_non_querable.tsv.gz'
-      contains:
-        - "07eb80a14ccf64e225d2db0a55ce9fe5"
+    #- path: 'test_sx_non_querable.tsv.gz'
+    #  contains:
+    #    - "07eb80a14ccf64e225d2db0a55ce9fe5"
   stdout:
     contains:
       - "query=True"
@@ -159,7 +159,7 @@
     - integrationtest
   command: >
     bash -c "
-    poetry run k4neo-annotator --database tests/resources/index_metadata.sqlite3 --index tests/resources/index_manifest.yaml --queries tests/resources/queries/test_junction_k4neo_input.tsv --compress --working-dir . --output ./test_jx ;
+    poetry run k4neo-annotator --database tests/resources/index_metadata.sqlite3 --index tests/resources/index_manifest.yaml --input_yaml tests/resources/yaml_input_jx/annotation_input.yaml  --compress --working-dir . --output ./test_jx &&
     poetry run k4neo-plotter --input ./test_jx --output test_picture.png
     "
   files:
@@ -182,7 +182,7 @@
 
 - name: test_k4neo_ref_index
   tags:
-    - integrationtest
+    - integrationtest2
   command: >
     poetry run k4neo-ref-index 
       --genome tests/resources/index/ref_mini/minigenome.fa

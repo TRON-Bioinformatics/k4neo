@@ -23,7 +23,7 @@ class AnnotatorConfig(BaseModel):
     query_fasta: pathlib.Path
     seq_to_short_output: pathlib.Path
     sequence_table_output: pathlib.Path
-    working_dir: pathlib.Path
+    working_dir: pathlib.Path | None = None
 
     @field_validator("query_fasta", "seq_to_short_output", "sequence_table_output", "working_dir")
     def file_must_exist(cls, path: pathlib.Path | None, info):
