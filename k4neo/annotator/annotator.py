@@ -27,16 +27,15 @@ class Annotator:
         index_kmer_size: int = 21,
         working_dir: pathlib.Path | None = None,
     ) -> None:
-        
+
         self.config = load_annotator_config(config_yaml)
         self.sequence_table = self.read_context_seq(self.config.sequence_table_output)
-        
+
         if working_dir is None:
             self.working_dir = self.config.working_dir
         else:
             self.working_dir = working_dir
-        
-        
+
         self.non_queryable = pd.DataFrame(
             columns=["cts_id", "cts_seq", "query_length", "pos", "query_sequence", "query_cts_id"]
         )
@@ -63,7 +62,7 @@ class Annotator:
         assert not ret, f"-> Missing columns: {missing_cols} in input table"
 
         return seq
-       
+
     def search_cts(
         self,
         pipeline: pathlib.Path,
@@ -93,7 +92,11 @@ class Annotator:
             meta_index=meta_index, pipeline=pipeline, workflow_profile=workflow_profile
         )
         query_pipeline_results = index_processor.search_index(
-            self.config.query_fasta, self.working_dir, slurm=slurm, cores=cores, kmer_ratio=kmer_ratio
+            self.config.query_fasta,
+            self.working_dir,
+            slurm=slurm,
+            cores=cores,
+            kmer_ratio=kmer_ratio,
         )
         parsed_results = index_processor.result_parser2(
             query_pipeline_results=query_pipeline_results, cores=cores, kmer_ratio=kmer_ratio

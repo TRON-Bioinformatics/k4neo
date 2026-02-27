@@ -19,6 +19,7 @@ TUMOR_TISSUE = ["primary blood tumor", "primary solid tumor", "metastatic"]
 
 IMMUNO_PRIVILIGED_TISSUE = ["testis", "ovary", "retina"]
 
+
 class AnnotatorConfig(BaseModel):
     query_fasta: pathlib.Path
     seq_to_short_output: pathlib.Path
@@ -34,14 +35,15 @@ class AnnotatorConfig(BaseModel):
             raise ValueError(f"File does not exist: {path}")
         return path
 
-    @field_serializer("query_fasta", "seq_to_short_output", "sequence_table_output", "working_dir", mode="plain")
+    @field_serializer(
+        "query_fasta", "seq_to_short_output", "sequence_table_output", "working_dir", mode="plain"
+    )
     def serialize_path(self, value: pathlib.Path) -> str:
         return str(value)
+
 
 def load_annotator_config(yaml_path: pathlib.Path) -> AnnotatorConfig:
     with open(yaml_path, "r") as file_handle:
         raw = yaml.safe_load(file_handle)
 
-    return AnnotatorConfig(
-        **raw
-    )
+    return AnnotatorConfig(**raw)

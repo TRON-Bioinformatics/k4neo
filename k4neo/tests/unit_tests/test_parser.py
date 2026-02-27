@@ -1,7 +1,5 @@
 import pytest
-import re
 from six import PY2
-from collections import ChainMap
 from k4neo.parser.parser import Parser
 from k4neo.parser.index_parser import (
     IndexResultParser2,

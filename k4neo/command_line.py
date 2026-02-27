@@ -82,10 +82,6 @@ def build_ref_index():
     )
     args = parser.parse_args()
 
-    log_file_name = pathlib.Path(args.output).parent / "k4neo_ref_index.log"
-
-    logger = setup_logging(log_file_name, verbose=True)
-
     ReferenceIndexer.prepare_data(args.genome, args.transcriptome, args.kmer_size, args.output)
 
 
@@ -194,7 +190,7 @@ def prepare():
         help="Verbose logs (default: False)",
     )
     args = parser.parse_args()
-    
+
     log_file_name = pathlib.Path(args.working_dir) / "k4neo_prepare.log"
 
     logger = setup_logging(log_file_name, args.verbose)
@@ -217,10 +213,8 @@ def annotate():
     parser.add_argument(
         "--index", dest="index_manifest", help="k-mer index to query.", required=True
     )
-    
-    parser.add_argument(
-        "--output", dest="output", help="Output prefix for annotated sequences"
-    )
+
+    parser.add_argument("--output", dest="output", help="Output prefix for annotated sequences")
     parser.add_argument(
         "--input_yaml",
         dest="input_yaml",
@@ -299,7 +293,7 @@ def annotate():
 
     # Create pipeline workdir if not existent
     working_dir = None
-    
+
     if not args.working_dir is None:
         working_dir = pathlib.Path(args.working_dir).resolve()
         working_dir.mkdir(parents=True, exist_ok=True)

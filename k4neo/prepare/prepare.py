@@ -2,12 +2,12 @@ import pathlib
 import pandas as pd
 from k4neo.annotator import (
     EXPECTED_CTS_COLUMNS,
-    annotator,
 )
 from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation, DiskIO
 from loguru import logger
 from pydantic import BaseModel, field_validator, field_serializer
 import yaml
+
 
 class PrepareOutput(BaseModel):
     query_fasta: pathlib.Path
@@ -24,7 +24,9 @@ class PrepareOutput(BaseModel):
             raise ValueError(f"File does not exist: {path}")
         return path
 
-    @field_serializer("query_fasta", "seq_to_short_output", "sequence_table_output", "working_dir", mode="plain")
+    @field_serializer(
+        "query_fasta", "seq_to_short_output", "sequence_table_output", "working_dir", mode="plain"
+    )
     def serialize_path(self, value: pathlib.Path) -> str:
         return str(value)
 
@@ -36,18 +38,18 @@ class Prepare:
         sequence_table: str,
         index_kmer_size: int = 21,
     ) -> None:
-        
+
         self.working_dir = pathlib.Path(working_dir).resolve()
         self.pipeline_dir = (self.working_dir / "workDir").resolve()
 
         if not self.working_dir.exists():
             self.working_dir.mkdir(parents=True, exist_ok=True)
-        
+
         if not self.pipeline_dir.exists():
             self.pipeline_dir.mkdir(parents=True, exist_ok=True)
 
         self.sequence_table = self._read_context_seq(sequence_table)
-        
+
         self.non_queryable = pd.DataFrame(
             columns=["cts_id", "cts_seq", "query_length", "pos", "query_sequence", "query_cts_id"]
         )
@@ -58,7 +60,6 @@ class Prepare:
         self.query_to_cts = self.working_dir / "cts_to_query_cts.tsv"
 
         self.index_kmer_size = index_kmer_size
-
 
     def _read_context_seq(self, sequence_table: pathlib.Path) -> pd.DataFrame:
         """Read context sequenc table.
@@ -137,10 +138,10 @@ class Prepare:
             logger.warning(
                 f"File: {self.sequence_table_output} already exists in working directory. Not overwriting"
             )
-        
+
         if not self.query_to_cts.exists():
             logger.info(f"Writing cts_id to query_cts_id mapping to disk: {self.query_to_cts}")
-           # Write a debug table that maps cts_ids to query_ids
+            # Write a debug table that maps cts_ids to query_ids
             self.sequence_table[["cts_id", "query_cts_id"]].to_csv(
                 pathlib.Path(self.query_to_cts), sep="\t", index=False
             )
@@ -151,21 +152,21 @@ class Prepare:
 
     def do_prepare(self) -> PrepareOutput:
         """
-        Main method to perform preparation steps. This includes generating target 
+        Main method to perform preparation steps. This includes generating target
         sequence of interest and filtering sequences that are too short for querying.
         """
         self._generate_target_sequence()
         self._filter_seq_to_short()
         self._write_annotator_input()
-        
+
         result = PrepareOutput(
             query_fasta=self.query_fasta,
             seq_to_short_output=self.seq_to_short_output,
             sequence_table_output=self.sequence_table_output,
-            working_dir = self.pipeline_dir
+            working_dir=self.pipeline_dir,
         )
-        
+
         with open(self.working_dir / "annotation_input.yaml", "w") as file_handle:
             yaml.safe_dump(result.model_dump(), file_handle, sort_keys=False)
-        
+
         return result
