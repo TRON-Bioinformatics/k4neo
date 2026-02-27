@@ -167,3 +167,5 @@ class Prepare:
         
         with open(self.working_dir / "annotation_input.yaml", "w") as file_handle:
             yaml.safe_dump(result.model_dump(), file_handle, sort_keys=False)
+        
+        return result

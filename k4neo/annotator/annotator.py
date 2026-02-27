@@ -11,7 +11,7 @@ from k4neo.annotator import (
     TUMOR_TISSUE,
     load_annotator_config,
 )
-from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation, DiskIO
+from k4neo.helper.helper import InputValidation
 import numpy as np
 from loguru import logger
 
