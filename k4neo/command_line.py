@@ -191,6 +191,8 @@ def prepare():
     )
     args = parser.parse_args()
 
+    pathlib.Path(args.working_dir).mkdir(parents=True, exist_ok=True)
+
     log_file_name = pathlib.Path(args.working_dir) / "k4neo_prepare.log"
 
     logger = setup_logging(log_file_name, args.verbose)
@@ -198,6 +200,7 @@ def prepare():
     logger.info("Starting to prepare k4neo annotation input...")
     preparer = Prepare(pathlib.Path(args.working_dir), pathlib.Path(args.queries), args.kmer_size)
     preparer.do_prepare()
+    
     logger.info("Done preparing k4neo annotation input.")
 
 

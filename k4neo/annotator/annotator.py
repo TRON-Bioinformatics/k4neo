@@ -35,6 +35,12 @@ class Annotator:
             self.working_dir = self.config.working_dir
         else:
             self.working_dir = working_dir
+        
+        if self.working_dir is None:
+            raise ValueError(
+                "Working directory is not set. Please provide it either via the CLI "
+                "or in the annotator configuration (working_dir)."
+            )
 
         self.non_queryable = pd.DataFrame(
             columns=["cts_id", "cts_seq", "query_length", "pos", "query_sequence", "query_cts_id"]
@@ -291,16 +297,17 @@ class Annotator:
 
         if len(parsed_results.index) == 0:
             logger.warning("None of the queried sequences was found in index.")
-            return not_expressed
+            return 
+        
         logger.debug("Annotating sample hits with sample level metadata.")
-        parsed_results = parsed_results.groupby("study_id", dropna=False).apply(
+        parsed_results = parsed_results.groupby("study_id", dropna=False)[['cts_id', 'sample_name', 'study_id']].apply(
             lambda sub_df: queries.annotate_samples_of_project(sub_df)
         )
         parsed_results.reset_index(drop=True, inplace=True)
         parsed_results = self._count_aggregation(parsed_results)
 
         logger.debug("Annotating with pre-computed counts from database.")
-        parsed_results = parsed_results.groupby("study_id", group_keys=False).apply(
+        parsed_results = parsed_results.groupby("study_id", group_keys=False)[['cts_id', 'count', 'study_id', 'tissue', 'developmental_stage', 'disease']].apply(
             lambda sub_df: queries.annotate_tissue_counts(sub_df)
         )
         parsed_results.reset_index(drop=True, inplace=True)
