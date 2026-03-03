@@ -99,4 +99,4 @@ jobs:
         shell: bash -l {0}
         run: |
           poetry install
-          pytest --git-aware --symlink --stderr-bytes 100000 tests/
+          pytest --tag integrationtest --git-aware --symlink --stderr-bytes 100000 tests/

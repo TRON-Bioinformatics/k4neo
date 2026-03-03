@@ -5,7 +5,7 @@
     poetry run k4neo-annotator
        --database tests/resources/index_metadata.sqlite3
        --index tests/resources/index_manifest.yaml
-       --queries tests/resources/queries/test_seq_not_in_index.tsv
+       --input_yaml tests/resources/yaml_input_seq_not_found/annotation_input.yaml 
        --working-dir .
        --output test_nx
        --ratio 0.7

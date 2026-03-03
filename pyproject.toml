@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "k4neo"
-version = "1.0.1"
+version = "2.0.0"
 description = ""
 authors = [
     "TRON - Translational Oncology at the University Medical Center", 
@@ -35,10 +35,10 @@ plotnine = "^0.14.5"
 tqdm = "^4.67.1"
 joblib = "^1.5.1"
 pyprobables = "^0.6.1"
-black = "^26.1.0"
 pydantic = "^2.12.5"
 
 [tool.poetry.scripts]
+k4neo-prepare = "k4neo.command_line:prepare"
 k4neo-annotator = "k4neo.command_line:annotate"
 k4neo-database = "k4neo.command_line:build_database"
 k4neo-ref-index = "k4neo.command_line:build_ref_index"
@@ -77,3 +77,11 @@ mkdocs-inline-select-svg-plugin = "*"
 mkdocstrings = "*"
 mkdocstrings-python = "*"
 markdown = "*"
+
+[tool.poetry.group.dev.dependencies]
+pyflakes = "^3.4.0"
+pytest-cov = "^7.0.0"
+black = "^26.1.0"
+pytest = "^9.0.2"
+pytest-workflow = "^2.1.0"
+

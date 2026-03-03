@@ -1,4 +1,3 @@
-import pathlib
 import pandas as pd
 from k4neo.database_sqlite.database import CreateDataBase
 
