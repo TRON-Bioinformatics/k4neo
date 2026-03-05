@@ -297,10 +297,9 @@ class Worker:
 
             results = annotator.annotate_cts(df_chunk, query)
             sample_hits = annotator.annotate_sequences(results)
-            healthy_sample_rate, tumor_sample_rate = annotator.annotate_sample_rate2(results, query)
+            healthy_sample_rate, tumor_sample_rate, index_sample_rate = annotator.annotate_sample_rate2(results, query)
 
-        return sample_hits, healthy_sample_rate, tumor_sample_rate
-
+        return sample_hits, healthy_sample_rate, tumor_sample_rate, index_sample_rate
 
 class QuantIndexHelper:
 

@@ -335,12 +335,18 @@ def annotate():
             output_tumor_rate = pathlib.Path(
                 args.output + f"_tumor_sample_rate_{method_name}.tsv.gz"
             )
+            output_index_rate = pathlib.Path(
+                args.output + f"_index_sample_rate_{method_name}.tsv.gz"
+            )
         else:
             output_annotated = pathlib.Path(args.output + f"_annotated_{method_name}.tsv")
             output_healthy_rate = pathlib.Path(
                 args.output + f"_healthy_sample_rate_{method_name}.tsv"
             )
             output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{method_name}.tsv")
+            output_index_rate = pathlib.Path(
+                args.output + f"_index_sample_rate_{method_name}.tsv"
+            )
 
         first_chunk = True
 
@@ -353,6 +359,9 @@ def annotate():
 
         annot_writer = AsyncDFWriter(output_annotated, compression=args.compression)
         annot_writer.start()
+
+        index_writer = AsyncDFWriter(output_index_rate, compression=args.compression)
+        index_writer.start()
 
         # Batch dataframe chunks for parallel processing
         for this_batch in batched(
@@ -369,7 +378,7 @@ def annotate():
                 for this_chunk in chunks_lst
             )
             # Get batch length and results from chunk and result tuple
-            for (_, batch_len, _), (sample_hits, healthy_sample_rate, tumor_sample_rate) in zip(
+            for (_, batch_len, _), (sample_hits, healthy_sample_rate, tumor_sample_rate, index_sample_rate) in zip(
                 this_batch, results
             ):
                 # Send metrics to background writer threads
@@ -402,6 +411,13 @@ def annotate():
                     header=first_chunk,
                 )
 
+                index_writer.write(
+                    index_sample_rate,
+                    ["cts_id", "index_sample_rate", "samples_per_index"],
+                    append=not first_chunk,
+                    header=first_chunk,
+                )
+
                 first_chunk = False  # turn off headers after first write
                 pbar.update(batch_len)
 
@@ -411,11 +427,12 @@ def annotate():
         annot_writer.wait_until_done()
         healthy_writer.wait_until_done()
         tumor_writer.wait_until_done()
+        index_writer.wait_until_done()
 
         annot_writer.stop()
         healthy_writer.stop()
         tumor_writer.stop()
-
+        index_writer.stop()
 
 def quant_annotation():
     parser = ArgumentParser(

@@ -359,7 +359,7 @@ def test_annotator_annotate_sample_rate2(setup_test_environment):
         "study_id": ["STUDY1"],
     })
 
-    healthy_rate, tumor_rate = annotator.annotate_sample_rate2(annotated_cts, queries, min_total=1)
+    healthy_rate, tumor_rate, index_rate = annotator.annotate_sample_rate2(annotated_cts, queries, min_total=1)
 
     # Verify healthy sample rate result
     assert isinstance(healthy_rate, pd.DataFrame)
@@ -376,14 +376,25 @@ def test_annotator_annotate_sample_rate2(setup_test_environment):
     assert "tissue" in tumor_rate.columns
     assert "disease" in tumor_rate.columns
 
+    # Verify index sample rate result
+    assert isinstance(index_rate, pd.DataFrame)
+    assert "index_sample_rate" in index_rate.columns
+    assert "cts_id" in index_rate.columns
+    assert "count" in index_rate.columns
+    assert "samples_per_index" in index_rate.columns
+
+
     # Verify sample rates are within valid range
     if len(healthy_rate) > 0:
-        print(healthy_rate)
         assert (healthy_rate["sample_rate"] >= 0).all()
         assert (healthy_rate["sample_rate"] <= 1).all()
 
     if len(tumor_rate) > 0:
         assert (tumor_rate["sample_rate"] >= 0).all()
         assert (tumor_rate["sample_rate"] <= 1).all()
+    
+    if len(index_rate) > 0:
+        assert (index_rate["index_sample_rate"] >= 0).all()
+        assert (index_rate["index_sample_rate"] <= 1).all()
 
     env["db"].close()

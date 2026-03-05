@@ -201,6 +201,30 @@ class Annotator:
         df["sample_rate"] = df.apply(lambda row: round(row["count"] / row["total"], 2), axis=1)
 
         return df
+    
+    def _calculate_index_sample_rate(self, parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
+        """Calculate sample rate of sequence of interest in whole index
+
+        Args:
+            parsed_results (pd.DataFrame): Parsed results of k-mer pipeline.
+            tissue_counts (pd.DataFrame): DataFrame with tissue counts.
+
+        Returns:
+            pd.DataFrame: DataFrame with sample rates for each sequence in the index.
+        """
+        tissue_counts = (
+            tissue_counts.loc[tissue_counts["disease"].isin(NON_TUMOR_TISSUE)]["total"].sum()
+        )
+        parsed_results = parsed_results.loc[parsed_results["disease"].isin(NON_TUMOR_TISSUE)]
+        if tissue_counts == 0:
+            logger.warning("Denominator (total sample count) is zero. Cannot calculate index sample rate.")
+            return parsed_results.assign(index_sample_rate=np.nan)
+
+        index_sample_rate = parsed_results.groupby("cts_id")["count"].sum().reset_index()
+        index_sample_rate["index_sample_rate"] = index_sample_rate.apply(
+            lambda row: row["count"] / tissue_counts, axis=1
+        )
+        return index_sample_rate
 
     @staticmethod
     def _calculate_healthy_sample_rate(parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
@@ -394,4 +418,17 @@ class Annotator:
 
         tumor_sample_rate = tumor_sample_rate.loc[tumor_sample_rate["index_count"] >= min_total]
 
-        return healthy_sample_rate, tumor_sample_rate
+        index_sample_rate = self._calculate_index_sample_rate(annotated_cts, tissue_counts)
+        index_sample_rate = pd.merge(
+            self.sequence_table,
+            index_sample_rate,
+            left_on="query_cts_id",
+            right_on="cts_id",
+        )
+        index_sample_rate.drop("cts_id_y", inplace=True, axis=1)
+        index_sample_rate.rename(columns={"cts_id_x": "cts_id"}, inplace=True)
+        index_sample_rate["index_sample_rate"] = pd.to_numeric(index_sample_rate["index_sample_rate"])
+        index_sample_rate["count"] = index_sample_rate["count"].astype(int)
+        index_sample_rate["samples_per_index"] = tissue_counts.loc[tissue_counts["disease"].isin(NON_TUMOR_TISSUE)]["total"].sum()
+
+        return healthy_sample_rate, tumor_sample_rate, index_sample_rate
