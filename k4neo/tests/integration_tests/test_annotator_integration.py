@@ -381,7 +381,7 @@ def test_annotator_annotate_sample_rate2(setup_test_environment):
     assert "index_sample_rate" in index_rate.columns
     assert "cts_id" in index_rate.columns
     assert "count" in index_rate.columns
-    assert "sample_per_index" in index_rate.columns
+    assert "samples_per_index" in index_rate.columns
 
 
     # Verify sample rates are within valid range
