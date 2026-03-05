@@ -3,7 +3,6 @@ from k4neo.index.index_loader import load_metaindex_from_manifest
 import pathlib
 import yaml
 import pytest
-import pathlib
 from pydantic import ValidationError
 
 
@@ -104,7 +103,7 @@ def test_KmerIndex_valid_config(mocker):
 
 def test_KmerIndex_invalid_config_method(mocker):
     with mocker.patch("pathlib.Path.exists", return_value=True), pytest.raises(ValidationError):
-        km = KmerIndex(
+        KmerIndex(
             samples=10,
             path="some.idx",
             sample_mapping="map.txt",
@@ -113,9 +112,8 @@ def test_KmerIndex_invalid_config_method(mocker):
 
 
 def test_KmerIndex_invalid_config_path_not_exists():
-
     with pytest.raises(ValidationError):
-        km = KmerIndex(
+        KmerIndex(
             samples=10,
             path="some.idx",
             sample_mapping="map.txt",
@@ -204,4 +202,4 @@ def test_load_metaindex_from_manifest_works_with_partial_invalid_manifest(partia
 def test_load_metaindex_from_manifest_with_invalid_manifest(invalid_yaml_file):
     # Raise ValueError as no index passed validation
     with pytest.raises(ValueError):
-        km = load_metaindex_from_manifest(invalid_yaml_file)
+        load_metaindex_from_manifest(invalid_yaml_file)

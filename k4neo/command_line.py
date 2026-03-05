@@ -5,6 +5,7 @@ import k4neo
 from k4neo.database_sqlite.database import CreateDataBase
 from k4neo.annotator.annotator import Annotator
 from k4neo.annotator.reference_annotation import ReferenceIndexer, KmerUniquenessAnnotator
+from k4neo.prepare.prepare import Prepare
 from k4neo.parser.index_parser import IndexResultParser2
 from k4neo.plotter.plotter import Plotter
 from k4neo.setup_logging import setup_logging
@@ -81,10 +82,6 @@ def build_ref_index():
     )
     args = parser.parse_args()
 
-    log_file_name = pathlib.Path(args.output).parent / "k4neo_ref_index.log"
-
-    logger = setup_logging(log_file_name, verbose=True)
-
     ReferenceIndexer.prepare_data(args.genome, args.transcriptome, args.kmer_size, args.output)
 
 
@@ -160,37 +157,51 @@ def annotate_uniqueness():
     logger.info(f"Annotated uniqueness of {counter} sequences")
 
 
-def parse_output():
+def prepare():
     parser = ArgumentParser(
-        description=f"k4neo {k4neo.VERSION} parser",
+        description=f"k4neo {k4neo.VERSION} preparation of query sequences",
         formatter_class=ArgumentDefaultsHelpFormatter,
         epilog=epilog,
     )
     parser.add_argument(
-        "--index-results",
-        dest="index_table",
-        help="Query results from k-mer index",
+        "--queries",
+        dest="queries",
+        help="Tabular format with context sequence and position of interest",
+        required=True,
     )
-    parser.add_argument("--tool", dest="tool", help="indexing method")
-    parser.add_argument("--output-table", dest="output_table", help="Output table")
     parser.add_argument(
-        "--kmindex-cutoff",
-        dest="kmindex_cutoff",
-        help="Kmindex cutoff to filter results",
-        default=0.7,
-        type=float,
+        "--working-dir",
+        dest="working_dir",
+        help="Working directory of k4neo pipeline",
+        default="./k4neo_query",
+    )
+    parser.add_argument(
+        "--kmer",
+        dest="kmer_size",
+        help="K-mer size of search index",
+        default=21,
+        type=int,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        help="Verbose logs (default: False)",
     )
     args = parser.parse_args()
-    logger.info("Starting query result parsing...")
-    parser = IndexResultParser(
-        args.index_table,
-        args.tool,
-        raptor_sample_mapping=args.raptor_sample_mapping,
-        kmindex_cutoff=args.kmindex_cutoff,
-    )
-    results = parser.parse_results()
-    parser.write_result(results, args.output_table)
-    logger.info("Parsed query results into table")
+
+    pathlib.Path(args.working_dir).mkdir(parents=True, exist_ok=True)
+
+    log_file_name = pathlib.Path(args.working_dir) / "k4neo_prepare.log"
+
+    logger = setup_logging(log_file_name, args.verbose)
+
+    logger.info("Starting to prepare k4neo annotation input...")
+    preparer = Prepare(pathlib.Path(args.working_dir), pathlib.Path(args.queries), args.kmer_size)
+    preparer.do_prepare()
+    
+    logger.info("Done preparing k4neo annotation input.")
 
 
 def annotate():
@@ -205,13 +216,14 @@ def annotate():
     parser.add_argument(
         "--index", dest="index_manifest", help="k-mer index to query.", required=True
     )
+
+    parser.add_argument("--output", dest="output", help="Output prefix for annotated sequences")
     parser.add_argument(
-        "--queries",
-        dest="queries",
-        help="Tabular format with context sequence and position of interest",
+        "--input_yaml",
+        dest="input_yaml",
+        help="YAML file containg paths to input files and working directory for annotation.",
         required=True,
     )
-    parser.add_argument("--output", dest="output", help="Output prefix for annotated sequences")
     parser.add_argument(
         "--ratio",
         dest="kmer_ratio",
@@ -223,7 +235,7 @@ def annotate():
         "--working-dir",
         dest="working_dir",
         help="Working directory of k4neo pipeline",
-        default="./k4neo_query",
+        default=None,
     )
     parser.add_argument(
         "--workflow",
@@ -283,8 +295,11 @@ def annotate():
     console.print(k4neo.logo, style="bold red")
 
     # Create pipeline workdir if not existent
-    working_dir = pathlib.Path(args.working_dir).resolve()
-    working_dir.mkdir(parents=True, exist_ok=True)
+    working_dir = None
+
+    if not args.working_dir is None:
+        working_dir = pathlib.Path(args.working_dir).resolve()
+        working_dir.mkdir(parents=True, exist_ok=True)
 
     # Setup logger
     output_directory = pathlib.Path(args.output).parent
@@ -296,8 +311,7 @@ def annotate():
     workflow_profile = pathlib.Path(args.workflow_profile).resolve()
     index_manifest = pathlib.Path(args.index_manifest).resolve()
 
-    annotator = Annotator(working_dir, args.queries)
-    annotator.prepare_cts()
+    annotator = Annotator(args.input_yaml, args.kmer_size, working_dir)
 
     result_dict = annotator.search_cts(
         pipeline=pipeline,
@@ -306,21 +320,6 @@ def annotate():
         kmer_ratio=args.kmer_ratio,
         cores=args.cpu,
         slurm=args.slurm,
-    )
-
-    # Write non-queryable sequences to disk
-    if len(annotator.non_queryable.index > 0):
-        logger.info("-> Writing non-queryable sequences to disk")
-        output_non_queryable = (
-            pathlib.Path(args.output + "_non_querable.tsv.gz")
-            if args.compression
-            else pathlib.Path(args.output + "_non_querable.tsv")
-        )
-        DiskIO.write_df(annotator.non_queryable, output_non_queryable, args.compression)
-
-    # Write a debug table that maps cts_ids to query_ids
-    annotator.sequence_table[["cts_id", "query_cts_id"]].to_csv(
-        pathlib.Path(args.output + "_cts_to_query_cts.tsv"), sep="\t", index=False
     )
 
     for method_name in result_dict:
