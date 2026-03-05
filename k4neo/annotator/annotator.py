@@ -297,8 +297,19 @@ class Annotator:
 
         if len(parsed_results.index) == 0:
             logger.warning("None of the queried sequences was found in index.")
-            return 
-        
+            return not_expressed[
+                [
+                    "cts_id",
+                    "count",
+                    "total",
+                    "disease",
+                    "developmental_stage",
+                    "tissue",
+                    "study_id",
+                ]
+            ]
+
+
         logger.debug("Annotating sample hits with sample level metadata.")
         parsed_results = parsed_results.groupby("study_id", dropna=False)[['cts_id', 'sample_name', 'study_id']].apply(
             lambda sub_df: queries.annotate_samples_of_project(sub_df)
