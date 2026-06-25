@@ -252,11 +252,11 @@ Please see our [CONTRIBUTING](./CONTRIBUTING.md) file.
 
 ## 📜 License
 
-k4neo is licensed under the [PolyForm Noncommercial License 1.0.0](./LICENSE). You are free to use, modify, and distribute this software for **non-commercial purposes**, including academic research, teaching, and educational use.
+k4neo is licensed under the [PolyForm Noncommercial License 1.0.0](./LICENSE.md). You are free to use, modify, and distribute this software for **non-commercial purposes**, including academic research, teaching, and educational use.
 
 ### Patent Notice
 
-This software implements methods covered by one or more patents owned by **TRON – Translational Oncology at the University Medical Center of the Johannes Gutenberg University Mainz gGmbH**. This License does **not** grant, and expressly excludes, any license under any such patent or patent application, whether expressly, by implication, estoppel, or otherwise.
+This software implements methods covered by one or more patents owned by **TRON – Translational Oncology at the University Medical Center of the Johannes Gutenberg University Mainz gGmbH**. This License grants rights to the Software under copyright only. No rights are granted under any patent or patent application owned or controlled by TRON gGmbH, regardless of whether such patent rights would otherwise arise explicitly from the terms of this License, by implication from the nature of the rights granted, or by legal doctrine (including but not limited to the doctrine of patent exhaustion or implied license)
 
 ### Non-Commercial Use & Patent Non-Assertion
 
