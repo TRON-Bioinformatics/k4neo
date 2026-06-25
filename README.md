@@ -4,7 +4,7 @@
 
 ![Python](https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54)
 ![Pandas](https://img.shields.io/badge/pandas-150458?style=flat-square&logo=pandas&logoColor=white)
-[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/license-PolyForm%20NC-blue?style=flat-square)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 [![Snakemake](https://img.shields.io/badge/snakemake-9.1.6-brightgreen.svg?style=flat-square)](https://snakemake.readthedocs.io)
 [![Release](https://img.shields.io/badge/release-v2.0.0-blue?style=flat)](https://github.com/TRON-Private/k4neo)
 
