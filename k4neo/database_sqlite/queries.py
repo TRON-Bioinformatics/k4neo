@@ -1,5 +1,4 @@
 import pandas as pd
-from tinydb import Query
 from k4neo.database_sqlite.database import DataBase
 import numpy as np
 

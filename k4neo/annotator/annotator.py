@@ -4,96 +4,16 @@ import pathlib
 import pandas as pd
 from k4neo.index.index_loader import load_metaindex_from_manifest
 from k4neo.index.index_processor import KmerIndexProcessor
-from k4neo.database.database import DataBase
-from k4neo.database.queries import Queries
+from k4neo.database_sqlite.queries import Queries
 from k4neo.annotator import (
     EXPECTED_CTS_COLUMNS,
     NON_TUMOR_TISSUE,
     TUMOR_TISSUE,
+    load_annotator_config,
 )
-from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation, DiskIO
+from k4neo.helper.helper import InputValidation
 import numpy as np
 from loguru import logger
-
-
-class Prepare:
-    def __init__(
-        self,
-        working_dir: str,
-        sequence_table: str,
-        index_kmer_size: int = 21,
-    ) -> None:
-        self.working_dir = pathlib.Path(working_dir)
-        self.sequence_table = DiskIO.read_context_seq(sequence_table)
-        self.non_queryable = pd.DataFrame(
-            columns=["cts_id", "cts_seq", "query_length", "pos", "query_sequence", "query_cts_id"]
-        )
-        self.index_kmer_size = index_kmer_size
-
-    def _generate_target_sequence(self) -> None:
-        """
-        Generate target sequence of interest by extracting
-        subsequence according to position and query_length column
-        """
-        self.sequence_table["query_sequence"] = self.sequence_table.apply(
-            lambda x: SequenceOperation.subset_cts(x.cts_seq, x.pos, x.query_length),
-            axis=1,
-        )
-
-        self.sequence_table["query_cts_id"] = self.sequence_table.apply(
-            lambda x: SequenceOperation.cts_id(x.query_sequence), axis=1
-        )
-
-    def _filter_seq_to_short(self) -> None:
-        """
-        Filter sequences that are shorter than minimiser_size are excluded from search
-        """
-        self.non_queryable = pd.concat(
-            [
-                self.non_queryable,
-                self.sequence_table[
-                    self.sequence_table["query_sequence"].str.len() < self.index_kmer_size + 4
-                ],
-            ]
-        )
-        self.sequence_table = self.sequence_table[
-            ~self.sequence_table["cts_id"].isin(self.non_queryable["cts_id"])
-        ]
-
-    def write_annotator_input(self) -> None:
-        """
-        Wrapper to call FastaHandler class
-        """
-        self._generate_target_sequence()
-        self._filter_seq_to_short()
-
-        fasta_output = self.working_dir / "query.fa"
-        seq_to_short_output = self.working_dir / "seq_to_short.tsv"
-        sequence_table = self.working_dir / "sequence_table.tsv"
-
-        if not fasta_output.exists():
-            logger.info(f"Writing context sequences to fasta file: {fasta_output}")
-            FastaHandler.write_fasta(self.sequence_table, fasta_output)
-        else:
-            logger.warning(
-                f"File: {self.query_fasta} already exists in working directory. Not overwriting"
-            )
-        if len(annotator.non_queryable.index > 0):
-            if not seq_to_short_output.exists():
-                logger.info(f"Writing non-queryable sequences to disk: {seq_to_short_output}")
-                DiskIO.write_df(self.non_queryable, seq_to_short_output, False)
-            else:
-                logger.warning(
-                    f"File: {seq_to_short_output} already exists in working directory. Not overwriting"
-                )
-
-        if not sequence_table.exists():
-            logger.info(f"Writing sequence table to disk: {sequence_table}")
-            DiskIO.write_df(annotator.sequence_table, sequence_table, False)
-        else:
-            logger.warning(
-                f"File: {sequence_table} already exists in working directory. Not overwriting"
-            )
 
 
 class Annotator:
@@ -103,17 +23,29 @@ class Annotator:
 
     def __init__(
         self,
-        working_dir: str,
-        sequence_table: str,
+        config_yaml: pathlib.Path,
         index_kmer_size: int = 21,
+        working_dir: pathlib.Path | None = None,
     ) -> None:
-        self.working_dir = pathlib.Path(working_dir)
-        self.sequence_table = self.read_context_seq(sequence_table)
+
+        self.config = load_annotator_config(config_yaml)
+        self.sequence_table = self.read_context_seq(self.config.sequence_table_output)
+
+        if working_dir is None:
+            self.working_dir = self.config.working_dir
+        else:
+            self.working_dir = working_dir
+        
+        if self.working_dir is None:
+            raise ValueError(
+                "Working directory is not set. Please provide it either via the CLI "
+                "or in the annotator configuration (working_dir)."
+            )
+
         self.non_queryable = pd.DataFrame(
             columns=["cts_id", "cts_seq", "query_length", "pos", "query_sequence", "query_cts_id"]
         )
         # , self.non_queryable, index_kmer_size
-        self.query_fasta = self.working_dir / "query.fa"
         self.index_kmer_size = index_kmer_size
 
     @staticmethod
@@ -136,62 +68,6 @@ class Annotator:
         assert not ret, f"-> Missing columns: {missing_cols} in input table"
 
         return seq
-
-    def _generate_target_sequence(self):
-        """
-        Generate target sequence of interest by extracting
-        subsequence according to position and query_length column
-        """
-        self.sequence_table["query_sequence"] = self.sequence_table.apply(
-            lambda x: SequenceOperation.subset_cts(x.cts_seq, x.pos, x.query_length),
-            axis=1,
-        )
-
-        self.sequence_table["query_cts_id"] = self.sequence_table.apply(
-            lambda x: SequenceOperation.cts_id(x.query_sequence), axis=1
-        )
-
-    def _filter_seq_to_short(self):
-        """
-        Filter sequences that are shorter than minimiser_size are excluded from search
-        """
-        self.non_queryable = pd.concat(
-            [
-                self.non_queryable,
-                self.sequence_table[
-                    self.sequence_table["query_sequence"].str.len() < self.index_kmer_size + 4
-                ],
-            ]
-        )
-        self.sequence_table = self.sequence_table[
-            ~self.sequence_table["cts_id"].isin(self.non_queryable["cts_id"])
-        ]
-
-    def _write_to_fasta(self):
-        """
-        Wrapper to call FastaHandler class
-        """
-        if not self.query_fasta.exists():
-            logger.info(f"Writing context sequences to fasta file: {self.query_fasta}")
-            FastaHandler.write_fasta(self.sequence_table, self.query_fasta)
-            return
-        logger.warning(
-            f"Fasta file: {self.query_fasta} already exists in working directory. Re-using for annotation"
-        )
-
-    def prepare_cts(self):
-        """
-        Prepare context sequences provided by user for targeted search and
-        dump into fasta format for query
-        """
-        logger.debug("Generating breakpoint sequences.")
-        self._generate_target_sequence()
-
-        logger.debug("Filtering sequences to short for query in k-mer index.")
-        self._filter_seq_to_short()
-
-        logger.debug("Writing query sequences to fasta file.")
-        self._write_to_fasta()
 
     def search_cts(
         self,
@@ -222,7 +98,11 @@ class Annotator:
             meta_index=meta_index, pipeline=pipeline, workflow_profile=workflow_profile
         )
         query_pipeline_results = index_processor.search_index(
-            self.query_fasta, self.working_dir, slurm=slurm, cores=cores, kmer_ratio=kmer_ratio
+            self.config.query_fasta,
+            self.working_dir,
+            slurm=slurm,
+            cores=cores,
+            kmer_ratio=kmer_ratio,
         )
         parsed_results = index_processor.result_parser2(
             query_pipeline_results=query_pipeline_results, cores=cores, kmer_ratio=kmer_ratio
@@ -321,6 +201,30 @@ class Annotator:
         df["sample_rate"] = df.apply(lambda row: round(row["count"] / row["total"], 2), axis=1)
 
         return df
+    
+    def _calculate_index_sample_rate(self, parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
+        """Calculate sample rate of sequence of interest in whole index
+
+        Args:
+            parsed_results (pd.DataFrame): Parsed results of k-mer pipeline.
+            tissue_counts (pd.DataFrame): DataFrame with tissue counts.
+
+        Returns:
+            pd.DataFrame: DataFrame with sample rates for each sequence in the index.
+        """
+        tissue_counts = (
+            tissue_counts.loc[tissue_counts["disease"].isin(NON_TUMOR_TISSUE)]["total"].sum()
+        )
+        parsed_results = parsed_results.loc[parsed_results["disease"].isin(NON_TUMOR_TISSUE)]
+        if tissue_counts == 0:
+            logger.warning("Denominator (total sample count) is zero. Cannot calculate index sample rate.")
+            return parsed_results.assign(index_sample_rate=np.nan)
+
+        index_sample_rate = parsed_results.groupby("cts_id")["count"].sum().reset_index()
+        index_sample_rate["index_sample_rate"] = index_sample_rate.apply(
+            lambda row: row["count"] / tissue_counts, axis=1
+        )
+        return index_sample_rate
 
     @staticmethod
     def _calculate_healthy_sample_rate(parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
@@ -417,16 +321,28 @@ class Annotator:
 
         if len(parsed_results.index) == 0:
             logger.warning("None of the queried sequences was found in index.")
-            return not_expressed
+            return not_expressed[
+                [
+                    "cts_id",
+                    "count",
+                    "total",
+                    "disease",
+                    "developmental_stage",
+                    "tissue",
+                    "study_id",
+                ]
+            ]
+
+
         logger.debug("Annotating sample hits with sample level metadata.")
-        parsed_results = parsed_results.groupby("study_id", dropna=False).apply(
+        parsed_results = parsed_results.groupby("study_id", dropna=False)[['cts_id', 'sample_name', 'study_id']].apply(
             lambda sub_df: queries.annotate_samples_of_project(sub_df)
         )
         parsed_results.reset_index(drop=True, inplace=True)
         parsed_results = self._count_aggregation(parsed_results)
 
         logger.debug("Annotating with pre-computed counts from database.")
-        parsed_results = parsed_results.groupby("study_id", group_keys=False).apply(
+        parsed_results = parsed_results.groupby("study_id", group_keys=False)[['cts_id', 'count', 'study_id', 'tissue', 'developmental_stage', 'disease']].apply(
             lambda sub_df: queries.annotate_tissue_counts(sub_df)
         )
         parsed_results.reset_index(drop=True, inplace=True)
@@ -502,4 +418,17 @@ class Annotator:
 
         tumor_sample_rate = tumor_sample_rate.loc[tumor_sample_rate["index_count"] >= min_total]
 
-        return healthy_sample_rate, tumor_sample_rate
+        index_sample_rate = self._calculate_index_sample_rate(annotated_cts, tissue_counts)
+        index_sample_rate = pd.merge(
+            self.sequence_table,
+            index_sample_rate,
+            left_on="query_cts_id",
+            right_on="cts_id",
+        )
+        index_sample_rate.drop("cts_id_y", inplace=True, axis=1)
+        index_sample_rate.rename(columns={"cts_id_x": "cts_id"}, inplace=True)
+        index_sample_rate["index_sample_rate"] = pd.to_numeric(index_sample_rate["index_sample_rate"])
+        index_sample_rate["count"] = index_sample_rate["count"].astype(int)
+        index_sample_rate["samples_per_index"] = tissue_counts.loc[tissue_counts["disease"].isin(NON_TUMOR_TISSUE)]["total"].sum()
+
+        return healthy_sample_rate, tumor_sample_rate, index_sample_rate
