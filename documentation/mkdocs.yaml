@@ -35,7 +35,7 @@ theme:
         icon: material/weather-night
         name: Switch to light mode
 
-copyright: © TRON gGmbH, 2026. This work is licensed under MIT.
+copyright: © TRON gGmbH, 2026. This work is licensed under PolyForm Noncommercial License.
 
 repo_url: https://github.com/TRON-Private/k4neo
 plugins:

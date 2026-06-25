@@ -1,7 +1,7 @@
 import pytest
-import pandas as pd
 from k4neo.database_sqlite.database import CreateDataBase
 from k4neo.database_sqlite.queries import Queries
+
 
 @pytest.fixture
 def test_queries_integration(tmp_path):
@@ -20,12 +20,14 @@ def test_queries_integration(tmp_path):
     )
 
     study_file.write_text(
-        "".join([
-            "STUDY1\t{}\t2\n".format(tmp_path / "samples.tsv"),
-            "STUDY2\t{}\t2\n".format(tmp_path / "samples2.tsv")
-        ])
+        "".join(
+            [
+                "STUDY1\t{}\t2\n".format(tmp_path / "samples.tsv"),
+                "STUDY2\t{}\t2\n".format(tmp_path / "samples2.tsv"),
+            ]
+        )
     )
-    
+
     samples_file = tmp_path / "samples.tsv"
     samples_file.write_text(
         "sample_name\truns\ttissue\tdevelopmental_stage\tdisease\tsex\n"
@@ -53,11 +55,12 @@ def test_queries_integration(tmp_path):
     yield db
     db.close()
 
+
 def test_queries_runtime_error(tmp_path):
-    
+
     tissue_map = tmp_path / "tissue.tsv"
     study_file = tmp_path / "study.txt"
-    
+
     db = CreateDataBase(
         db_file=None,
         data_set_file=study_file,
@@ -67,8 +70,9 @@ def test_queries_runtime_error(tmp_path):
     with pytest.raises(RuntimeError):
         Queries(db=db)
 
+
 def test_queries_functions(test_queries_integration):
-    
+
     queries = Queries(test_queries_integration)
 
     # Test get_sample_study
@@ -76,11 +80,15 @@ def test_queries_functions(test_queries_integration):
     assert sample_study.shape[0] == 4
 
     # Test annotate_samples_of_project
-    annotated = queries.annotate_samples_of_project(sample_study[sample_study["study_id"] == "STUDY1"])
+    annotated = queries.annotate_samples_of_project(
+        sample_study[sample_study["study_id"] == "STUDY1"]
+    )
     assert "tissue" in annotated.columns
     assert set(annotated["tissue"]) == {"B", "E"}
 
-    annotated = queries.annotate_samples_of_project(sample_study[sample_study["study_id"] == "STUDY2"])
+    annotated = queries.annotate_samples_of_project(
+        sample_study[sample_study["study_id"] == "STUDY2"]
+    )
     assert "tissue" in annotated.columns
     assert set(annotated["tissue"]) == {"E", "E"}
 
@@ -90,6 +98,6 @@ def test_queries_functions(test_queries_integration):
     assert tc["total"].sum() == 4
 
     # Test annotate_tissue_counts
-    #annotated_tc = queries.annotate_tissue_counts(annotated)
-    #assert "total" in annotated_tc.columns
-    #assert annotated_tc.shape[0] == 
+    # annotated_tc = queries.annotate_tissue_counts(annotated)
+    # assert "total" in annotated_tc.columns
+    # assert annotated_tc.shape[0] ==

@@ -1,0 +1,102 @@
+- name: test_k4neo_prepare
+  tags:
+    - integrationtest
+  command: >
+    poetry run k4neo-prepare
+      --queries tests/resources/queries/test_junction_k4neo_input.tsv
+      --working-dir .
+      --kmer 21
+  files:
+    - path: annotation_input.yaml
+    - path: cts_to_query_cts.tsv
+      contains:
+        - 'cts_id	query_cts_id'
+        - '07eb80a14ccf64e225d2db0a55ce9fe5	52dcb9d5e335e70d'
+        - 'a534b03cc1757cac71b2265687a2b019	dde52f9b214f3e15'
+        - 'a2e81236bd05f5b4eaefe0401215f9b2	533edcf076516d19'
+        - 'a2e81236bd05f5b4eaefe0401215f9b2	533edcf076516d19'
+        - '782c19c1fd5fc15a4497bcb63bfc015c	06ec3cff497888f2'
+        - 'f6fc40c0ecb6c89c6f25677601234995	c655f2dce34f5636'
+        - '919ded07622fb32611da50a73f1eac36	5f810a48cd3d8d32'
+        - '6c053adbd53741847485c0e388fc86e0	5e0adbb9fe1aee63'
+        - '8d4375756575ad24ae709a1f73880656	1c36ea07975e281a'
+        - '5b2af75c057382bdf69a0ea144e2116a	47db3e668dedba0a'
+        - 'a325437d845b36cf7e58d13be3f1ceb9	36a7233af1d21164'
+        - '299ad8f1bb1ed9b63c3facdb93c20df1	094b128e95c71b30'
+        - 'aebd8794320e2727cb448c41274ed239	20441523a1d74d65'
+        - '4fc8e89bc671d0934c8ee0b03e8e710d	8ac28324039643bb'
+        - 'a9e360f5e159155dd528cecd1ed363ea	3a1603799541d56c'
+    - path: seq_to_short.tsv
+      contains:
+        - 'cts_id	cts_seq	query_length	pos	query_sequence	query_cts_id	junc_id'
+    - path: query.fa
+      contains:
+        - '>52dcb9d5e335e70d'
+        - 'AAGCTAAGCTGGCAGCCCTGTCCCAGCAAGGGGGAGGTAC'
+        - '>dde52f9b214f3e15'
+        - 'CACCATCCTGGGACTTCCAGCCATGCTGCAGGCAGTGCGA'
+        - '>533edcf076516d19'
+        - 'GAGAGCCGCCTGCTTGAGTTCTACCTCGCCATGCCTTTCG'
+        - '>06ec3cff497888f2'
+        - 'CTCCCAGGTGCGGGAGAGAGGCCTGCTGAAAATGACTGAA'
+        - '>c655f2dce34f5636'
+        - 'AGGCTCTGTGAGGAGGCAAGGTTTTCAGGGGACAGGCCAA'
+        - '>5f810a48cd3d8d32'
+        - 'AGGCTCGGTGAGGAGGCAAGGTTCTGAGGGGACAGGCTGA'
+        - '>5e0adbb9fe1aee63'
+        - 'GGCCTGCACCCGGCATACAGGCCATGCCCAGGATGGCTCC'
+        - '>1c36ea07975e281a'
+        - 'ACACCTCTGCAGAGAGAATGGCCAGCAGGAAGGCGGGGAC'
+        - '>47db3e668dedba0a'
+        - 'TCCCTTTGGAAATTTGGCAGCTGCCTTCACCAGTGAGCAC'
+        - '>36a7233af1d21164'
+        - 'AGGAACGCGCGCTCCAGAGACAACTTCGCGGTGTGGTGAA'
+        - '>094b128e95c71b30'
+        - 'GCTGGAGGCTCTGTGTGTGGGTCGCTGATTTCTTGGAGCC'
+        - '>20441523a1d74d65'
+        - 'GCTTCCAAAGAGAGGATCAGAATGTCTCAGGATAATGACA'
+        - '>8ac28324039643bb'
+        - 'GCTGTCCCCAGGGGCTGCAGACTTCAACATCTCAAGCCTC'
+        - '>3a1603799541d56c'
+        - 'TGATGGTCCAGAATTAAGAGCTGTCACCTGTGTCATTCAC'
+    - path: sequence_table.tsv
+      contains:
+        - 'junc_id	cts_id	cts_seq	pos	query_length	query_sequence	query_cts_id'
+        - '12:4645192-4648745:-'
+        - '07eb80a14ccf64e225d2db0a55ce9fe5'
+        - 'GACTCTCAGTTTCCTGTTCCCTGAAAATGTAAGCTAAGCTGGCAGCCCTGTCCCAGCAAGGGGGAGGTACATGGAAGGCCACAGGAAGAAACAAGATCTT'
+        - 'AAGCTAAGCTGGCAGCCCTGTCCCAGCAAGGGGGAGGTAC'
+        - '52dcb9d5e335e70d'
+
+- name: test_k4neo_prepare_seq_to_short
+  tags:
+    - integrationtest
+  command: >
+    poetry run k4neo-prepare
+      --queries tests/resources/queries/test_seq_to_short.tsv
+      --working-dir .
+      --kmer 21
+  files:
+    - path: annotation_input.yaml
+    - path: cts_to_query_cts.tsv
+      contains:
+        - 'cts_id	query_cts_id'
+        - 'a534b03cc1757cac71b2265687a2b019	dde52f9b214f3e15'
+      must_not_contain:
+        - 'ff8170a617fb0988'
+    - path: seq_to_short.tsv
+      contains:
+        - 'cts_id	cts_seq	query_length	pos	query_sequence	query_cts_id	junc_id'
+        - '07eb80a14ccf64e225d2db0a55ce9fe5	GACTCTCAGTTTCCTGTTCCCTGA	40	6	GACTCTCAGTTTCCTGTTCCCTGA	ff8170a617fb0988	12:4645192-4648745:-'
+    - path: sequence_table.tsv
+      contains:
+        - '3:138010445-138023658:+'
+        - 'a534b03cc1757cac71b2265687a2b019'
+        - 'TTCAGGCTTCACCGAATGCAGGCCCTATTTCACCATCCTGGGACTTCCAGCCATGCTGCAGGCAGTGCGAGCCCTGATGATCGTAGGCATCGTCCTGGGT'
+        - '50'
+        - '40'
+        - 'CACCATCCTGGGACTTCCAGCCATGCTGCAGGCAGTGCGA'
+        - 'dde52f9b214f3e15'
+      
+      
+

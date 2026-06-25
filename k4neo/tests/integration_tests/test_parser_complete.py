@@ -1,5 +1,5 @@
 import pathlib
-from k4neo.parser.index_parser import IndexResultParser2, BinaryKmerIndexResultParser
+from k4neo.parser.index_parser import BinaryKmerIndexResultParser
 
 
 class TestBinaryKmerIndexResultPaser:

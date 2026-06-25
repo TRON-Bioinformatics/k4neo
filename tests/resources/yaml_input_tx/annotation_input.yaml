@@ -1,0 +1,3 @@
+query_fasta: tests/resources/yaml_input_tx/query.fa
+seq_to_short_output: tests/resources/yaml_input_tx/seq_to_short.tsv
+sequence_table_output: tests/resources/yaml_input_tx/sequence_table.tsv

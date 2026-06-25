@@ -1,9 +1,7 @@
 from k4neo.pipeline.query_pipeline import QueryPipelineResult
-from k4neo.index.kmer_index import KmerMetaIndex
 from k4neo.index.index_loader import load_metaindex_from_manifest
 from k4neo.index.index_processor import KmerIndexProcessor
 import pathlib
-import yaml
 
 
 class TestKmerIndexProcessor:

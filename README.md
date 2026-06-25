@@ -4,9 +4,9 @@
 
 ![Python](https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54)
 ![Pandas](https://img.shields.io/badge/pandas-150458?style=flat-square&logo=pandas&logoColor=white)
-[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/license-PolyForm%20NC-blue?style=flat-square)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 [![Snakemake](https://img.shields.io/badge/snakemake-9.1.6-brightgreen.svg?style=flat-square)](https://snakemake.readthedocs.io)
-[![Release](https://img.shields.io/badge/release-v1.0.1-blue?style=flat)](https://github.com/TRON-Private/k4neo)
+[![Release](https://img.shields.io/badge/release-v2.0.0-blue?style=flat)](https://github.com/TRON-Private/k4neo)
 
 <!-- badges: end -->
 
@@ -248,3 +248,23 @@ The k4neo package was originally developed in the Computational Genomics group a
 ## Contributing
 
 Please see our [CONTRIBUTING](./CONTRIBUTING.md) file.
+
+
+## 📜 License
+
+k4neo is licensed under the [PolyForm Noncommercial License 1.0.0](./LICENSE.md). You are free to use, modify, and distribute this software for **non-commercial purposes**, including academic research, teaching, and educational use.
+
+### Patent Notice
+
+This software implements methods covered by one or more patents owned by **TRON – Translational Oncology at the University Medical Center of the Johannes Gutenberg University Mainz gGmbH**. This License grants rights to the Software under copyright only. No rights are granted under any patent or patent application owned or controlled by TRON gGmbH, regardless of whether such patent rights would otherwise arise explicitly from the terms of this License, by implication from the nature of the rights granted, or by legal doctrine (including but not limited to the doctrine of patent exhaustion or implied license)
+
+### Non-Commercial Use & Patent Non-Assertion
+
+TRON gGmbH agrees not to assert any patent claims against individuals or institutions using this software solely for **non-commercial academic or research purposes**, consistent with the terms of the PolyForm Noncommercial License 1.0.0.
+
+### Commercial Use
+
+Any use of this software for **commercial purposes** — including but not limited to use within a for-profit organization, integration into a commercial product or service, or any use intended to directly or indirectly generate revenue — requires a **separate written commercial license agreement** with TRON gGmbH. Such use without a license may constitute infringement of patents owned by TRON gGmbH.
+
+To inquire about a commercial license, please contact:
+📧 [patents@tron-mainz.de](mailto:patents@tron-mainz.de)
