@@ -19,7 +19,7 @@
 
 # Module `database`
 
-# ::: k4neo.database.database
+# ::: k4neo.database_sqlite.database
     options:
         show_submodules: true
         parameter_headings: true
