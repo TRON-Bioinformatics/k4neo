@@ -222,6 +222,10 @@ This will generate a file called `quant_annotation.tsv` with the following annot
 * `cv`: Coefficient of variation.
 
 
+## Pre-built k-mer indices
+
+Pre-built Raptor k-mer indices of human RNA-seq samples are soon available for download via ftp://easyfuse.tron-mainz.de/k4neo.
+
 
 ## Authors & Acknowledgements 
 
@@ -229,21 +233,21 @@ The k4neo package was originally developed in the Computational Genomics group a
 
 💡 Idea and conceptualisation:
 
-- [Jonas Ibn-Salem, TRON gGmbH](mailto:jonas.ibn-salem@tron-mainz.de)
-- [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)  
+- [Jonas Ibn-Salem, TRON gGmbH](https://github.com/ibn-salem)
+- [Johannes Hausmann, TRON gGmbH](https://github.com/johausmann)  
 
 🛠️ Main developer: 
 
-- [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)   
+- [Johannes Hausmann, TRON gGmbH](https://github.com/johausmann)   
 
 ✨ Contributors and code reviewers:
 
-- [Özlem Muslu, TRON gGmbH](mailto:Oezlem.Muslu@TrOn-Mainz.DE)
-- [Luis Kress, TRON gGmbH](mailto:luis.kress@tron-mainz.de)
+- [Özlem Muslu, TRON gGmbH](https://github.com/ozlemmuslu)
+- [Luis Kress, TRON gGmbH](https://github.com/LKress)
 
 🐞 Bug hunter:
 
-- [Franziska Lang, TRON gGmbH](mailto:franziska.lang@tron-mainz.de)
+- [Franziska Lang, TRON gGmbH](https://github.com/franla23)
 
 ## Contributing
 
@@ -256,7 +260,7 @@ k4neo is licensed under the [PolyForm Noncommercial License 1.0.0](./LICENSE.md)
 
 ### Patent Notice
 
-This software implements methods covered by one or more patents owned by **TRON – Translational Oncology at the University Medical Center of the Johannes Gutenberg University Mainz gGmbH**. This License grants rights to the Software under copyright only. No rights are granted under any patent or patent application owned or controlled by TRON gGmbH, regardless of whether such patent rights would otherwise arise explicitly from the terms of this License, by implication from the nature of the rights granted, or by legal doctrine (including but not limited to the doctrine of patent exhaustion or implied license)
+This software implements methods covered by one or more patents filed by **TRON – Translational Oncology at the University Medical Center of the Johannes Gutenberg University Mainz gGmbH**. This License grants rights to the Software under copyright only. No rights are granted under any patent or patent application owned or controlled by TRON gGmbH, regardless of whether such patent rights would otherwise arise explicitly from the terms of this License, by implication from the nature of the rights granted, or by legal doctrine (including but not limited to the doctrine of patent exhaustion or implied license)
 
 ### Non-Commercial Use & Patent Non-Assertion
 
@@ -264,7 +268,7 @@ TRON gGmbH agrees not to assert any patent claims against individuals or institu
 
 ### Commercial Use
 
-Any use of this software for **commercial purposes** — including but not limited to use within a for-profit organization, integration into a commercial product or service, or any use intended to directly or indirectly generate revenue — requires a **separate written commercial license agreement** with TRON gGmbH. Such use without a license may constitute infringement of patents owned by TRON gGmbH.
+Any use of this software for **commercial purposes** — including but not limited to use within a for-profit organization, integration into a commercial product or service, or any use intended to directly or indirectly generate revenue — requires a **separate written commercial license agreement** with TRON gGmbH. Such use without a license may constitute infringement of patents filed by TRON gGmbH.
 
 To inquire about a commercial license, please contact:
 📧 [patents@tron-mainz.de](mailto:patents@tron-mainz.de)
