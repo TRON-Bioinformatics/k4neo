@@ -2,23 +2,25 @@
 
 The k4neo package was originally developed in the Computational Genomics group at [TRON - Translational Oncology at the Medical Center of the Johannes Gutenberg University Mainz gGmbH (non-profit)](https://tron-mainz.de/).
 
+
 💡 Idea and conceptualisation:
 
-- [Jonas Ibn-Salem, TRON gGmbH](mailto:jonas.ibn-salem@tron-mainz.de)
-- [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)  
+- [Jonas Ibn-Salem, TRON gGmbH](https://github.com/ibn-salem)
+- [Johannes Hausmann, TRON gGmbH](https://github.com/johausmann)  
 
 🛠️ Main developer: 
 
-- [Johannes Hausmann, TRON gGmbH](mailto:johannes.hausmann@tron-mainz.de)   
+- [Johannes Hausmann, TRON gGmbH](https://github.com/johausmann)   
 
 ✨ Contributors and code reviewers:
 
-- [Özlem Muslu, TRON gGmbH](mailto:Oezlem.Muslu@TrOn-Mainz.DE)
-- [Luis Kress, TRON gGmbH](mailto:luis.kress@tron-mainz.de)
+- [Özlem Muslu, TRON gGmbH](https://github.com/ozlemmuslu)
+- [Luis Kress, TRON gGmbH](https://github.com/LKress)
 
 🐞 Bug hunter:
 
-- [Franziska Lang, TRON gGmbH](mailto:franziska.lang@tron-mainz.de)
+- [Franziska Lang, TRON gGmbH](https://github.com/franla23)
+
 
 ## Contributing to k4neo
 
