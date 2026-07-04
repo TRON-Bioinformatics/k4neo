@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="documentation/docs/assets/k4neo.png" alt="logo" width="20%">
+    <img src="documentation/docs/assets/k4neo.png" alt="logo" width="25%">
 </p>
 
 ## k4neo: k-mer indexing for neoantigen annotation
@@ -108,7 +108,7 @@ k4neo supports querying multiple index types via a YAML manifest file that descr
 
 We provide a small k-mer index consisting of 20 TNBC and 27 normal RNA-seq samples (covering 17 genes). This [list](tests/resources/queries/test_genes.tsv) includes clinical antigen candidates as well as broadly expressed and tissue-specific genes (e.g., MAGEA3, PRAME, CLDN18).
 
-Below are demo queries to test k4neo's functionality.
+Below are demo queries to test k4neo's functionality. For detailed information on the content of output files, please refer to the [online documentation](https://tron-bioinformatics.github.io/k4neo/output/).
 
 #### (1) Splice Junction Analysis
 
@@ -123,10 +123,7 @@ k4neo-annotator \
   --output test_jx
 ```
 
-**Outputs:**
-- `test_jx_annotated_raptor.tsv.gz`: Hits per tissue and developmental state per indexed study.
-- `test_jx_healthy_sample_rate_raptor.tsv.gz`: Healthy tissue sample rate per sequence.
-- `test_jx_tumor_sample_rate_raptor.tsv.gz`: Tumor entity sample rate per sequence.
+**Outputs:** `test_jx_annotated_raptor.tsv.gz`, `test_jx_healthy_sample_rate_raptor.tsv.gz`, `test_jx_tumor_sample_rate_raptor.tsv.gz`.
 
 #### (2) Full-Length Transcript Analysis
 
@@ -141,11 +138,7 @@ k4neo-annotator \
   --output test_tx
 ```
 
-**Outputs:**
-- `test_tx_annotated_raptor.tsv.gz`: Hits per tissue and developmental state per indexed study.
-- `test_tx_healthy_sample_rate_raptor.tsv.gz`: Healthy tissue sample rate per isoform.
-- `test_tx_tumor_sample_rate_raptor.tsv.gz`: Tumor entity sample rate per isoform.
-
+**Outputs:** `test_tx_annotated_raptor.tsv.gz`, `test_tx_healthy_sample_rate_raptor.tsv.gz`, `test_tx_tumor_sample_rate_raptor.tsv.gz`.
 
 #### (3) Uniqueness Annotation and False-Positive Estimation
 
@@ -160,16 +153,7 @@ k4neo-uniq \
   --output uniq_annot.tsv
 ```
 
-**Outputs (`uniq_annot.tsv`):**
-- `cts_id`: Query identifier.
-- `cts_unique_rate`: Rate of k-mers unique to the query sequence (should be higher than the search fraction for novel variants).
-- `cts_ref_rate`: Rate of k-mers occurring at least once in the reference genome or transcriptome.
-- `cts_ref_single_gene_locus_rate`: Rate of k-mers occurring only once in a genic region.
-- `cts_ref_multi_gene_locus_rate`: Rate of k-mers occurring at multiple genic regions (e.g., repeats or paralogs).
-- `cts_ref_single_transcript_rate`: Rate of k-mers specific to a single isoform at one genic region.
-- `cts_ref_multi_transcript_rate`: Rate of k-mers occurring in multiple isoforms at one genic region.
-
-These metrics are estimated using reference sequences and CountingBloomFilters without reference annotation, helping determine if hits in healthy tissues are real expression or false positives due to non-unique k-mer origins. This feature was inspired by KmeratorSuite, but does not include reference annotation or sequence assembly.
+**Output:** `uniq_annot.tsv`.
 
 #### (4) Quantitative Annotation
 
@@ -190,14 +174,7 @@ k4neo-quant \
   --normalize
 ```
 
-**Outputs (`quant_annotation.tsv`):**
-- `cts_id`: Query identifier.
-- `sample`: Indexed sample identifier.
-- `median_kmer_count`, `mean_kmer_count`, `max_kmer_count`, `min_kmer_count`: K-mer count statistics.
-- `rate_non_zero_kmers`: Rate of k-mers with counts in the index.
-- `rate_zero_kmers`: Rate of k-mers with zero counts.
-- `variance`: Variance of k-mer counts (coverage uniformity).
-- `cv`: Coefficient of variation.
+**Output:** `quant_annotation.tsv`.
 
 
 
