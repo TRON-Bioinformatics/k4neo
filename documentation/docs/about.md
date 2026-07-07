@@ -11,21 +11,17 @@ The k4neo package was originally developed in the Computational Genomics group a
 🛠️ Main developer: 
 
 - [Johannes Hausmann, TRON gGmbH](https://github.com/johausmann)   
+- [Özlem Muslu](https://github.com/ozlemmuslu)  
 
-✨ Contributors and code reviewers:
+✨ **Contributors, Reviewers and Bug Hunter:**
 
-- [Özlem Muslu, TRON gGmbH](https://github.com/ozlemmuslu)
 - [Luis Kress, TRON gGmbH](https://github.com/LKress)
-
-🐞 Bug hunter:
-
 - [Franziska Lang, TRON gGmbH](https://github.com/franla23)
 
 
 ## Contributing to k4neo
 
-We welcome any contibutions of interested individuals to the k4neo project. Feel free to report issues or 
-submit patches to the repository.
+We welcome any contributions from interested individuals to the k4neo project. Feel free to report issues or submit patches to the repository.
 
 If you wish to make an addition or change to the package, please follow these
 steps:
