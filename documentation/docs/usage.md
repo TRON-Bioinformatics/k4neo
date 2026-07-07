@@ -5,7 +5,7 @@ k4neo provides six subcommands with different functionalities:
 * `k4neo-annotator`: Annotation of sequences with **expression breadth** across healthy and tumor tissues. This step requires the sequences as [TSV](input.md#k4neo-input) and a k4neo metaindex in [yaml format](input.md#k4neo-metaindex).
 
 
-* `k4neo-database`: Preparation of the **k4neo metadata database**. See [kmer-index-data](https://github.com/TRON-Private/kmer_index_data) repository for structured metadata and instructions to build the database.
+* `k4neo-database`: Preparation of the **k4neo metadata database**. See [k4neo-index-data](https://github.com/TRON-Bioinformatics/k4neo-index-data) repository for structured metadata and instructions to build the database.
 
 
 * `k4neo-ref-index`: Generation of reference based CountingBloomFilters to annotate sequences in the context of the reference genome and transcriptome.
