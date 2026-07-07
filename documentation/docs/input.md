@@ -55,7 +55,7 @@ test_index3:
 
 ## sample_mapping 
 
-This file is required because Raptor currently uses the file path of the minimiser file as the bin identifier in the final k-mer index. When using [tronmake-kmer-pipeline](https://github.com/TRON-Private/tronmake-kmer-pipeline) for indexing, a TSV file is created that maps file paths to custom sample identifiers. This is particularly useful when combining multiple FASTQ files (e.g., technical replicates), as Raptor will use the path of the first FASTQ file as the bin identifier, allowing mapping to a custom sample identifier.
+This file is required because Raptor currently uses the file path of the minimiser file as the bin identifier in the final k-mer index. When using [tronmake-kmer-pipeline](https://github.com/TRON-Bioinformatics/tronmake-kmer-pipeline) for indexing, a TSV file is created that maps file paths to custom sample identifiers. This is particularly useful when combining multiple FASTQ files (e.g., technical replicates), as Raptor will use the path of the first FASTQ file as the bin identifier, allowing mapping to a custom sample identifier.
 
 
 |minimiser_id|sample_name|
