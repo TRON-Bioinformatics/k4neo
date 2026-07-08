@@ -167,7 +167,7 @@ def test_insert_and_query_samples(in_memory_db, tissue_records, sample_record_si
     df = pd.read_sql("SELECT * FROM samples", in_memory_db.connection)
     assert df.shape[0] == 1
     assert df.iloc[0]["sample_name"] == "S1"
-    assert len(df.columns) == 7
+    assert len(df.columns) == 8
 
 
 def test_insert_and_query_valid_samples(in_memory_db, tissue_records, sample_records):
@@ -176,7 +176,7 @@ def test_insert_and_query_valid_samples(in_memory_db, tissue_records, sample_rec
     in_memory_db.insert_sample_table(sample_records)
     df = pd.read_sql("SELECT * FROM samples", in_memory_db.connection)
     assert df.shape[0] == 3
-    assert len(df.columns) == 7
+    assert len(df.columns) == 8
 
     assert df.iloc[0]["sample_name"] == "S1"
     assert df.iloc[0]["sex"] == "M"

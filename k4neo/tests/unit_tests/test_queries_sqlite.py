@@ -61,13 +61,13 @@ def test_get_project_id(setup_db):
 def test_get_sample_study(setup_db):
     queries = Queries(setup_db)
     df = queries.get_sample_study()
-    assert set(df.columns) == {"sample_name", "study_id"}
+    assert set(df.columns) == {"sample_id", "study_id"}
     assert df.shape[0] == 2
 
 
 def test_annotate_samples_of_project(setup_db):
     queries = Queries(setup_db)
-    df = pd.DataFrame([{"sample_name": "S1", "study_id": "STUDY1"}])
+    df = pd.DataFrame([{"sample_id": 1, "study_id": "STUDY1"}])
     annotated = queries.annotate_samples_of_project(df)
 
     assert "tissue" in annotated.columns
@@ -79,7 +79,7 @@ def test_annotate_samples_of_project(setup_db):
     assert annotated.loc[0, "disease"] == "healthy"
 
     # Check for a sample not in the database returns NaN annotations
-    df = pd.DataFrame([{"sample_name": "S3", "study_id": "STUDY3"}])
+    df = pd.DataFrame([{"sample_id": 999, "study_id": "STUDY3"}])
     annotated = queries.annotate_samples_of_project(df)
 
     assert "tissue" in annotated.columns
