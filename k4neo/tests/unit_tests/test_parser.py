@@ -2,7 +2,7 @@ import pytest
 from six import PY2
 from k4neo.parser.parser import Parser
 from k4neo.parser.index_parser import (
-    IndexResultParser2,
+    IndexResultParser,
     BinaryKmerIndexResultParser,
     QuantitativeKmerIndexParser,
 )
@@ -117,10 +117,17 @@ def test_parse_kmindex(mocker, kmer_ratio, expected):
     mocker.patch("builtins.open", mocker.mock_open(read_data="ignored"))
 
     parser = BinaryKmerIndexResultParser("dummy.tsv", method="kmindex", kmer_ratio=kmer_ratio)
-
     results = parser._parse_kmindex()
-
     assert results == expected
+
+    # Test with integer encoding
+    encoding = {"MCF7": 1, "SKBR3": 2, None: None}
+    parser_enc = BinaryKmerIndexResultParser("dummy.tsv", method="kmindex", kmer_ratio=kmer_ratio, sample_integer_encoding=encoding)
+    results_enc = parser_enc._parse_kmindex()
+    
+    # Map expected strings to integers for verification
+    expected_enc = {k: {encoding[s] for s in v if s in encoding} for k, v in expected.items()}
+    assert results_enc == expected_enc
 
 
 @pytest.fixture
@@ -174,6 +181,23 @@ def test_parse_raptor(mocker, example_raptor_output):
 
     assert results == example_raptor_output[2]
 
+def test_parse_raptor_with_integer_encoding(mocker, example_raptor_output):
+    from io import StringIO
+    
+    # Mock minimiser file
+    mock_mapping_file = StringIO(example_raptor_output[0])
+    # Mock open for raptor resultsw
+    mock_search_file = StringIO(example_raptor_output[1])
+    mocker.patch("builtins.open", side_effect=[mock_mapping_file, mock_search_file])
+    
+    # Test with integer encoding
+    encoding = {"MCF7": 1, "SKBR3": 2, None: None}
+    parser_enc = BinaryKmerIndexResultParser("dummy.tsv", "raptor", "dummy2.txt", kmer_ratio=0.7, sample_integer_encoding=encoding)
+    results_enc = parser_enc._parse_raptor()
+
+    expected_enc = {k: {encoding[s] for s in v if s in encoding} for k, v in example_raptor_output[2].items()}
+    assert results_enc == expected_enc
+
 
 # Parsing of subindex results is happening in parallel.
 # Here we test that method results are correctly put together for further processing.
@@ -185,7 +209,7 @@ def test_add_real_sample_to_placeholder_set():
     """
     target = {None}
     new = {"sample1", "sample2"}
-    IndexResultParser2.update_sample_set(target, new)
+    IndexResultParser.update_sample_set(target, new)
     assert target == {"sample1", "sample2"}
 
 
@@ -195,7 +219,7 @@ def test_add_placeholder_to_placeholder_set():
     """
     target = {None}
     new = {None}
-    IndexResultParser2.update_sample_set(target, new)
+    IndexResultParser.update_sample_set(target, new)
     assert target == {None}
 
 
@@ -205,7 +229,7 @@ def test_add_placeholder_to_real_sample():
     """
     target = {"sample1"}
     new = {None}
-    IndexResultParser2.update_sample_set(target, new)
+    IndexResultParser.update_sample_set(target, new)
     assert target == {"sample1"}
 
 
@@ -215,7 +239,7 @@ def test_add_mix_of_placeholder_and_real_sample_to_real_sample():
     """
     target = {"sample1"}
     new = {"sample2", None}
-    IndexResultParser2.update_sample_set(target, new)
+    IndexResultParser.update_sample_set(target, new)
     assert target == {"sample1", "sample2"}
 
 
@@ -225,6 +249,7 @@ def test_parse_jellyfish_basic(mocker):
         "cts1\tAAA\t5\n" "cts1\tAAC\t7\n" "cts2\tAAG\t2\n" "cts2\tAAT\t3\n" "cts2\tACC\t4\n"
     )
     mock_open = mocker.patch("builtins.open", mocker.mock_open(read_data=file_content))
+    from k4neo.parser.index_parser import QuantitativeKmerIndexParser
     parser = QuantitativeKmerIndexParser("dummy.txt", "jellyfish")
     result = parser.parse_jellyfish()
     assert result == {
@@ -237,6 +262,7 @@ def test_parse_jellyfish_basic(mocker):
 def test_parse_jellyfish_empty_file(mocker):
     # Simulate an empty jellyfish output file
     mock_open = mocker.patch("builtins.open", mocker.mock_open(read_data=""))
+    from k4neo.parser.index_parser import QuantitativeKmerIndexParser
     parser = QuantitativeKmerIndexParser("dummy.txt", "jellyfish")
     result = parser.parse_jellyfish()
     assert result == {}
@@ -247,6 +273,7 @@ def test_parse_jellyfish_single_entry(mocker):
     # Simulate a file with a single entry
     file_content = "ctsX\tAAA\t42\n"
     mock_open = mocker.patch("builtins.open", mocker.mock_open(read_data=file_content))
+    from k4neo.parser.index_parser import QuantitativeKmerIndexParser
     parser = QuantitativeKmerIndexParser("dummy.txt", "jellyfish")
     result = parser.parse_jellyfish()
     assert result == {"ctsX": [42]}

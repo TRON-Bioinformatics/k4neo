@@ -43,7 +43,7 @@ class TestKmerIndexProcessor:
         assert isinstance(result, QueryPipelineResult)
         assert isinstance(result.query_path, list)
 
-        parsed_results = processor.result_parser2(result, cores=1, kmer_ratio=self.kmer_ratio)
+        parsed_results = processor.result_parser(result, cores=1, kmer_ratio=self.kmer_ratio)
 
         assert isinstance(parsed_results, dict)
         assert "raptor" in parsed_results

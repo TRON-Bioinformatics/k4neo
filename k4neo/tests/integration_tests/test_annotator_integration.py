@@ -122,7 +122,7 @@ def test_annotator_count_aggregation(setup_test_environment):
     parsed_results = pd.DataFrame({
         "cts_id": ["seq1", "seq1", "seq1", "seq2", "seq2"],
         "study_id": ["STUDY1", "STUDY1", "STUDY2", "STUDY1", "STUDY2"],
-        "sample_name": ["S1", "S2", "S3", "S1", "S4"],
+        "sample_id": [1, 2, 3, 1, 4],
         "tissue": ["brain", "liver", "lung", "brain", "lung"],
         "developmental_stage": ["adult", "adult", "adult", "adult", "fetal"],
         "disease": ["healthy", "healthy", "healthy", "healthy", "healthy"],
@@ -154,7 +154,7 @@ def test_annotator_split_found(setup_test_environment):
     # Create mock parsed results with some sequences not found
     parsed_results = pd.DataFrame({
         "cts_id": ["seq1", "seq2", "seq3"],
-        "sample_name": ["S1", None, "S3"],
+        "sample_id": [1, None, 3],
     })
 
     not_expressed = Annotator._split_found(parsed_results)
@@ -270,8 +270,8 @@ def test_annotator_annotate_cts(setup_test_environment):
 
     # Create mock parsed results
     parsed_results = pd.DataFrame({
-        "cts_id": ["seq1", "seq1", "seq2", "seq3"],
-        "sample_name": ["S1", "S2", None, "S3"],
+        "cts_id": ["seq1", "seq2", "seq3", "seq4"],
+        "sample_id": [1, None, 3, 4]
     })
 
     result = annotator.annotate_cts(parsed_results, queries)
@@ -291,6 +291,7 @@ def test_annotator_annotate_cts(setup_test_environment):
     assert "seq1" in unique_seqs
     assert "seq2" in unique_seqs
     assert "seq3" in unique_seqs
+    assert "seq4" in unique_seqs
 
     env["db"].close()
 
