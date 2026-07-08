@@ -112,7 +112,9 @@ class IndexResultParser2:
                 # Generate cts/sample generators for dataframe creation
                 rows = ((cts, sample) for cts, samples in batch for sample in samples)
                 df = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
-                yield method_name, len(batch), df
+                batch_len = len(batch)
+                del batch, rows
+                yield method_name, batch_len, df
 
     @staticmethod
     def update_sample_set(target_set: set, new_set: set):
