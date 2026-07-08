@@ -5,7 +5,7 @@ from k4neo.database_sqlite.database import CreateDataBase
 from k4neo.annotator.annotator import Annotator
 from k4neo.annotator.reference_annotation import ReferenceIndexer, KmerUniquenessAnnotator
 from k4neo.prepare.prepare import Prepare
-from k4neo.parser.index_parser import IndexResultParser2
+from k4neo.annotator.sample_tracking import get_sample_integer_mapping
 from k4neo.plotter.plotter import Plotter
 from k4neo.setup_logging import setup_logging
 from k4neo.helper.helper import DiskIO, QuantIndexHelper
@@ -301,13 +301,16 @@ def annotate():
     output_directory = pathlib.Path(args.output).parent
     log_file_name = pathlib.Path(output_directory) / "k4neo.log"
 
-    logger = setup_logging(log_file_name, args.verbose)
+    setup_logging(log_file_name, args.verbose)
 
     pipeline = pathlib.Path(args.workflow).resolve()
     workflow_profile = pathlib.Path(args.workflow_profile).resolve()
     index_manifest = pathlib.Path(args.index_manifest).resolve()
 
     annotator = Annotator(args.input_yaml, args.kmer_size, working_dir)
+
+    # Initialize sample integer mapping for memory optimization during annotation
+    sample_mapping = get_sample_integer_mapping(args.database)
 
     result_dict = annotator.search_cts(
         pipeline=pipeline,
@@ -316,6 +319,7 @@ def annotate():
         kmer_ratio=args.kmer_ratio,
         cores=args.cpu,
         slurm=args.slurm,
+        sample_integer_encoding=sample_mapping,
     )
 
     # Write non-queryable sequences to disk
