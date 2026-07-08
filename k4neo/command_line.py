@@ -1,6 +1,5 @@
 import pathlib
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from itertools import batched
 import k4neo
 from k4neo.database_sqlite.database import CreateDataBase
 from k4neo.annotator.annotator import Annotator
@@ -9,12 +8,9 @@ from k4neo.prepare.prepare import Prepare
 from k4neo.parser.index_parser import IndexResultParser2
 from k4neo.plotter.plotter import Plotter
 from k4neo.setup_logging import setup_logging
-from k4neo.helper.helper import DiskIO, Worker, QuantIndexHelper
-from k4neo.helper.async_writer import AsyncDFWriter
+from k4neo.helper.helper import DiskIO, QuantIndexHelper
 from rich.console import Console
-from tqdm import tqdm
 import pandas as pd
-from joblib import Parallel, delayed
 
 console = Console()
 
@@ -275,7 +271,7 @@ def annotate():
         dest="chunk_size",
         help="Chunk size for processing input sequences",
         type=int,
-        default=10000,
+        default=5000,
     )
     parser.add_argument(
         "-v",
@@ -322,117 +318,23 @@ def annotate():
         slurm=args.slurm,
     )
 
-    for method_name in result_dict:
-        total_cts = len(result_dict[method_name])
-        logger.info(f"-> Annotating query results of method: {method_name}")
-        pbar = tqdm(total=total_cts, desc=f"Processing {method_name}")
+    # Write non-queryable sequences to disk
+    annotator.write_non_queryable(args.output, args.compression)
 
-        if args.compression:
-            output_annotated = pathlib.Path(args.output + f"_annotated_{method_name}.tsv.gz")
-            output_healthy_rate = pathlib.Path(
-                args.output + f"_healthy_sample_rate_{method_name}.tsv.gz"
-            )
-            output_tumor_rate = pathlib.Path(
-                args.output + f"_tumor_sample_rate_{method_name}.tsv.gz"
-            )
-            output_index_rate = pathlib.Path(
-                args.output + f"_index_sample_rate_{method_name}.tsv.gz"
-            )
-        else:
-            output_annotated = pathlib.Path(args.output + f"_annotated_{method_name}.tsv")
-            output_healthy_rate = pathlib.Path(
-                args.output + f"_healthy_sample_rate_{method_name}.tsv"
-            )
-            output_tumor_rate = pathlib.Path(args.output + f"_tumor_sample_rate_{method_name}.tsv")
-            output_index_rate = pathlib.Path(
-                args.output + f"_index_sample_rate_{method_name}.tsv"
-            )
+    # Write a debug table that maps cts_ids to query_ids
+    annotator.sequence_table[["cts_id", "query_cts_id"]].to_csv(
+        pathlib.Path(args.output + "_cts_to_query_cts.tsv"), sep="\t", index=False
+    )
 
-        first_chunk = True
+    annotator.annotate_result_dict(
+        result_dict=result_dict,
+        database=args.database,
+        output_prefix=args.output,
+        cpu=args.cpu,
+        chunk_size=args.chunk_size,
+        compression=args.compression,
+    )
 
-        # Start writer threads
-        healthy_writer = AsyncDFWriter(output_healthy_rate, compression=args.compression)
-        healthy_writer.start()
-
-        tumor_writer = AsyncDFWriter(output_tumor_rate, compression=args.compression)
-        tumor_writer.start()
-
-        annot_writer = AsyncDFWriter(output_annotated, compression=args.compression)
-        annot_writer.start()
-
-        index_writer = AsyncDFWriter(output_index_rate, compression=args.compression)
-        index_writer.start()
-
-        # Batch dataframe chunks for parallel processing
-        for this_batch in batched(
-            IndexResultParser2.generate_dataframe_in_batches(
-                {method_name: result_dict[method_name]}, batch_size=args.chunk_size
-            ),
-            args.cpu,
-        ):
-            # Extract only dfs to pass to worker
-            chunks_lst = [chunk for _, _, chunk in this_batch]
-            # Multiprocessing of annotation class functions
-            results = Parallel(n_jobs=args.cpu)(
-                delayed(Worker.annotator_worker)(this_chunk, annotator, args.database)
-                for this_chunk in chunks_lst
-            )
-            # Get batch length and results from chunk and result tuple
-            for (_, batch_len, _), (sample_hits, healthy_sample_rate, tumor_sample_rate, index_sample_rate) in zip(
-                this_batch, results
-            ):
-                # Send metrics to background writer threads
-                annot_writer.write(
-                    sample_hits,
-                    [
-                        "cts_id",
-                        "count",
-                        "total",
-                        "disease",
-                        "developmental_stage",
-                        "tissue",
-                        "study_id",
-                    ],
-                    append=not first_chunk,
-                    header=first_chunk,
-                )
-
-                healthy_writer.write(
-                    healthy_sample_rate,
-                    ["cts_id", "developmental_stage", "tissue", "sample_rate"],
-                    append=not first_chunk,
-                    header=first_chunk,
-                )
-
-                tumor_writer.write(
-                    tumor_sample_rate,
-                    ["cts_id", "disease", "tissue", "sample_rate"],
-                    append=not first_chunk,
-                    header=first_chunk,
-                )
-
-                index_writer.write(
-                    index_sample_rate,
-                    ["cts_id", "index_sample_rate", "samples_per_index"],
-                    append=not first_chunk,
-                    header=first_chunk,
-                )
-
-                first_chunk = False  # turn off headers after first write
-                pbar.update(batch_len)
-
-        pbar.close()
-        logger.info("Waiting for writer threads to finish")
-        # Wait for writer threads to finish and close
-        annot_writer.wait_until_done()
-        healthy_writer.wait_until_done()
-        tumor_writer.wait_until_done()
-        index_writer.wait_until_done()
-
-        annot_writer.stop()
-        healthy_writer.stop()
-        tumor_writer.stop()
-        index_writer.stop()
 
 def quant_annotation():
     parser = ArgumentParser(

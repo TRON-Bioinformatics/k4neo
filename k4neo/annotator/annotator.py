@@ -11,8 +11,11 @@ from k4neo.annotator import (
     TUMOR_TISSUE,
     load_annotator_config,
 )
-from k4neo.helper.helper import InputValidation
+from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation, DiskIO, Worker
+from k4neo.helper.async_writer import AsyncDFWriter
+from k4neo.parser.index_parser import IndexResultParser2
 import numpy as np
+from joblib import Parallel, delayed
 from loguru import logger
 
 
@@ -432,3 +435,159 @@ class Annotator:
         index_sample_rate["samples_per_index"] = tissue_counts.loc[tissue_counts["disease"].isin(NON_TUMOR_TISSUE)]["total"].sum()
 
         return healthy_sample_rate, tumor_sample_rate, index_sample_rate
+
+    def write_non_queryable(self, output_prefix: str, compression: bool) -> None:
+        """Write non-queryable sequences to disk if any exist.
+
+        Sequences too short to be queried in the k-mer index are stored in
+        ``self.non_queryable``.  This method writes them to a TSV file next to
+        the other output files.  The file is skipped when the DataFrame is empty.
+
+        Args:
+            output_prefix (str): Output file path prefix (without extension).
+            compression (bool): Write gzip-compressed output when True.
+        """
+        if len(self.non_queryable.index) > 0:
+            logger.info("-> Writing non-queryable sequences to disk")
+            output_non_queryable = (
+                pathlib.Path(output_prefix + "_non_querable.tsv.gz")
+                if compression
+                else pathlib.Path(output_prefix + "_non_querable.tsv")
+            )
+            DiskIO.write_df(self.non_queryable, output_non_queryable, compression)
+
+    @staticmethod
+    def _write_annotation_batch(
+        annot_writer,
+        healthy_writer,
+        tumor_writer,
+        index_writer,
+        sample_hits,
+        healthy_sample_rate,
+        tumor_sample_rate,
+        index_sample_rate,
+        first_chunk: bool,
+    ) -> None:
+        """Send one batch of annotation results to the async writer threads.
+
+        Writes the three result DataFrames produced by a single annotation
+        worker to their respective :class:`AsyncDFWriter` instances.  On the
+        first call (``first_chunk=True``) the header row is written; on
+        subsequent calls it is suppressed and the file is appended.
+
+        Args:
+            annot_writer (AsyncDFWriter): Writer for the per-sample annotation table.
+            healthy_writer (AsyncDFWriter): Writer for healthy-tissue sample-rate table.
+            tumor_writer (AsyncDFWriter): Writer for tumor sample-rate table.
+            index_writer (AsyncDFWriter): Writer for index sample-rate table.
+            sample_hits (pd.DataFrame): Annotated sample hits from one chunk.
+            healthy_sample_rate (pd.DataFrame): Healthy sample rates for the chunk.
+            tumor_sample_rate (pd.DataFrame): Tumor sample rates for the chunk.
+            index_sample_rate (pd.DataFrame): Index sample rates for the chunk.
+            first_chunk (bool): If True, write the header and open the file fresh.
+        """
+        annot_writer.write(
+            sample_hits,
+            ["cts_id", "count", "total", "disease", "developmental_stage", "tissue", "study_id"],
+            append=not first_chunk,
+            header=first_chunk,
+        )
+        healthy_writer.write(
+            healthy_sample_rate,
+            ["cts_id", "developmental_stage", "tissue", "sample_rate"],
+            append=not first_chunk,
+            header=first_chunk,
+        )
+        tumor_writer.write(
+            tumor_sample_rate,
+            ["cts_id", "disease", "tissue", "sample_rate"],
+            append=not first_chunk,
+            header=first_chunk,
+        )
+        index_writer.write(
+            index_sample_rate,
+            ["cts_id", "index_sample_rate", "samples_per_index"],
+            append=not first_chunk,
+            header=first_chunk,
+        )
+
+    def annotate_result_dict(
+        self,
+        result_dict: dict,
+        database: pathlib.Path,
+        output_prefix: str,
+        cpu: int,
+        chunk_size: int,
+        compression: bool,
+    ) -> None:
+        """Annotate all methods in result_dict and write results to disk.
+
+        Iterates over each method in result_dict, runs parallel annotation workers,
+        and streams results to async writer threads.
+
+        Args:
+            result_dict (dict): Parsed k-mer index results keyed by method name.
+            database (pathlib.Path): Path to SQLite annotation database.
+            output_prefix (str): Output file prefix.
+            cpu (int): Number of parallel workers.
+            chunk_size (int): CTS IDs per DataFrame chunk.
+            compression (bool): Compress output files with gzip.
+        """
+        for method_name in result_dict:
+            logger.info(f"-> Annotating query results of method: {method_name}")
+
+            ext = ".tsv.gz" if compression else ".tsv"
+            output_annotated = pathlib.Path(output_prefix + f"_annotated_{method_name}{ext}")
+            output_healthy_rate = pathlib.Path(output_prefix + f"_healthy_sample_rate_{method_name}{ext}")
+            output_tumor_rate = pathlib.Path(output_prefix + f"_tumor_sample_rate_{method_name}{ext}")
+            output_index_rate = pathlib.Path(output_prefix + f"_index_sample_rate_{method_name}{ext}")
+            
+            first_chunk = True
+
+            # Start writer threads
+            healthy_writer = AsyncDFWriter(output_healthy_rate, compression=compression)
+            healthy_writer.start()
+
+            tumor_writer = AsyncDFWriter(output_tumor_rate, compression=compression)
+            tumor_writer.start()
+
+            annot_writer = AsyncDFWriter(output_annotated, compression=compression)
+            annot_writer.start()
+
+            index_writer = AsyncDFWriter(output_index_rate, compression=compression)
+            index_writer.start()
+
+
+            results = Parallel(n_jobs=cpu, return_as="generator_unordered", pre_dispatch="n_jobs")(
+                delayed(Worker.annotator_worker)(this_chunk, self, database)
+                for _, _, this_chunk in IndexResultParser2.generate_dataframe_in_batches(
+                    {method_name: result_dict[method_name]}, batch_size=chunk_size
+                )
+            )
+
+            # Get batch length and results from chunk and result tuple
+            for sample_hits, healthy_sample_rate, tumor_sample_rate, index_sample_rate in results:
+                self._write_annotation_batch(
+                    annot_writer, 
+                    healthy_writer, 
+                    tumor_writer,
+                    index_writer,
+                    sample_hits, 
+                    healthy_sample_rate, 
+                    tumor_sample_rate,
+                    index_sample_rate,
+                    first_chunk,
+                )
+                first_chunk = False  # turn off headers after first write
+
+            logger.info("Waiting for writer threads to finish")
+            # Wait for writer threads to finish and close
+            annot_writer.wait_until_done()
+            healthy_writer.wait_until_done()
+            tumor_writer.wait_until_done()
+            index_writer.wait_until_done()
+
+            annot_writer.stop()
+            healthy_writer.stop()
+            tumor_writer.stop()
+            index_writer.stop()
