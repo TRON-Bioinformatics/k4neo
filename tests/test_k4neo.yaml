@@ -3,7 +3,7 @@
     - integrationtest
   command: >
     poetry run k4neo-annotator
-      --database tests/resources/index_metadata.sqlite3
+      --database tests/resources/index_metadata_v2.sqlite3
       --index tests/resources/index_manifest.yaml
       --input_yaml tests/resources/yaml_input_jx/annotation_input.yaml 
       --working-dir .
@@ -68,7 +68,7 @@
     - integrationtest
   command: >
     poetry run k4neo-annotator
-       --database tests/resources/index_metadata.sqlite3
+       --database tests/resources/index_metadata_v2.sqlite3
        --index tests/resources/index_manifest.yaml
        --input_yaml tests/resources/yaml_input_tx/annotation_input.yaml 
        --working-dir .
@@ -130,7 +130,7 @@
     - integrationtest
   command: >
     poetry run k4neo-annotator
-       --database tests/resources/index_metadata.sqlite3
+       --database tests/resources/index_metadata_v2.sqlite3
        --index tests/resources/index_manifest.yaml
        --input_yaml tests/resources/yaml_input_seq_to_short/annotation_input.yaml
        --working-dir .
@@ -159,7 +159,7 @@
     - integrationtest
   command: >
     bash -c "
-    poetry run k4neo-annotator --database tests/resources/index_metadata.sqlite3 --index tests/resources/index_manifest.yaml --input_yaml tests/resources/yaml_input_jx/annotation_input.yaml  --compress --working-dir . --output ./test_jx &&
+    poetry run k4neo-annotator --database tests/resources/index_metadata_v2.sqlite3 --index tests/resources/index_manifest.yaml --input_yaml tests/resources/yaml_input_jx/annotation_input.yaml  --compress --working-dir . --output ./test_jx &&
     poetry run k4neo-plotter --input ./test_jx --output test_picture.png
     "
   files:
