@@ -10,21 +10,22 @@ import itertools
 from joblib import Parallel, delayed
 
 
-class IndexResultParser2:
+class IndexResultParser:
     """
     Class provides functions to parse table formats
     returned by kmer indexing pipeline and map to sample names
     if required.
     """
 
-    def __init__(self, query_pipeline_results, cores: int = 8) -> None:
+    def __init__(self, query_pipeline_results, cores: int = 8, sample_integer_encoding: Dict[str, int] = None) -> None:
 
         self.query_tables = query_pipeline_results
         self.cores = cores
+        self.sample_integer_encoding = sample_integer_encoding
 
     @staticmethod
     def parse_results_of_kmer_search(
-        this_method, this_index, this_sample_mapping, this_result_path, kmer_ratio
+        this_method, this_index, this_sample_mapping, this_result_path, kmer_ratio, sample_integer_encoding=None
     ):
 
         kmer_parser = BinaryKmerIndexResultParser(
@@ -32,10 +33,11 @@ class IndexResultParser2:
             method=this_method,
             raptor_sample_mapping=this_sample_mapping,
             kmer_ratio=kmer_ratio,
+            sample_integer_encoding=sample_integer_encoding,
         )
         return this_method, kmer_parser.parse_results()
 
-    def parse_result2(self, kmer_ratio=0.7) -> dict:
+    def parse_result(self, kmer_ratio=0.7) -> dict:
         """Parse results of QueryPipeline
 
         Args:
@@ -53,14 +55,14 @@ class IndexResultParser2:
         query_results = defaultdict(lambda: defaultdict(lambda: {None}))
         logger.debug("Parsing k-mer result files in parallel")
 
-        results = Parallel(n_jobs=self.cores, backend="multiprocessing")(
-            delayed(IndexResultParser2.parse_results_of_kmer_search)(m, i, s, r, kmer_ratio)
+        results = Parallel(n_jobs=self.cores)(
+            delayed(IndexResultParser.parse_results_of_kmer_search)(m, i, s, r, kmer_ratio, self.sample_integer_encoding)
             for m, i, s, r in self.query_tables
         )
 
         for this_method, detected_samples in results:
             for this_cts, this_sample_set in detected_samples.items():
-                IndexResultParser2.update_sample_set(
+                IndexResultParser.update_sample_set(
                     query_results[this_method][this_cts], this_sample_set
                 )
 
@@ -91,6 +93,7 @@ class IndexResultParser2:
                 method=this_method,
                 raptor_sample_mapping=this_sample_mapping,
                 kmer_ratio=kmer_ratio,
+                sample_integer_encoding=self.sample_integer_encoding,
             )
             detected_samples = kmer_parser.parse_results()
 
@@ -101,7 +104,7 @@ class IndexResultParser2:
 
     @staticmethod
     def generate_dataframe_in_batches(
-        parsed_results: Dict[str, Dict[str, Set[str]]], batch_size: int = 10000
+        parsed_results: Dict[str, Dict[str, Set[int]]], batch_size: int = 10000
     ) -> Generator[Tuple[str, int, pd.DataFrame], None, None]:
         for method_name, cts_dict in parsed_results.items():
             it = iter(cts_dict.items())
@@ -111,7 +114,7 @@ class IndexResultParser2:
                     break
                 # Generate cts/sample generators for dataframe creation
                 rows = ((cts, sample) for cts, samples in batch for sample in samples)
-                df = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_name"])
+                df = pd.DataFrame.from_records(rows, columns=["cts_id", "sample_id"])
                 batch_len = len(batch)
                 del batch, rows
                 yield method_name, batch_len, df
@@ -157,6 +160,7 @@ class BinaryKmerIndexResultParser:
         method: str,
         raptor_sample_mapping: str = None,
         kmer_ratio: float = 0.7,
+        sample_integer_encoding: Dict[str, int] = None,
     ) -> None:
 
         self.search_results = search_results
@@ -168,6 +172,7 @@ class BinaryKmerIndexResultParser:
                 self.raptor_sample_mapping is not None and self.raptor_sample_mapping != ""
             ), "Parsing Raptor results requires a sample/index mapping file"
         self.kmer_ratio = kmer_ratio
+        self.sample_integer_encoding = sample_integer_encoding
 
     def parse_results(self) -> pd.DataFrame:
         """
@@ -202,13 +207,14 @@ class BinaryKmerIndexResultParser:
                     # k-mer fraction smaller than minimum.
                     if prediction < self.kmer_ratio:
                         continue
-                    detected_samples.add(sample)
+                    
+                    if self.sample_integer_encoding and sample in self.sample_integer_encoding:
+                        detected_samples.add(self.sample_integer_encoding[sample])
+                    else:
+                        detected_samples.add(sample)
+
                 if not detected_samples:
-                    results[cts_id] = set(
-                        [
-                            None,
-                        ]
-                    )
+                    results[cts_id] = set([None])
                 else:
                     results[cts_id] = detected_samples
 
@@ -254,15 +260,13 @@ class BinaryKmerIndexResultParser:
                         # Iterate over samples bins
                         for this_sample in elements[1].split(","):
                             # Save detected bins and directly translate into sample identifier
-                            detected_samples.add(
-                                sample_name_mapping[dataset_mapping[int(this_sample)]]
-                            )
+                            sample_name = sample_name_mapping[dataset_mapping[int(this_sample)]]
+                            if self.sample_integer_encoding and sample_name in self.sample_integer_encoding:
+                                detected_samples.add(self.sample_integer_encoding[sample_name])
+                            else:
+                                detected_samples.add(sample_name)
                     if not detected_samples:
-                        results[cts_id] = set(
-                            [
-                                None,
-                            ]
-                        )
+                        results[cts_id] = set([None])
                     else:
                         results[cts_id] = detected_samples
 
