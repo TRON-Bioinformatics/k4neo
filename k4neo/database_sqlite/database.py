@@ -123,6 +123,7 @@ class CreateDataBase(DataBase):
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS samples (
+                sample_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 sample_name TEXT,
                 study_id TEXT, 
                 runs TEXT NOT NULL,
@@ -130,7 +131,7 @@ class CreateDataBase(DataBase):
                 developmental_stage TEXT NOT NULL,
                 disease TEXT NOT NULL,
                 sex TEXT,
-                PRIMARY KEY (sample_name, study_id),
+                UNIQUE(sample_name, study_id),
                 FOREIGN KEY (tissue)
                     REFERENCES tissue_map(tissue_public)
                     ON UPDATE CASCADE

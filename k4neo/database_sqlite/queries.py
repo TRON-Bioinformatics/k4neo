@@ -1,6 +1,7 @@
 import pandas as pd
 from k4neo.database_sqlite.database import DataBase
 import numpy as np
+from typing import Dict
 
 
 class Queries:
@@ -43,9 +44,58 @@ class Queries:
             return
         return project_id.get("study_id", None)
 
+    def get_sample_id(self, sample_name: str) -> int:
+        """
+        Retrieve the internal integer ID for a given sample name.
+
+        Args:
+            sample_name (str): The human-readable sample name.
+
+        Returns:
+            int: The unique integer ID of the sample.
+        """
+        res = pd.read_sql(
+            "SELECT sample_id FROM samples WHERE sample_name = ?",
+            self.db.connection,
+            params=[sample_name],
+        )
+        if res.empty:
+            return None
+        return int(res.iloc[0]["sample_id"])
+
+    def get_sample_name(self, sample_id: int) -> str:
+        """
+        Retrieve the human-readable sample name for a given integer ID.
+
+        Args:
+            sample_id (int): The unique integer ID of the sample.
+
+        Returns:
+            str: The sample name.
+        """
+        res = pd.read_sql(
+            "SELECT sample_name FROM samples WHERE sample_id = ?",
+            self.db.connection,
+            params=[sample_id],
+        )
+        if res.empty:
+            return None
+        return res.iloc[0]["sample_name"]
+
     def get_sample_study(self) -> pd.DataFrame:
-        table = pd.read_sql("SELECT sample_name, study_id FROM samples", self.db.connection)
+        table = pd.read_sql("SELECT sample_id, study_id FROM samples", self.db.connection)
         return table
+
+    def get_all_samples_mapping(self) -> Dict[str, int]:
+        """
+        Retrieve all sample names from the database and create a mapping to unique integers.
+        This is used to optimize memory and speed during k-mer result parsing.
+
+        Returns:
+            Dict[str, int]: A dictionary mapping sample_name (str) to a unique integer ID.
+        """
+        df = pd.read_sql("SELECT sample_id, sample_name FROM samples", self.db.connection)
+        return dict(zip(df["sample_name"], df["sample_id"]))
 
     def annotate_samples_of_project(self, samples: pd.DataFrame) -> pd.DataFrame:
         """
@@ -59,17 +109,18 @@ class Queries:
             len(study) == 1
         ), "More than one project in samples dataframe. Function supports only query for one study"
         study = study.item()
-        sample_query = samples.sample_name.unique().tolist()
+        sample_query = samples.sample_id.unique().tolist()
         # annotation = table.search(self.query.sample_name.one_of(sample_query))
         placeholders = ",".join("?" for _ in sample_query)
         annotation = pd.read_sql_query(
-            f"""SELECT s.sample_name,
+            f"""SELECT s.sample_id,
+                s.sample_name,
                 s.developmental_stage,
                 s.disease, 
                 tm.tissue
                 FROM samples s
                 LEFT JOIN tissue_map tm ON s.tissue = tm.tissue_public
-                WHERE sample_name IN ({placeholders});
+                WHERE sample_id IN ({placeholders});
             """,
             self.db.connection,
             params=sample_query,
@@ -81,7 +132,7 @@ class Queries:
             samples["disease"] = np.nan
             return samples
         # Merge group df with annotation features
-        samples = pd.merge(samples, annotation, on="sample_name", how="left")
+        samples = pd.merge(samples, annotation, on="sample_id", how="left")
         return samples
 
     def document_to_pd(self, document: dict) -> pd.DataFrame:
