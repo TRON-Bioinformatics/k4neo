@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import pathlib
+from typing import Dict
 import pandas as pd
 from k4neo.index.index_loader import load_metaindex_from_manifest
 from k4neo.index.index_processor import KmerIndexProcessor
@@ -13,7 +14,7 @@ from k4neo.annotator import (
 )
 from k4neo.helper.helper import FastaHandler, SequenceOperation, InputValidation, DiskIO, Worker
 from k4neo.helper.async_writer import AsyncDFWriter
-from k4neo.parser.index_parser import IndexResultParser2
+from k4neo.parser.index_parser import IndexResultParser
 import numpy as np
 from joblib import Parallel, delayed
 from loguru import logger
@@ -77,6 +78,7 @@ class Annotator:
         pipeline: pathlib.Path,
         workflow_profile: pathlib.Path,
         index_manifest: pathlib.Path,
+        sample_integer_encoding: Dict[str, int] | None = None,
         kmer_ratio: float = 0.7,
         slurm: bool = False,
         cores: int = 16,
@@ -88,6 +90,7 @@ class Annotator:
         Args:
             pipeline (pathlib.Path): Path to SnakeMake pipeline (Snakefile)
             index_manifest (pathlib.Path): Path to k4neo index manifest (yaml)
+            sample_integer_encoding (Dict[str, int] | None): Mapping of sample names to unique integers for memory optimization.
             kmer_ratio (float, optional): Required fraction of shared k-mers between query and sample. Defaults to 0.7.
             slurm (bool, optional):  If True, QueryPipeline will submit jobs to slurm scheduler. Defaults to False.
             cores (int, optional): Number of cores for pipeline. Defaults to 16.
@@ -107,8 +110,9 @@ class Annotator:
             cores=cores,
             kmer_ratio=kmer_ratio,
         )
-        parsed_results = index_processor.result_parser2(
-            query_pipeline_results=query_pipeline_results, cores=cores, kmer_ratio=kmer_ratio
+
+        parsed_results = index_processor.result_parser(
+            query_pipeline_results=query_pipeline_results, cores=cores, kmer_ratio=kmer_ratio, sample_integer_encoding=sample_integer_encoding
         )
         return parsed_results
 
@@ -136,7 +140,7 @@ class Annotator:
             [
                 "cts_id",
                 "study_id",
-                "sample_name",
+                "sample_id",
                 "tissue",
                 "developmental_stage",
                 "disease",
@@ -172,7 +176,7 @@ class Annotator:
             pd.DataFrame: DataFrame of non-detected sequences in final output format.
         """
 
-        not_expressed = parsed_results.loc[parsed_results["sample_name"].isnull(), ["cts_id"]]
+        not_expressed = parsed_results.loc[parsed_results["sample_id"].isnull(), ["cts_id"]]
         not_expressed["count"] = 0
         not_expressed["total"] = 0
         not_expressed["disease"] = np.nan
@@ -251,8 +255,8 @@ class Annotator:
         )
         # Count occurence of each cts per tissue
         parsed_counts = parsed_results.groupby(
-            ["cts_id", "developmental_stage", "tissue"], as_index=False, dropna=True
-        ).agg(count=("count", "sum"))
+            ["cts_id", "developmental_stage", "tissue"]
+        )["count"].sum().reset_index()
 
         # Merge and calculate sample rate
         count_table = cts_tissue_comb.merge(
@@ -282,8 +286,8 @@ class Annotator:
         )
         # Count occurence of each cts per tumor
         parsed_counts = parsed_results.groupby(
-            ["cts_id", "disease", "tissue"], as_index=False, dropna=True
-        ).agg(count=("count", "sum"))
+            ["cts_id", "disease", "tissue"]
+        )["count"].sum().reset_index()
 
         # Merge and calculate tumor rate
         count_table = cts_tumor_comb.merge(
@@ -320,7 +324,7 @@ class Annotator:
 
         logger.debug("Annotating sample hits with corresponding study annotation.")
         study_annotation = queries.get_sample_study()
-        parsed_results = parsed_results.merge(study_annotation, how="left", on="sample_name")
+        parsed_results = parsed_results.merge(study_annotation, how="left", on="sample_id")
 
         if len(parsed_results.index) == 0:
             logger.warning("None of the queried sequences was found in index.")
@@ -338,7 +342,7 @@ class Annotator:
 
 
         logger.debug("Annotating sample hits with sample level metadata.")
-        parsed_results = parsed_results.groupby("study_id", dropna=False)[['cts_id', 'sample_name', 'study_id']].apply(
+        parsed_results = parsed_results.groupby("study_id", dropna=False)[['cts_id', 'sample_id', 'study_id']].apply(
             lambda sub_df: queries.annotate_samples_of_project(sub_df)
         )
         parsed_results.reset_index(drop=True, inplace=True)
@@ -362,6 +366,12 @@ class Annotator:
                 "study_id",
             ]
         ]
+        # Use categorical data types to reduce memory usage and speed up processing
+        parsed_results["disease"] = parsed_results["disease"].astype("category")
+        parsed_results["developmental_stage"] = parsed_results["developmental_stage"].astype("category")
+        parsed_results["tissue"] = parsed_results["tissue"].astype("category")
+        parsed_results["study_id"] = parsed_results["study_id"].astype("category")
+
         return parsed_results
 
     def annotate_sequences(self, annotated_cts):
@@ -560,7 +570,7 @@ class Annotator:
 
             results = Parallel(n_jobs=cpu, return_as="generator_unordered", pre_dispatch="n_jobs")(
                 delayed(Worker.annotator_worker)(this_chunk, self, database)
-                for _, _, this_chunk in IndexResultParser2.generate_dataframe_in_batches(
+                for _, _, this_chunk in IndexResultParser.generate_dataframe_in_batches(
                     {method_name: result_dict[method_name]}, batch_size=chunk_size
                 )
             )
