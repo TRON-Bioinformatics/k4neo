@@ -14,7 +14,7 @@ import yaml
 import tempfile
 
 from k4neo.pipeline.query_pipeline import QueryPipeline, QueryPipelineConfig
-from k4neo.parser.index_parser import IndexResultParser2
+from k4neo.parser.index_parser import IndexResultParser
 from k4neo.pipeline import TARGET_RULES_OF_METHODS
 from k4neo.index.kmer_index import KmerMetaIndex
 
@@ -138,7 +138,7 @@ class KmerIndexProcessor:
         logger.info("-> Searching index for context sequences")
         return pipeline.run_pipeline(slurm=slurm, cores=cores)
 
-    def result_parser2(self, query_pipeline_results, cores, kmer_ratio):
+    def result_parser(self, query_pipeline_results, cores, kmer_ratio, sample_integer_encoding=None):
         """
         Parse results returned by k-mer index
         """
@@ -157,6 +157,6 @@ class KmerIndexProcessor:
                     this_result[2],
                 )
             )
-        parser = IndexResultParser2(query_pipeline_results=parser_compatible_structure, cores=cores)
-        query_hits = parser.parse_result2(kmer_ratio=kmer_ratio)
+        parser = IndexResultParser(query_pipeline_results=parser_compatible_structure, cores=cores, sample_integer_encoding=sample_integer_encoding)
+        query_hits = parser.parse_result(kmer_ratio=kmer_ratio)
         return query_hits
