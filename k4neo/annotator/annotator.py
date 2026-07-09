@@ -185,29 +185,6 @@ class Annotator:
         not_expressed["study_id"] = np.nan
 
         return not_expressed
-
-    def _calculate_sample_rate(self, parsed_results: pd.DataFrame):
-        """
-        High level aggregate. Sum all tissue hits of a developmental stage
-        per cts_id an calculate sample rate. The number of samples per tissue
-        containing the sequence of interest.
-        """
-        tissue_counts = self.queries.get_tissue_counts()
-        tissue_counts = (
-            tissue_counts.groupby(["developmental_stage", "tissue"])["total"].sum().reset_index()
-        )
-        parsed_results = (
-            parsed_results.groupby(["cts_id", "developmental_stage", "tissue"])["count"]
-            .sum()
-            .reset_index()
-        )
-        df = parsed_results[["cts_id"]].drop_duplicates()
-        df = pd.merge(df, parsed_results, how="left")
-        df["count"] = df["count"].fillna(0).astype("int")
-        df = pd.merge(df, tissue_counts, how="left")
-        df["sample_rate"] = df.apply(lambda row: round(row["count"] / row["total"], 2), axis=1)
-
-        return df
     
     def _calculate_index_sample_rate(self, parsed_results: pd.DataFrame, tissue_counts: pd.DataFrame):
         """Calculate sample rate of sequence of interest in whole index
@@ -392,7 +369,7 @@ class Annotator:
 
         return df
 
-    def annotate_sample_rate2(self, annotated_cts, queries: Queries, min_total=1):
+    def annotate_sample_rate(self, annotated_cts, queries: Queries, min_total=1):
         """
         Add sample rate to sequences
         """
