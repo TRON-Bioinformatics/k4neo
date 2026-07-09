@@ -270,8 +270,8 @@ def test_annotator_annotate_cts(setup_test_environment):
 
     # Create mock parsed results
     parsed_results = pd.DataFrame({
-        "cts_id": ["seq1", "seq2", "seq3", "seq4"],
-        "sample_id": [1, None, 3, 4]
+        "cts_id": ["seq1", "seq1", "seq2", "seq3"],
+        "sample_id": [1, 2, None, 3]
     })
 
     result = annotator.annotate_cts(parsed_results, queries)
@@ -291,7 +291,6 @@ def test_annotator_annotate_cts(setup_test_environment):
     assert "seq1" in unique_seqs
     assert "seq2" in unique_seqs
     assert "seq3" in unique_seqs
-    assert "seq4" in unique_seqs
 
     env["db"].close()
 
@@ -336,9 +335,9 @@ def test_annotator_annotate_sequences(setup_test_environment):
     env["db"].close()
 
 
-def test_annotator_annotate_sample_rate2(setup_test_environment):
+def test_annotator_annotate_sample_rate(setup_test_environment):
     """
-    Test the annotate_sample_rate2 method.
+    Test the annotate_sample_rate method.
     """
     env = setup_test_environment
     
@@ -360,7 +359,7 @@ def test_annotator_annotate_sample_rate2(setup_test_environment):
         "study_id": ["STUDY1"],
     })
 
-    healthy_rate, tumor_rate, index_rate = annotator.annotate_sample_rate2(annotated_cts, queries, min_total=1)
+    healthy_rate, tumor_rate, index_rate = annotator.annotate_sample_rate(annotated_cts, queries, min_total=1)
 
     # Verify healthy sample rate result
     assert isinstance(healthy_rate, pd.DataFrame)

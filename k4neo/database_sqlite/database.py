@@ -123,7 +123,7 @@ class CreateDataBase(DataBase):
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS samples (
-                sample_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sample_id INTEGER PRIMARY KEY,
                 sample_name TEXT,
                 study_id TEXT, 
                 runs TEXT NOT NULL,
