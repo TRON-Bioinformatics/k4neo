@@ -129,6 +129,12 @@ def test_parse_kmindex(mocker, kmer_ratio, expected):
     expected_enc = {k: {encoding[s] for s in v if s in encoding} for k, v in expected.items()}
     assert results_enc == expected_enc
 
+    parser = BinaryKmerIndexResultParser("dummy.tsv", method="kmindex", kmer_ratio=kmer_ratio)
+    results = parser._stream_kmindex()
+    for this_cts, this_samples in results:
+        assert this_cts in expected
+        assert this_samples == expected[this_cts]
+
 
 @pytest.fixture
 def example_raptor_output():
@@ -180,6 +186,7 @@ def test_parse_raptor(mocker, example_raptor_output):
     results = parser._parse_raptor()
 
     assert results == example_raptor_output[2]
+    
 
 def test_parse_raptor_with_integer_encoding(mocker, example_raptor_output):
     from io import StringIO
@@ -197,6 +204,22 @@ def test_parse_raptor_with_integer_encoding(mocker, example_raptor_output):
 
     expected_enc = {k: {encoding[s] for s in v if s in encoding} for k, v in example_raptor_output[2].items()}
     assert results_enc == expected_enc
+
+def test_parse_raptor_streaming(mocker, example_raptor_output):
+    from io import StringIO
+
+    # Mock minimiser file
+    mock_mapping_file = StringIO(example_raptor_output[0])
+    # Mock open for raptor resultsw
+    mock_search_file = StringIO(example_raptor_output[1])
+    mocker.patch("builtins.open", side_effect=[mock_mapping_file, mock_search_file])
+
+    parser = BinaryKmerIndexResultParser("dummy.tsv", "raptor", "dummy2.txt", kmer_ratio=0.7)
+    results = parser._stream_raptor()
+
+    for this_cts, this_samples in results:
+        assert this_cts in example_raptor_output[2]
+        assert this_samples == example_raptor_output[2][this_cts]
 
 
 # Parsing of subindex results is happening in parallel.
