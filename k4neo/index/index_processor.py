@@ -158,5 +158,5 @@ class KmerIndexProcessor:
                 )
             )
         parser = IndexResultParser(query_pipeline_results=parser_compatible_structure, cores=cores, sample_integer_encoding=sample_integer_encoding)
-        query_hits = parser.parse_result(kmer_ratio=kmer_ratio)
+        query_hits = parser.parse_results_sequential(kmer_ratio=kmer_ratio)
         return query_hits
