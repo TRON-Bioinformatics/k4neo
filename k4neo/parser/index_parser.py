@@ -37,6 +37,38 @@ class IndexResultParser:
         )
         return this_method, kmer_parser.parse_results()
 
+    def parse_results_sequential(self, kmer_ratio=0.7) -> dict:
+        """Parse results of QueryPipeline sequentially to minimise memory usage.
+
+        Processes one subindex file at a time and merges each result row
+        directly into ``query_results`` via the streaming generator.  At any
+        point only ``query_results`` plus a single parsed line are held in
+        memory — no intermediate per-subindex dict is ever built.
+
+        Args:
+            kmer_ratio (float, optional):
+                Required fraction of shared k-mers. Only used for kmindex. Defaults to 0.7.
+
+        Returns:
+            dict: {'method': {cts_id: set(sample_ids), ...}, ...}
+        """
+        query_results = defaultdict(lambda: defaultdict(lambda: {None}))
+        logger.debug("Parsing k-mer result files sequentially")
+        for this_method, this_index, this_sample_mapping, this_result_path in self.query_tables:
+            logger.debug(f"Parsing {this_index} results obtained with {this_method}")
+            kmer_parser = BinaryKmerIndexResultParser(
+                search_results=this_result_path,
+                method=this_method,
+                raptor_sample_mapping=this_sample_mapping,
+                kmer_ratio=kmer_ratio,
+                sample_integer_encoding=self.sample_integer_encoding,
+            )
+            for this_cts, this_sample_set in kmer_parser.stream_results():
+                IndexResultParser.update_sample_set(
+                    query_results[this_method][this_cts], this_sample_set
+                )
+        return query_results
+
     def parse_result(self, kmer_ratio=0.7) -> dict:
         """Parse results of QueryPipeline
 
@@ -55,7 +87,7 @@ class IndexResultParser:
         query_results = defaultdict(lambda: defaultdict(lambda: {None}))
         logger.debug("Parsing k-mer result files in parallel")
 
-        results = Parallel(n_jobs=self.cores)(
+        results = Parallel(n_jobs=self.cores, return_as="generator_unordered", pre_dispatch="n_jobs")(
             delayed(IndexResultParser.parse_results_of_kmer_search)(m, i, s, r, kmer_ratio, self.sample_integer_encoding)
             for m, i, s, r in self.query_tables
         )
@@ -65,40 +97,8 @@ class IndexResultParser:
                 IndexResultParser.update_sample_set(
                     query_results[this_method][this_cts], this_sample_set
                 )
-
-        return query_results
-
-    def parse_results(self, kmer_ratio=0.7) -> dict:
-        """Parse results of QueryPipeline
-
-        Args:
-            kmer_ratio (float, optional):
-                Required fraction of shared k-mers between query and sample.
-                Only required for kmindex results. Defaults to 0.7.
-
-        Returns:
-            dict: A dictionary containing parsed results of k-mer methods.
-            For example:
-                {'raptor': {cts: set(P1,P2,P3), cts_2: set(P1)},
-                 'kimindex': {cts: set(P2,P3), cts_2: set(P1,P2)}
-                }
-        """
-        query_results = defaultdict(lambda: defaultdict(lambda: {None}))
-        logger.debug("Parsing k-mer result files")
-        # [("method", "subindex_name", "subindex_mapping", "result_path")]
-        for this_method, this_index, this_sample_mapping, this_result_path in self.query_tables:
-            logger.debug(f"Parsing {this_index} results obtained with {this_method}")
-            kmer_parser = BinaryKmerIndexResultParser(
-                search_results=this_result_path,
-                method=this_method,
-                raptor_sample_mapping=this_sample_mapping,
-                kmer_ratio=kmer_ratio,
-                sample_integer_encoding=self.sample_integer_encoding,
-            )
-            detected_samples = kmer_parser.parse_results()
-
-            for this_cts, this_sample_set in detected_samples.items():
-                query_results[this_method][this_cts].update(this_sample_set)
+            # Free the worker's result immediately after merging
+            del detected_samples
 
         return query_results
 
@@ -138,12 +138,19 @@ class IndexResultParser:
             set: The modified target_set without placeholder if detected in at least one sample or a placeholder set.
 
         """
-        pre_existing = len(target_set - {None})
-        new_entries = new_set - {None}
+        # Avoid copying entire sets via set subtraction (O(n) allocation).
+        # Use O(1) membership checks and a short-circuiting any() instead.
+        if None in new_set:
+            new_entries = new_set - {None}
+            if not new_entries:
+                return  # new_set is only the {None} placeholder – nothing real to add
+        else:
+            new_entries = new_set
 
+        # Short-circuits on the first non-None element, avoiding a full set copy.
+        has_pre_existing = any(x is not None for x in target_set)
         target_set.update(new_entries)
-
-        if pre_existing == 0 and new_entries:
+        if not has_pre_existing:
             target_set.discard(None)
 
 
@@ -190,6 +197,24 @@ class BinaryKmerIndexResultParser:
                 logger.error(f"Tool {self.method} is unknown. Cannot parse results")
         return result
 
+    def stream_results(self) -> Generator[Tuple[str, set], None, None]:
+        """Yield (cts_id, sample_set) pairs without materialising a full result dict.
+
+        Use this instead of :meth:`parse_results` when the caller can process
+        results incrementally (e.g. the sequential :meth:`IndexResultParser.parse_results`
+        path).  This keeps peak memory proportional to the size of *query_results*
+        alone rather than *query_results + current subindex dict*.
+        """
+        match self.method:
+            case "kmindex":
+                logger.debug("-> Streaming KMINDEX index query results...")
+                yield from self._stream_kmindex()
+            case "raptor":
+                logger.debug("-> Streaming RAPTOR index query results...")
+                yield from self._stream_raptor()
+            case _:
+                logger.error(f"Tool {self.method} is unknown. Cannot stream results")
+
     def _parse_kmindex(self) -> pd.DataFrame:
         """
         Parse tabular output format of kmindex
@@ -220,6 +245,28 @@ class BinaryKmerIndexResultParser:
 
         logger.debug(f"Parsed {len(results.keys())} query sequences from kmindex output.")
         return results
+
+    def _stream_kmindex(self) -> Generator[Tuple[str, set], None, None]:
+        """Yield (cts_id, sample_set) pairs from kmindex output without building a full dict."""
+        count = 0
+        with open(self.search_results) as file_handle:
+            reader = DictReader(file_handle, delimiter="\t")
+            for line in reader:
+                cts_id = line["samples"].split(":")[1]
+                detected_samples = set()
+                for sample, prediction in line.items():
+                    if sample == "samples":
+                        continue
+                    prediction = round(float(prediction), 2)
+                    if prediction < self.kmer_ratio:
+                        continue
+                    if self.sample_integer_encoding and sample in self.sample_integer_encoding:
+                        detected_samples.add(self.sample_integer_encoding[sample])
+                    else:
+                        detected_samples.add(sample)
+                count += 1
+                yield cts_id, detected_samples if detected_samples else {None}
+        logger.debug(f"Streamed {count} query sequences from kmindex output.")
 
     def _parse_raptor(self) -> pd.DataFrame:
         """
@@ -272,6 +319,40 @@ class BinaryKmerIndexResultParser:
 
         logger.info(f"Parsed {len(results.keys())} query sequences from raptor output")
         return results
+
+    def _stream_raptor(self) -> Generator[Tuple[str, set], None, None]:
+        """Yield (cts_id, sample_set) pairs from raptor output without building a full dict."""
+        dataset_mapping = {}
+        sample_name_mapping = {}
+        with open(self.raptor_sample_mapping, "r") as file_handle:
+            logger.debug(
+                "Reading minimiser2sample mapping file to match raptor bin ids to sample names"
+            )
+            reader = DictReader(file_handle, delimiter="\t")
+            for row in reader:
+                sample_name_mapping[row["minimiser_id"]] = row["sample_name"]
+        count = 0
+        with open(self.search_results) as file_handle:
+            for line in file_handle:
+                elements = line.rstrip().split("\t")
+                if line.startswith("##"):
+                    continue
+                elif line.startswith("#"):
+                    if elements[0] != "#QUERY_NAME":
+                        dataset_mapping[int(elements[0][1:])] = elements[1].rstrip()
+                else:
+                    cts_id = elements[0]
+                    detected_samples = set()
+                    if len(elements) > 1:
+                        for this_sample in elements[1].split(","):
+                            sample_name = sample_name_mapping[dataset_mapping[int(this_sample)]]
+                            if self.sample_integer_encoding and sample_name in self.sample_integer_encoding:
+                                detected_samples.add(self.sample_integer_encoding[sample_name])
+                            else:
+                                detected_samples.add(sample_name)
+                    count += 1
+                    yield cts_id, detected_samples if detected_samples else {None}
+        logger.info(f"Streamed {count} query sequences from raptor output")
 
 
 class QuantitativeKmerIndexParser:
