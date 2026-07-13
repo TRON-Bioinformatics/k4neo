@@ -23,27 +23,12 @@ class IndexResultParser:
         self.cores = cores
         self.sample_integer_encoding = sample_integer_encoding
 
-    @staticmethod
-    def parse_results_of_kmer_search(
-        this_method, this_index, this_sample_mapping, this_result_path, kmer_ratio, sample_integer_encoding=None
-    ):
-
-        kmer_parser = BinaryKmerIndexResultParser(
-            search_results=this_result_path,
-            method=this_method,
-            raptor_sample_mapping=this_sample_mapping,
-            kmer_ratio=kmer_ratio,
-            sample_integer_encoding=sample_integer_encoding,
-        )
-        return this_method, kmer_parser.parse_results()
 
     def parse_results_sequential(self, kmer_ratio=0.7) -> dict:
         """Parse results of QueryPipeline sequentially to minimise memory usage.
 
         Processes one subindex file at a time and merges each result row
-        directly into ``query_results`` via the streaming generator.  At any
-        point only ``query_results`` plus a single parsed line are held in
-        memory — no intermediate per-subindex dict is ever built.
+        directly into ``query_results`` via the streaming generator.
 
         Args:
             kmer_ratio (float, optional):
@@ -69,8 +54,23 @@ class IndexResultParser:
                 )
         return query_results
 
+    @staticmethod
+    def parse_results_of_kmer_search(
+        this_method, this_index, this_sample_mapping, this_result_path, kmer_ratio, sample_integer_encoding=None
+    ):
+        """Parse results of a single k-mer search and return the method name and detected samples."""
+
+        kmer_parser = BinaryKmerIndexResultParser(
+            search_results=this_result_path,
+            method=this_method,
+            raptor_sample_mapping=this_sample_mapping,
+            kmer_ratio=kmer_ratio,
+            sample_integer_encoding=sample_integer_encoding,
+        )
+        return this_method, kmer_parser.parse_results()
+
     def parse_result(self, kmer_ratio=0.7) -> dict:
-        """Parse results of QueryPipeline
+        """Parse results of QueryPipeline in parallel
 
         Args:
             kmer_ratio (float, optional):
@@ -138,18 +138,17 @@ class IndexResultParser:
             set: The modified target_set without placeholder if detected in at least one sample or a placeholder set.
 
         """
-        # Avoid copying entire sets via set subtraction (O(n) allocation).
-        # Use O(1) membership checks and a short-circuiting any() instead.
         if None in new_set:
             new_entries = new_set - {None}
             if not new_entries:
-                return  # new_set is only the {None} placeholder – nothing real to add
+                return  # nothing real to add
         else:
             new_entries = new_set
 
-        # Short-circuits on the first non-None element, avoiding a full set copy.
+        # Check if target set already has a real sample name.
         has_pre_existing = any(x is not None for x in target_set)
         target_set.update(new_entries)
+        # Discard placeholder if there is at least one real sample name in the target set after updating.
         if not has_pre_existing:
             target_set.discard(None)
 
@@ -200,10 +199,11 @@ class BinaryKmerIndexResultParser:
     def stream_results(self) -> Generator[Tuple[str, set], None, None]:
         """Yield (cts_id, sample_set) pairs without materialising a full result dict.
 
-        Use this instead of :meth:`parse_results` when the caller can process
-        results incrementally (e.g. the sequential :meth:`IndexResultParser.parse_results`
-        path).  This keeps peak memory proportional to the size of *query_results*
-        alone rather than *query_results + current subindex dict*.
+        Use this instead of :meth:`parse_results`  if you want to process results in a 
+        streaming fashion to reduce memory usage.
+
+        Yields:
+            Tuple[str, set]: A tuple containing the cts_id and a set of detected sample ids. If no samples were detected, the set will contain a single None value.
         """
         match self.method:
             case "kmindex":
@@ -247,7 +247,7 @@ class BinaryKmerIndexResultParser:
         return results
 
     def _stream_kmindex(self) -> Generator[Tuple[str, set], None, None]:
-        """Yield (cts_id, sample_set) pairs from kmindex output without building a full dict."""
+        """Yield (cts_id, sample_set) pairs from kmindex output"""
         count = 0
         with open(self.search_results) as file_handle:
             reader = DictReader(file_handle, delimiter="\t")
@@ -321,7 +321,7 @@ class BinaryKmerIndexResultParser:
         return results
 
     def _stream_raptor(self) -> Generator[Tuple[str, set], None, None]:
-        """Yield (cts_id, sample_set) pairs from raptor output without building a full dict."""
+        """Yield (cts_id, sample_set) pairs from raptor"""
         dataset_mapping = {}
         sample_name_mapping = {}
         with open(self.raptor_sample_mapping, "r") as file_handle:
